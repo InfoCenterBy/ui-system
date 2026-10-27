@@ -1,7 +1,9 @@
+import classNames from 'classnames'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Controls from '../components/system/themeGenerator/controls'
 import ExportDialog from '../components/system/themeGenerator/exportDialog'
+import ImportDialog from '../components/system/themeGenerator/importDialog'
 import ThemePreview from '../components/system/themeGenerator/themePreview'
 import Icon from '../components/system/icon'
 import { useTheme } from '../contexts/themeContext'
@@ -24,6 +26,8 @@ const ThemeGenerator = () => {
 		() => decodeTheme(searchParams.get('t')) ?? loadSaved() ?? createTheme()
 	)
 	const exportRef = useRef(null)
+	const importRef = useRef(null)
+	const [mode, setMode] = useState('dashboard')
 	const { applyCustomTheme } = useTheme()
 	const style = useMemo(() => themeStyle(theme.vars), [theme.vars])
 
@@ -67,6 +71,13 @@ const ThemeGenerator = () => {
 						<Icon name='reset' className='size-4' />
 						Reset
 					</button>
+					<button
+						className='btn btn-ghost'
+						onClick={() => importRef.current?.showModal()}
+					>
+						<Icon name='upload' className='size-4' />
+						Import
+					</button>
 					<button className='btn' onClick={applyToSite}>
 						Apply to site
 					</button>
@@ -89,9 +100,33 @@ const ThemeGenerator = () => {
 						}
 					/>
 				</aside>
-				<ThemePreview style={style} />
+				<div className='flex min-w-0 flex-col gap-3'>
+					<div
+						role='tablist'
+						className='tabs tabs-box self-start tabs-sm'
+					>
+						{[
+							['dashboard', 'Dashboard'],
+							['components', 'All components'],
+						].map(([value, label]) => (
+							<button
+								key={value}
+								role='tab'
+								aria-selected={mode === value}
+								className={classNames('tab', {
+									'tab-active': mode === value,
+								})}
+								onClick={() => setMode(value)}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+					<ThemePreview style={style} mode={mode} />
+				</div>
 			</div>
 			<ExportDialog ref={exportRef} theme={theme} />
+			<ImportDialog ref={importRef} onImport={setTheme} />
 		</div>
 	)
 }

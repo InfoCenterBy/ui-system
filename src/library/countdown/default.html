@@ -1,3 +1,22 @@
 <span class="countdown">
-	<span style="--value: 59" aria-live="polite" aria-label="59">59</span>
+	<span
+		id="countdown-default"
+		style="--value: 59"
+		aria-live="polite"
+		aria-label="59"
+		>59</span
+	>
 </span>
+<script>
+	{
+		// Counts seconds down from 59 and starts over
+		const el = document.getElementById('countdown-default')
+		let value = 59
+		setInterval(() => {
+			value = value > 0 ? value - 1 : 59
+			el.style.setProperty('--value', value)
+			el.setAttribute('aria-label', value)
+			el.textContent = value
+		}, 1000)
+	}
+</script>

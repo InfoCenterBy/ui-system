@@ -1,5 +1,6 @@
 import classNames from 'classnames'
 import ColorSwatch from './colorSwatch'
+import ContrastSummary from './contrastSummary'
 import { isReadable } from '../../../lib/color'
 import {
 	PRESET_NAMES,
@@ -207,6 +208,10 @@ const Controls = ({ theme, onChange, onPreset }) => {
 						</span>
 					</div>
 				))}
+			</Section>
+
+			<Section title='Contrast'>
+				<ContrastSummary theme={theme} onChange={onChange} />
 			</Section>
 
 			<Section title='Radius'>

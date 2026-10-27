@@ -2,9 +2,11 @@ import { Link, NavLink } from 'react-router-dom'
 import classNames from 'classnames'
 import Icon from '../icon'
 import { categoryPath, groupedCategories, pages } from '../../../registry'
+import { useFavorites } from '../../../lib/preferences'
 
 const PAGE_ICONS = {
 	'/': 'grid',
+	'/favorites': 'star',
 	'/theme-generator': 'swatch',
 	'/colors': 'brush',
 }
@@ -12,6 +14,8 @@ const PAGE_ICONS = {
 const linkClass = ({ isActive }) => classNames({ 'menu-active': isActive })
 
 const Sidebar = ({ onNavigate }) => {
+	const favoriteCount = useFavorites().length
+
 	return (
 		<aside className='flex min-h-full w-72 flex-col border-e border-base-200 bg-base-100'>
 			<div className='sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 bg-base-100 px-6'>
@@ -34,6 +38,12 @@ const Sidebar = ({ onNavigate }) => {
 								className='size-4'
 							/>
 							{page.name}
+							{page.path === '/favorites' &&
+								favoriteCount > 0 && (
+									<span className='badge badge-sm'>
+										{favoriteCount}
+									</span>
+								)}
 						</NavLink>
 					</li>
 				))}

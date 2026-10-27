@@ -6,4 +6,6 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
 	base: '/ui-system/',
 	plugins: [react(), tailwindcss()],
+	// Raw Tailwind theme CSS feeds the class autocomplete tests
+	test: { css: { include: [/tailwindcss\/theme\.css/] } },
 })

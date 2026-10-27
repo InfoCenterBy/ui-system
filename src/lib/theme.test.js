@@ -5,6 +5,7 @@ import {
 	decodeTheme,
 	encodeTheme,
 	getColor,
+	parseThemeCss,
 	setAuto,
 	setColor,
 	setVar,
@@ -69,6 +70,41 @@ describe('theme', () => {
 		expect(css).toContain('--color-primary: oklch(')
 		expect(css).toContain('--radius-box: 0.5rem;')
 		expect(css.trim().endsWith('}')).toBe(true)
+	})
+
+	it('imports its own export back', () => {
+		const theme = setColor(
+			createTheme('dark', 'night'),
+			'primary',
+			'oklch(60% 0.2 30)'
+		)
+		const { theme: imported, skipped } = parseThemeCss(themeCss(theme))
+		expect(skipped).toEqual([])
+		expect(imported.name).toBe('night')
+		expect(imported.vars).toEqual(theme.vars)
+		expect(Object.values(imported.auto).every((on) => !on)).toBe(true)
+	})
+
+	it('imports hex colors and skips formats it cannot read', () => {
+		const { theme, skipped } = parseThemeCss(`
+			[data-theme='brand'] {
+				/* brand colors */
+				--color-primary: #ff0000;
+				--color-secondary: #0f0;
+				--color-accent: rgb(0 0 255);
+				--radius-box: 1rem;
+			}
+		`)
+		expect(theme.vars['--color-primary']).toBe('oklch(62.8% 0.258 29.234)')
+		expect(theme.vars['--color-secondary']).toMatch(/^oklch\(/)
+		expect(theme.vars['--radius-box']).toBe('1rem')
+		expect(skipped).toEqual(['--color-accent'])
+		expect(theme.name).toBe('brand')
+	})
+
+	it('returns null when there are no colors', () => {
+		expect(parseThemeCss('body { margin: 0; }')).toBeNull()
+		expect(parseThemeCss('')).toBeNull()
 	})
 
 	it('builds an inline style with color-scheme', () => {

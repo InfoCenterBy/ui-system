@@ -69,6 +69,17 @@ describe('htmlToJsx', () => {
 		)
 	})
 
+	it('replaces scripts with a hint comment', () => {
+		expect(htmlToJsx('<b>a</b><script>alert(1)</script>')).toBe(
+			[
+				'<>',
+				'\t<b>a</b>',
+				'\t{/* Script from the HTML example is not included, run it in useEffect */}',
+				'</>',
+			].join('\n')
+		)
+	})
+
 	it.each(libraryFiles)('converts library/%s', (file) => {
 		const jsx = htmlToJsx(readFileSync(`${LIBRARY}/${file}`, 'utf8'))
 		expect(jsx).not.toMatch(/\s(class|for|onclick)=/)

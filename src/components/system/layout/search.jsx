@@ -2,47 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import classNames from 'classnames'
 import Icon from '../icon'
-import { categories, categoryPath, groups, pages } from '../../../registry'
+import { categories, groups, pages } from '../../../registry'
+import { buildIndex, search } from '../../../lib/search'
 
-const groupName = (id) => groups.find((g) => g.id === id)?.name
-
-const PAGE_ITEMS = pages.map((page) => ({
-	id: page.path,
-	label: page.name,
-	hint: 'Page',
-	to: page.path,
-}))
-
-const CATEGORY_ITEMS = [...categories]
-	.sort((a, b) => a.name.localeCompare(b.name))
-	.map((category) => ({
-		id: category.slug,
-		label: category.name,
-		hint: groupName(category.group),
-		to: categoryPath(category.slug),
-	}))
-
-const VARIANT_ITEMS = categories.flatMap((category) =>
-	category.variants.map((variant) => ({
-		id: `${category.slug}/${variant.name}`,
-		label: `${category.name} / ${variant.title}`,
-		hint: 'Variant',
-		to: `${categoryPath(category.slug)}?v=${variant.name}`,
-	}))
-)
-
-const ALL_ITEMS = [...PAGE_ITEMS, ...CATEGORY_ITEMS, ...VARIANT_ITEMS]
+const INDEX = buildIndex({
+	pages,
+	categories,
+	groupName: (id) => groups.find((g) => g.id === id)?.name,
+})
 
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.userAgent)
-
-// Every word of the query must appear in the label
-const filterItems = (query) => {
-	const words = query.toLowerCase().split(/\s+/).filter(Boolean)
-	if (words.length === 0) return [...PAGE_ITEMS, ...CATEGORY_ITEMS]
-	return ALL_ITEMS.filter((item) =>
-		words.every((word) => item.label.toLowerCase().includes(word))
-	)
-}
 
 const Search = () => {
 	const [query, setQuery] = useState('')
@@ -51,7 +20,7 @@ const Search = () => {
 	const listRef = useRef(null)
 	const navigate = useNavigate()
 
-	const results = useMemo(() => filterItems(query), [query])
+	const results = useMemo(() => search(INDEX, query), [query])
 
 	const open = () => {
 		setQuery('')
@@ -116,7 +85,7 @@ const Search = () => {
 						<Icon name='search' className='size-4 opacity-60' />
 						<input
 							type='search'
-							placeholder='Search components'
+							placeholder='Search components or classes like btn-soft'
 							value={query}
 							autoFocus
 							onChange={(e) => {
