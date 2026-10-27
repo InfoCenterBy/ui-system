@@ -13,7 +13,9 @@ const AppLayout = () => {
 	// Start each page from the top unless a variant is targeted
 	useEffect(() => {
 		if (!new URLSearchParams(search).has('v')) window.scrollTo(0, 0)
-	}, [pathname, search])
+		// Only page changes count, query updates keep the scroll position
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pathname])
 
 	return (
 		<div className='drawer lg:drawer-open'>

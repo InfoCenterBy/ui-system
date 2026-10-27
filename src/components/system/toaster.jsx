@@ -11,7 +11,10 @@ const Toaster = () => {
 	if (toasts.length === 0) return null
 
 	return (
-		<div className='toast toast-end toast-top z-50' aria-live='polite'>
+		<div
+			className='toast toast-end toast-top top-16 z-50'
+			aria-live='polite'
+		>
 			{toasts.map((t) => (
 				<div
 					key={t.id}

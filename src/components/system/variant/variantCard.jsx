@@ -2,6 +2,7 @@ import { lazy, Suspense, useDeferredValue, useMemo, useState } from 'react'
 import classNames from 'classnames'
 import Icon from '../icon'
 import HtmlPreview from './htmlPreview'
+import { PREVIEW_BOX } from './previewBox'
 import { htmlToJsx } from '../../../lib/htmlToJsx'
 import { copyText } from '../../../lib/toast'
 import { setCodeFormat, useCodeFormat } from '../../../lib/codeFormat'
@@ -57,11 +58,9 @@ const VariantCard = ({ category, variant, highlighted }) => {
 			</div>
 			<HtmlPreview
 				html={previewHtml}
-				className={classNames(
-					'flex min-h-32 flex-wrap items-center justify-center gap-4 overflow-x-auto rounded-box border border-base-300 bg-base-200 p-6',
-					category.previewClass,
-					{ 'animate-variant-highlight': highlighted }
-				)}
+				className={classNames(PREVIEW_BOX, category.previewClass, {
+					'animate-variant-highlight': highlighted,
+				})}
 			/>
 			{codeOpen && (
 				<div className='mt-2'>

@@ -9,8 +9,11 @@ const OPTIONS = [
 ]
 
 const ThemeToggle = () => {
-	const { theme, toggleTheme } = useTheme()
-	const current = OPTIONS.find((o) => o.value === theme) ?? OPTIONS[2]
+	const { theme, toggleTheme, customTheme } = useTheme()
+	const options = customTheme
+		? [...OPTIONS, { value: 'custom', label: 'Custom', icon: 'swatch' }]
+		: OPTIONS
+	const current = options.find((o) => o.value === theme) ?? OPTIONS[2]
 
 	const select = (value) => {
 		toggleTheme(value)
@@ -32,7 +35,7 @@ const ThemeToggle = () => {
 				tabIndex={0}
 				className='menu dropdown-content z-50 mt-2 w-36 rounded-box border border-base-200 bg-base-100 p-2 shadow-lg'
 			>
-				{OPTIONS.map((option) => (
+				{options.map((option) => (
 					<li key={option.value}>
 						<button
 							className={classNames({

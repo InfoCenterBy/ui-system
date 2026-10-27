@@ -41,6 +41,17 @@ The JSX tab is generated from the HTML, so there is nothing else to write. A mis
 
 Tailwind only generates classes it finds in the source, so classes typed in the live editor work only if they already appear somewhere in the project.
 
+## Theme generator
+
+`#/theme-generator` builds a daisyUI theme on top of any built-in preset: colors, radius, sizes, border and depth.
+
+- Content colors follow their background automatically and keep at least 4.5:1 contrast; turn off "auto" to pick one by hand.
+- The preview shows every library example with the theme applied, the rest of the site is untouched.
+- Export gives a `@plugin "daisyui/theme"` block in OKLCH. The theme is also kept in the URL, so a link restores it.
+- "Apply to site" saves the theme and adds a Custom option to the theme menu.
+
+Color math and theme logic live in `src/lib/color.js` and `src/lib/theme.js` and are covered by tests.
+
 ## Code style
 
 - Formatting is defined in `.prettierrc.json` and `.editorconfig`: tabs, single quotes, no semicolons, 80 columns, LF line endings. Tailwind classes are sorted by `prettier-plugin-tailwindcss`.
