@@ -1,6 +1,5 @@
 import classNames from 'classnames/bind'
-import { toast } from 'react-toastify'
-import SystemToast from '../systemToast'
+import { copyText } from '../../../lib/toast'
 
 const ColorBlock = ({ colorFromParent, className, textColor, colorType }) => {
 	const colorClass = classNames('rounded w-[32px] h-[32px]', colorFromParent)
@@ -14,17 +13,7 @@ const ColorBlock = ({ colorFromParent, className, textColor, colorType }) => {
 			colorToCopy = getComputedStyle(tempDiv).backgroundColor
 			document.body.removeChild(tempDiv)
 		}
-		navigator.clipboard.writeText(colorToCopy)
-		toast(
-			<SystemToast type='success'>
-				Color {colorFromParent} copied to clipboard
-			</SystemToast>,
-			{
-				closeButton: false,
-				autoClose: 1000,
-				closeOnClick: true,
-			}
-		)
+		copyText(colorToCopy, `Color ${colorFromParent}`)
 	}
 	return (
 		<div

@@ -8,5 +8,14 @@
 	"printWidth": 80,
 	"endOfLine": "lf",
 	"plugins": ["prettier-plugin-tailwindcss"],
-	"tailwindStylesheet": "./src/index.css"
+	"tailwindStylesheet": "./src/index.css",
+	"overrides": [
+		{
+			"files": "*.{yml,yaml}",
+			"options": {
+				"useTabs": false,
+				"tabWidth": 2
+			}
+		}
+	]
 }

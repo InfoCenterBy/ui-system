@@ -1,6 +1,6 @@
 # UI System
 
-A catalog of [daisyUI](https://daisyui.com) components with live preview and copy-ready markup.
+A catalog of [daisyUI](https://daisyui.com) components with live preview, an in-browser HTML editor and copy-ready HTML or JSX.
 
 Live: https://infocenterby.github.io/ui-system/
 
@@ -25,8 +25,21 @@ npm run dev
 | `npm run build`        | Build to `dist`                     |
 | `npm run preview`      | Serve the production build locally  |
 | `npm run lint`         | Run ESLint                          |
+| `npm test`             | Run unit tests with Vitest          |
 | `npm run format`       | Format the whole repo with Prettier |
 | `npm run format:check` | Check formatting without writing    |
+
+## Adding a component
+
+Every example is a plain HTML file, the registry lists them in display order.
+
+1. Add the markup to `src/library/<slug>/<variant>.html`. Use unique ids and radio names, prefixed with the slug.
+2. List the variant in `src/registry/categories.js`. A new component needs `slug`, `name`, `group`, a Russian `description` and `variants`.
+3. Optional fields: `showcase` picks the variant shown on the overview page, `previewClass` adjusts the preview box.
+
+The JSX tab is generated from the HTML, so there is nothing else to write. A missing file fails the build with a clear error.
+
+Tailwind only generates classes it finds in the source, so classes typed in the live editor work only if they already appear somewhere in the project.
 
 ## Code style
 
@@ -42,4 +55,4 @@ npm run dev
 
 ## Deploy
 
-Every push to `main` runs the `Deploy to GitHub Pages` workflow: format check, lint, build, publish `dist`.
+Every push to `main` runs the `Deploy to GitHub Pages` workflow: format check, lint, tests, build, publish `dist`.
