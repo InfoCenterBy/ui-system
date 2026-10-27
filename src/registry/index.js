@@ -1,4 +1,31 @@
-import { categories } from './categories'
+import { categoryMeta } from './categories'
+
+const files = import.meta.glob('../library/*/*.html', {
+	query: '?raw',
+	import: 'default',
+	eager: true,
+})
+
+const loadHtml = (slug, name) => {
+	const html = files[`../library/${slug}/${name}.html`]
+	if (html === undefined)
+		throw new Error(`Missing library/${slug}/${name}.html`)
+	return html
+}
+
+const titleOf = (name) =>
+	name[0].toUpperCase() + name.slice(1).replace(/-/g, ' ')
+
+export const categories = categoryMeta.map((meta) => {
+	const variants = meta.variants.map((name) => ({
+		name,
+		title: titleOf(name),
+		html: loadHtml(meta.slug, name),
+	}))
+	const showcase =
+		variants.find((v) => v.name === meta.showcase) ?? variants[0]
+	return { ...meta, variants, showcase }
+})
 
 // Group order follows daisyUI docs
 export const groups = [
@@ -30,5 +57,3 @@ export const groupedCategories = groups
 			.sort((a, b) => a.name.localeCompare(b.name)),
 	}))
 	.filter((group) => group.categories.length > 0)
-
-export { categories }

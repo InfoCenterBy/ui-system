@@ -25,7 +25,7 @@ const CATEGORY_ITEMS = [...categories]
 const VARIANT_ITEMS = categories.flatMap((category) =>
 	category.variants.map((variant) => ({
 		id: `${category.slug}/${variant.name}`,
-		label: `${category.name} / ${variant.name}`,
+		label: `${category.name} / ${variant.title}`,
 		hint: 'Variant',
 		to: `${categoryPath(category.slug)}?v=${variant.name}`,
 	}))

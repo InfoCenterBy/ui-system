@@ -1,35 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-import ComponentWrapper from '../components/system/componentWrapper'
+import VariantCard from '../components/system/variant/variantCard'
 import { getCategory } from '../registry'
 
-const ComponentView = ({ category, variant }) => {
-	const [active, setActive] = useState({
-		category: category.slug,
-		name: variant,
-		tab: 'preview',
-	})
-
-	// Bring the variant from search into view
+const ComponentView = ({ category, target }) => {
+	// Bring the variant picked in search into view
 	useEffect(() => {
-		if (!variant) return
+		if (!target) return
 		document
-			.getElementById(`${category.slug}-${variant}`)
+			.getElementById(`example-${category.slug}-${target}`)
 			?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-	}, [category.slug, variant])
+	}, [category.slug, target])
 
 	return (
-		<div className='mx-auto max-w-7xl'>
+		<div className='mx-auto max-w-6xl'>
 			<h1 className='text-3xl font-bold'>{category.name}</h1>
-			<p className='mt-2 mb-6 text-base-content/70'>
-				{category.description}
-			</p>
-			<ComponentWrapper
-				category={category.slug}
-				components={category.variants}
-				selectedComponent={active}
-				setSelectedComponent={setActive}
-			/>
+			<p className='mt-2 text-base-content/70'>{category.description}</p>
+			<div className='mt-8 flex flex-col gap-10'>
+				{category.variants.map((variant) => (
+					<VariantCard
+						key={variant.name}
+						category={category}
+						variant={variant}
+						highlighted={variant.name === target}
+					/>
+				))}
+			</div>
 		</div>
 	)
 }
@@ -38,16 +34,16 @@ const ComponentPage = () => {
 	const { slug } = useParams()
 	const [searchParams] = useSearchParams()
 	const category = getCategory(slug)
-	const variant = searchParams.get('v') ?? undefined
+	const target = searchParams.get('v') ?? undefined
 
 	if (!category) return <Navigate to='/' replace />
 
-	// Remount on navigation so the view state starts fresh
+	// Remount on navigation so edits and highlight start fresh
 	return (
 		<ComponentView
-			key={`${slug}:${variant}`}
+			key={`${slug}:${target}`}
 			category={category}
-			variant={variant}
+			target={target}
 		/>
 	)
 }

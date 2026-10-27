@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { ToastContainer } from 'react-toastify'
 import Header from './header'
 import Sidebar from './sidebar'
+import Toaster from '../toaster'
 
 const DRAWER_ID = 'app-drawer'
 
@@ -38,14 +38,7 @@ const AppLayout = () => {
 				/>
 				<Sidebar onNavigate={() => setDrawerOpen(false)} />
 			</div>
-			<ToastContainer
-				position='top-right'
-				hideProgressBar
-				closeOnClick
-				limit={5}
-				autoClose={5000}
-				toastClassName={() => 'toast toast-top toast-end'}
-			/>
+			<Toaster />
 		</div>
 	)
 }
