@@ -7,7 +7,7 @@ import { ThemeProvider } from './contexts/themeContext'
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>
-		<HashRouter basename='/' hashType='noslash'>
+		<HashRouter basename='/'>
 			<ThemeProvider>
 				<App />
 			</ThemeProvider>

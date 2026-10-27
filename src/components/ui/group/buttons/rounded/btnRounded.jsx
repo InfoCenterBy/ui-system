@@ -1,7 +1,7 @@
 const BtnRounded = () => {
 	return (
 		<>
-			<button className='rounded-full btn'>Rounded</button>
+			<button className='btn rounded-full'>Rounded</button>
 		</>
 	)
 }

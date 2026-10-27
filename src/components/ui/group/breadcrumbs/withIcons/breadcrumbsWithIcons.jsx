@@ -1,6 +1,6 @@
 const BreadcrumbsWithIcons = () => {
 	return (
-		<div className='text-sm breadcrumbs'>
+		<div className='breadcrumbs text-sm'>
 			<ul>
 				<li>
 					<a>
@@ -8,7 +8,7 @@ const BreadcrumbsWithIcons = () => {
 							xmlns='http://www.w3.org/2000/svg'
 							fill='none'
 							viewBox='0 0 24 24'
-							className='stroke-current w-4 h-4'
+							className='h-4 w-4 stroke-current'
 						>
 							<path
 								strokeLinecap='round'
@@ -26,7 +26,7 @@ const BreadcrumbsWithIcons = () => {
 							xmlns='http://www.w3.org/2000/svg'
 							fill='none'
 							viewBox='0 0 24 24'
-							className='stroke-current w-4 h-4'
+							className='h-4 w-4 stroke-current'
 						>
 							<path
 								strokeLinecap='round'
@@ -44,7 +44,7 @@ const BreadcrumbsWithIcons = () => {
 							xmlns='http://www.w3.org/2000/svg'
 							fill='none'
 							viewBox='0 0 24 24'
-							className='stroke-current w-4 h-4'
+							className='h-4 w-4 stroke-current'
 						>
 							<path
 								strokeLinecap='round'

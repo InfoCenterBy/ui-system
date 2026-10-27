@@ -5,9 +5,7 @@ import { toast } from 'react-toastify'
 const CopyComponent = ({ children, objToCopy, copyName, id, name }) => {
 	const capitalizeName =
 		typeof id === 'string' && id.length > 0
-			? id
-					.replace(/-/g, ' ')
-					.replace(/^./, (char) => char.toUpperCase())
+			? id.replace(/-/g, ' ').replace(/^./, (char) => char.toUpperCase())
 			: 'Html'
 	const toastConfig = {
 		position: 'top-right',
@@ -37,18 +35,16 @@ const CopyComponent = ({ children, objToCopy, copyName, id, name }) => {
 	}
 	return (
 		<div className='' id={id}>
-			<div className='flex justify-between items-center gap-2'>
-				<div className='block opacity-60 text-sm text-base-content italic select-none pointer-none'>
+			<div className='flex items-center justify-between gap-2'>
+				<div className='pointer-none block text-sm text-base-content italic opacity-60 select-none'>
 					{name}
 				</div>
 				<div
-					className='tooltip-left tooltip tooltip-accent'
+					className='tooltip tooltip-left tooltip-accent'
 					onClick={notify}
 				>
-					<div className='ms-3 tooltip-content'>
-						<div className='text-[.75rem]'>
-							copy {copyName}
-						</div>
+					<div className='tooltip-content ms-3'>
+						<div className='text-[.75rem]'>copy {copyName}</div>
 					</div>
 					<div className='cursor-pointer'>
 						<svg
@@ -57,7 +53,7 @@ const CopyComponent = ({ children, objToCopy, copyName, id, name }) => {
 							viewBox='0 0 24 24'
 							strokeWidth={1.5}
 							stroke='currentColor'
-							className='stroke-base-content w-5 h-5'
+							className='h-5 w-5 stroke-base-content'
 						>
 							<path
 								strokeLinecap='round'

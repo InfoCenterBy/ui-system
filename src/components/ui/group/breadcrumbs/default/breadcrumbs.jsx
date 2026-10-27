@@ -1,7 +1,7 @@
 const Breadcrumbs = () => {
 	return (
 		<>
-			<div className='text-sm breadcrumbs'>
+			<div className='breadcrumbs text-sm'>
 				<ul>
 					<li>
 						<a>Home</a>

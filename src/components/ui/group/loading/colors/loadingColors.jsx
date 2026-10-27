@@ -1,14 +1,14 @@
 const LoadingColors = () => {
 	return (
 		<div className='flex flex-row flex-wrap gap-2'>
-			<span className='text-primary loading loading-spinner'></span>
-			<span className='text-secondary loading loading-spinner'></span>
-			<span className='text-accent loading loading-spinner'></span>
-			<span className='text-neutral loading loading-spinner'></span>
-			<span className='text-info loading loading-spinner'></span>
-			<span className='text-success loading loading-spinner'></span>
-			<span className='text-warning loading loading-spinner'></span>
-			<span className='text-error loading loading-spinner'></span>
+			<span className='loading loading-spinner text-primary'></span>
+			<span className='loading loading-spinner text-secondary'></span>
+			<span className='loading loading-spinner text-accent'></span>
+			<span className='loading loading-spinner text-neutral'></span>
+			<span className='loading loading-spinner text-info'></span>
+			<span className='loading loading-spinner text-success'></span>
+			<span className='loading loading-spinner text-warning'></span>
+			<span className='loading loading-spinner text-error'></span>
 		</div>
 	)
 }

@@ -1,7 +1,7 @@
 const InputTime = () => {
 	return (
 		<>
-			<input type='time' className='min-w-[120px] input' />
+			<input type='time' className='input min-w-[120px]' />
 		</>
 	)
 }

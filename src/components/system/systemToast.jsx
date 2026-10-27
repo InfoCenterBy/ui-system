@@ -13,7 +13,7 @@ const SystemToast = ({ children, type }) => {
 				<div className={alertClass}>
 					<svg
 						xmlns='http://www.w3.org/2000/svg'
-						className='stroke-current w-6 h-6 shrink-0'
+						className='h-6 w-6 shrink-0 stroke-current'
 						fill='none'
 						viewBox='0 0 24 24'
 					>
@@ -34,7 +34,7 @@ const SystemToast = ({ children, type }) => {
 						xmlns='http://www.w3.org/2000/svg'
 						fill='none'
 						viewBox='0 0 24 24'
-						className='stroke-current w-6 h-6 shrink-0'
+						className='h-6 w-6 shrink-0 stroke-current'
 					>
 						<path
 							strokeLinecap='round'
@@ -51,7 +51,7 @@ const SystemToast = ({ children, type }) => {
 				<div className={alertClass}>
 					<svg
 						xmlns='http://www.w3.org/2000/svg'
-						className='stroke-current w-6 h-6 shrink-0'
+						className='h-6 w-6 shrink-0 stroke-current'
 						fill='none'
 						viewBox='0 0 24 24'
 					>
@@ -70,7 +70,7 @@ const SystemToast = ({ children, type }) => {
 				<div className={alertClass}>
 					<svg
 						xmlns='http://www.w3.org/2000/svg'
-						className='stroke-current w-6 h-6 shrink-0'
+						className='h-6 w-6 shrink-0 stroke-current'
 						fill='none'
 						viewBox='0 0 24 24'
 					>

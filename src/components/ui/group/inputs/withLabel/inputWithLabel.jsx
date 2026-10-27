@@ -3,14 +3,8 @@ const InputWithLabel = () => {
 		<>
 			<label className='input'>
 				Path
-				<input
-					type='text'
-					className='grow'
-					placeholder='src/app/'
-				/>
-				<span className='badge badge-neutral badge-xs'>
-					Optional
-				</span>
+				<input type='text' className='grow' placeholder='src/app/' />
+				<span className='badge badge-xs badge-neutral'>Optional</span>
 			</label>
 		</>
 	)

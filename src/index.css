@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
+@plugin 'daisyui' {
 	theme: light, dark;
 	--base-content: black;
 	--base-600: #ff0000;
@@ -31,4 +31,3 @@ main,
 	display: flex;
 	flex-direction: column;
 }
-/* @use "./App.scss"; */

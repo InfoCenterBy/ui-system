@@ -1,9 +1,9 @@
 const InputValidator = () => {
 	return (
 		<>
-			<label className='input validator'>
+			<label className='validator input'>
 				<svg
-					className='opacity-50 h-[1em]'
+					className='h-[1em] opacity-50'
 					xmlns='http://www.w3.org/2000/svg'
 					viewBox='0 0 24 24'
 				>
@@ -32,7 +32,7 @@ const InputValidator = () => {
 					title='Must be more than 8 characters, including number, lowercase letter, uppercase letter'
 				/>
 			</label>
-			<p className='hidden validator-hint'>
+			<p className='validator-hint hidden'>
 				Must be more than 8 characters, including
 				<br />
 				At least one number <br />

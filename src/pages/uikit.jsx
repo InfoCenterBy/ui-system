@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import Logo from '../components/logo'
 import ComponentWrapper from '../components/system/componentWrapper'
@@ -46,31 +45,31 @@ import InputDate from '../components/ui/group/inputs/date/inputDate'
 import InputWithLabel from '../components/ui/group/inputs/withLabel/inputWithLabel'
 import IndicatorBadge from '../components/ui/group/indicator/badge/indicatorBadge'
 import IndicatorStatus from '../components/ui/group/indicator/status/indicatorStatus'
-import Tabs from "../components/ui/group/tabs/default/tabs"
-import TabsWithIcons from "../components/ui/group/tabs/withIcons/tabsWithIcons"
-import Collapse from "../components/ui/group/collapse/default/collapse"
-import Drawer from "../components/ui/group/drawer/default/drawer"
-import DrawerOpenFromRight from "../components/ui/group/drawer/openFromRight/drawerOpenFromRight"
-import Tooltip from "../components/ui/group/tooltip/default/tooltip"
-import TooltipWithContent from "../components/ui/group/tooltip/withContent/tooltipWithContent"
-import Toggle from "../components/ui/group/toggle/default/toggle"
-import ToggleColors from "../components/ui/group/toggle/colors/toggleColors"
-import ToggleSizes from "../components/ui/group/toggle/sizes.jsx/toggleSizes"
-import ToggleDisabled from "../components/ui/group/toggle/disabled/toggleDisabled"
-import Label from "../components/ui/group/label/default/label"
-import FloatingLabel from "../components/ui/group/label/floatingLabel/floatingLabel"
-import FloatingLabelSizes from "../components/ui/group/label/floatingLabelSizes/floatingLabelSizes"
-import Select from "../components/ui/group/select/default/select"
-import SelectSizes from "../components/ui/group/select/sizes/selectSizes"
-import SelectDisabled from "../components/ui/group/select/disabled/selectDisabled"
-import Range from "../components/ui/group/range/default/range"
-import RangeSizes from "../components/ui/group/range/sizes/rangeSizes"
-import RangeSteps from "../components/ui/group/range/rangeSteps/rangeSteps"
-import RangeDisabled from "../components/ui/group/range/disabled/rangeDisabled"
+import Tabs from '../components/ui/group/tabs/default/tabs'
+import TabsWithIcons from '../components/ui/group/tabs/withIcons/tabsWithIcons'
+import Collapse from '../components/ui/group/collapse/default/collapse'
+import Drawer from '../components/ui/group/drawer/default/drawer'
+import DrawerOpenFromRight from '../components/ui/group/drawer/openFromRight/drawerOpenFromRight'
+import Tooltip from '../components/ui/group/tooltip/default/tooltip'
+import TooltipWithContent from '../components/ui/group/tooltip/withContent/tooltipWithContent'
+import Toggle from '../components/ui/group/toggle/default/toggle'
+import ToggleColors from '../components/ui/group/toggle/colors/toggleColors'
+import ToggleSizes from '../components/ui/group/toggle/sizes/toggleSizes'
+import ToggleDisabled from '../components/ui/group/toggle/disabled/toggleDisabled'
+import Label from '../components/ui/group/label/default/label'
+import FloatingLabel from '../components/ui/group/label/floatingLabel/floatingLabel'
+import FloatingLabelSizes from '../components/ui/group/label/floatingLabelSizes/floatingLabelSizes'
+import Select from '../components/ui/group/select/default/select'
+import SelectSizes from '../components/ui/group/select/sizes/selectSizes'
+import SelectDisabled from '../components/ui/group/select/disabled/selectDisabled'
+import Range from '../components/ui/group/range/default/range'
+import RangeSizes from '../components/ui/group/range/sizes/rangeSizes'
+import RangeSteps from '../components/ui/group/range/rangeSteps/rangeSteps'
+import RangeDisabled from '../components/ui/group/range/disabled/rangeDisabled'
 
 const UiKit = () => {
-	// * if component has MULTIPLE variations use this COMP_NAME:[{name:'name_variation', component:JSX}]
-	// * if component has SINGLE variation use this COMP_NAME:[{component:JSX}]
+	// Several variants: category: [{ name: 'variant', component: <Jsx /> }]
+	// Single variant: category: [{ component: <Jsx /> }]
 	const uiList = {
 		button: [
 			{
@@ -204,60 +203,60 @@ const UiKit = () => {
 				component: <Skeleton />,
 			},
 		],
-collapse: [
-      {
-        name: "default",
-        component: <Collapse />,
-      },
-    ],
-    tabs: [
-      {
-        name: "default",
-        component: <Tabs />,
-      },
-      {
-        name: "withIcons",
-        component: <TabsWithIcons />,
-      },
-    ],
-    drawer: [
-      {
-        name: "default",
-        component: <Drawer />,
-      },
-      {
-        name: "openFromRight",
-        component: <DrawerOpenFromRight />,
-      },
-    ],
-    tooltip: [
-      {
-        name: "default",
-        component: <Tooltip />,
-      },
-      {
-        name: "withContent",
-        component: <TooltipWithContent />,
-      },
-    ],
-    toggle: [
-      {
-        name: "default",
-        component: <Toggle />,
-      },
-      {
-        name: "colors",
-        component: <ToggleColors />,
-      },
-      {
-        name: "sizes",
-        component: <ToggleSizes />,
-      },
-      {
-        name: "disabled",
-        component: <ToggleDisabled />,
-      },
-    ],
+		collapse: [
+			{
+				name: 'default',
+				component: <Collapse />,
+			},
+		],
+		tabs: [
+			{
+				name: 'default',
+				component: <Tabs />,
+			},
+			{
+				name: 'withIcons',
+				component: <TabsWithIcons />,
+			},
+		],
+		drawer: [
+			{
+				name: 'default',
+				component: <Drawer />,
+			},
+			{
+				name: 'openFromRight',
+				component: <DrawerOpenFromRight />,
+			},
+		],
+		tooltip: [
+			{
+				name: 'default',
+				component: <Tooltip />,
+			},
+			{
+				name: 'withContent',
+				component: <TooltipWithContent />,
+			},
+		],
+		toggle: [
+			{
+				name: 'default',
+				component: <Toggle />,
+			},
+			{
+				name: 'colors',
+				component: <ToggleColors />,
+			},
+			{
+				name: 'sizes',
+				component: <ToggleSizes />,
+			},
+			{
+				name: 'disabled',
+				component: <ToggleDisabled />,
+			},
+		],
 		loading: [
 			{
 				name: 'spinner',
@@ -276,52 +275,52 @@ collapse: [
 				component: <LoadingColors />,
 			},
 		],
-label: [
-      {
-        name: "default",
-        component: <Label />,
-      },
-      {
-        name: "floatingLabel",
-        component: <FloatingLabel />,
-      },
-      {
-        name: "floatingLabelSizes",
-        component: <FloatingLabelSizes />,
-      },
-    ],
-    select: [
-      {
-        name: "default",
-        component: <Select />,
-      },
-      {
-        name: "sizes",
-        component: <SelectSizes />,
-      },
-      {
-        name: "disabled",
-        component: <SelectDisabled />,
-      },
-    ],
-    range: [
-      {
-        name: "default",
-        component: <Range />,
-      },
-      {
-        name: "sizes",
-        component: <RangeSizes />,
-      },
-      {
-        name: "steps",
-        component: <RangeSteps />,
-      },
-      {
-        name: "disabled",
-        component: <RangeDisabled />,
-      },
-    ],
+		label: [
+			{
+				name: 'default',
+				component: <Label />,
+			},
+			{
+				name: 'floatingLabel',
+				component: <FloatingLabel />,
+			},
+			{
+				name: 'floatingLabelSizes',
+				component: <FloatingLabelSizes />,
+			},
+		],
+		select: [
+			{
+				name: 'default',
+				component: <Select />,
+			},
+			{
+				name: 'sizes',
+				component: <SelectSizes />,
+			},
+			{
+				name: 'disabled',
+				component: <SelectDisabled />,
+			},
+		],
+		range: [
+			{
+				name: 'default',
+				component: <Range />,
+			},
+			{
+				name: 'sizes',
+				component: <RangeSizes />,
+			},
+			{
+				name: 'steps',
+				component: <RangeSteps />,
+			},
+			{
+				name: 'disabled',
+				component: <RangeDisabled />,
+			},
+		],
 		input: [
 			{
 				name: 'default',
@@ -374,72 +373,70 @@ label: [
 		// ],
 	}
 
+	// Map uiList to { category: ['variant'] } for the side nav
+	const navList = Object.entries(uiList).reduce((acc, [key, items]) => {
+		if (Array.isArray(items)) {
+			acc[key] = items
+				.filter((item) => item?.name)
+				.map((item) => item.name)
+		} else {
+			// Not an array, no variants
+			acc[key] = []
+		}
+		return acc
+	}, {})
 
+	const [active, setActive] = useState({
+		category: '',
+		name: '',
+		tab: 'preview',
+	})
 
-  //* process uiList to this {name: ['component_name'], ...} for render in sideNav
-  const navList = Object.entries(uiList).reduce((acc, [key, items]) => {
-    // check items is array
-    if (Array.isArray(items)) {
-      // filter el and create arr of names
-      acc[key] = items
-        .filter((item) => item?.name) // check name is exist
-        .map((item) => item.name) // take name
-    } else {
-      // if items is not arr create empty arr
-      acc[key] = []
-    }
-    return acc
-  }, {})
-
-  const [active, setActive] = useState({
-    category: "",
-    name: "",
-    tab: "preview",
-  })
-
-  return (
-    <>
-      <main>
-        <div className="flex flex-row flex-wrap lg:flex-nowrap items-start content-start gap-x-6 pt-2 w-full h-full">
-          <SideNav
-            className={"lg:w-[20%] w-full"}
-            listItem={navList}
-            changeSelectedComponent={(category, name) =>
-              setActive({ category, name, tab: "preview" })
-            }
-          />
-          <div className="pb-20 w-full lg:w-[80%] overflow-x-hidden">
-            <div className="w-full">
-              <ColorParent />
-            </div>
-            <div className="flex flex-col gap-3 mt-4">
-              {Object.entries(uiList).map(([category, components]) => (
-                <ComponentWrapper
-                  key={category}
-                  category={category}
-                  components={components}
-                  selectedComponent={active}
-                  setSelectedComponent={setActive}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <ToastContainer
-          position="top-right"
-          hideProgressBar
-          closeOnClick
-          draggable
-          pauseOnHover
-          toastClassName={() => "toast toast-top toast-end"}
-          bodyClassName={() => "p-0"}
-          limit={5}
-          autoClose={5000}
-          pauseOnFocusLoss={true}
-        />
-      </main>
-    </>
-  )
+	return (
+		<>
+			<main>
+				<div className='flex h-full w-full flex-row flex-wrap content-start items-start gap-x-6 pt-2 lg:flex-nowrap'>
+					<SideNav
+						className={'w-full lg:w-[20%]'}
+						listItem={navList}
+						changeSelectedComponent={(category, name) =>
+							setActive({ category, name, tab: 'preview' })
+						}
+					/>
+					<div className='w-full overflow-x-hidden pb-20 lg:w-[80%]'>
+						<div className='w-full'>
+							<ColorParent />
+						</div>
+						<div className='mt-4 flex flex-col gap-3'>
+							{Object.entries(uiList).map(
+								([category, components]) => (
+									<ComponentWrapper
+										key={category}
+										category={category}
+										components={components}
+										selectedComponent={active}
+										setSelectedComponent={setActive}
+									/>
+								)
+							)}
+						</div>
+					</div>
+				</div>
+				<ToastContainer
+					position='top-right'
+					hideProgressBar
+					closeOnClick
+					draggable
+					pauseOnHover
+					toastClassName={() => 'toast toast-top toast-end'}
+					bodyClassName={() => 'p-0'}
+					limit={5}
+					autoClose={5000}
+					pauseOnFocusLoss={true}
+				/>
+			</main>
+		</>
+	)
 }
 
 export default UiKit

@@ -10,7 +10,7 @@ const NavBar = ({ className }) => {
 			<div
 				className={classNames(
 					className,
-					'flex flex-row justify-between items-center mt-3.5 py-2 border bg-base-200 border-base-content rounded-lg'
+					'mt-3.5 flex flex-row items-center justify-between rounded-lg border border-base-content bg-base-200 py-2'
 				)}
 			>
 				<nav className='w-full'>

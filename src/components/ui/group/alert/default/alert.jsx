@@ -5,7 +5,7 @@ const Alert = () => {
 				xmlns='http://www.w3.org/2000/svg'
 				fill='none'
 				viewBox='0 0 24 24'
-				className='stroke-info w-6 h-6 shrink-0'
+				className='h-6 w-6 shrink-0 stroke-info'
 			>
 				<path
 					strokeLinecap='round'

@@ -10,12 +10,12 @@ const GridCell = ({ id, children, isLastRow }) => {
 		<div
 			ref={setNodeRef}
 			className={classNames(
-				'w-full h-full rounded-md transition-all duration-200 border-base-300',
+				'h-full w-full rounded-md border-base-300 transition-all duration-200',
 				{
 					'min-h-[0px]': isLastRow,
 					'min-h-[60px]': !isLastRow,
 					'bg-base-300': isOver,
-					'border ': !isLastRow,
+					border: !isLastRow,
 				}
 			)}
 		>

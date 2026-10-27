@@ -1,11 +1,11 @@
 const LoadingSpinner = () => {
 	return (
 		<div className='flex flex-col gap-2'>
-			<span className='loading loading-spinner loading-xs'></span>
-			<span className='loading loading-spinner loading-sm'></span>
-			<span className='loading loading-spinner loading-md'></span>
-			<span className='loading loading-spinner loading-lg'></span>
-			<span className='loading loading-spinner loading-xl'></span>
+			<span className='loading loading-xs loading-spinner'></span>
+			<span className='loading loading-sm loading-spinner'></span>
+			<span className='loading loading-md loading-spinner'></span>
+			<span className='loading loading-lg loading-spinner'></span>
+			<span className='loading loading-xl loading-spinner'></span>
 		</div>
 	)
 }

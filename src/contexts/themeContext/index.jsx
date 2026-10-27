@@ -12,7 +12,7 @@ function getSystemTheme() {
 }
 
 export const ThemeProvider = ({ children }) => {
-	// Инициализация темы: localStorage -> system
+	// Initial theme: localStorage, then system
 	const getInitialTheme = () => {
 		const saved = localStorage.getItem(THEME_KEY)
 		if (THEMES.includes(saved)) return saved
@@ -20,7 +20,7 @@ export const ThemeProvider = ({ children }) => {
 	}
 	const [theme, setTheme] = useState(getInitialTheme())
 
-	// Применяем тему к <html> через data-theme
+	// Apply the theme to <html> via data-theme
 	useEffect(() => {
 		const applyTheme = (t) => {
 			let applied = t
@@ -29,7 +29,7 @@ export const ThemeProvider = ({ children }) => {
 		}
 		applyTheme(theme)
 		localStorage.setItem(THEME_KEY, theme)
-		// Если выбрана system, слушаем изменения системной темы
+		// Follow OS theme changes when system is selected
 		let mql
 		const handleSystemChange = () => {
 			if (theme === 'system') applyTheme('system')
@@ -43,7 +43,7 @@ export const ThemeProvider = ({ children }) => {
 		}
 	}, [theme])
 
-	// Смена темы
+	// Switch theme
 	const toggleTheme = (newTheme) => {
 		if (THEMES.includes(newTheme)) setTheme(newTheme)
 	}

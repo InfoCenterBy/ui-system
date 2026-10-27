@@ -3,7 +3,7 @@ const InputSearch = () => {
 		<>
 			<label className='input'>
 				<svg
-					className='opacity-50 h-[1em]'
+					className='h-[1em] opacity-50'
 					xmlns='http://www.w3.org/2000/svg'
 					viewBox='0 0 24 24'
 				>

@@ -28,9 +28,9 @@ const TestPage = () => {
 	])
 	const [activeId, setActiveId] = useState(null)
 
-	// Вычисляем максимальную высоту сетки на основе позиций элементов
+	// Grid height follows the lowest item
 	const maxY = Math.max(...items.map((item) => item.position.y), 0)
-	const gridRows = maxY + 2 // Добавляем одну дополнительную строку для возможности перетаскивания
+	const gridRows = maxY + 2 // One spare row to drop into
 	const sensors = useSensors(
 		useSensor(PointerSensor),
 		useSensor(KeyboardSensor, {
@@ -53,8 +53,7 @@ const TestPage = () => {
 				const x = cellIndex % 12
 				const y = Math.floor(cellIndex / 12)
 
-				// Позволяем перемещать элементы на любую позицию в пределах сетки
-				// или на одну строку ниже для расширения сетки
+				// Allow any cell in the grid or one row below to extend it
 				if (x >= 0 && x < 12 && y >= 0 && y <= maxY + 1) {
 					setItems((prevItems) => {
 						return prevItems.map((item) =>
@@ -73,8 +72,8 @@ const TestPage = () => {
 	return (
 		<>
 			<main>
-				<div className='flex flex-row flex-wrap lg:flex-nowrap items-start content-start gap-x-6 pt-2 w-full h-full'>
-					<SideNav className={'lg:w-[20%] w-full'} />
+				<div className='flex h-full w-full flex-row flex-wrap content-start items-start gap-x-6 pt-2 lg:flex-nowrap'>
+					<SideNav className={'w-full lg:w-[20%]'} />
 					<div className='w-full lg:w-[80%]'>
 						<div className='bg-base-100 p-4'>
 							<DndContext
@@ -84,13 +83,11 @@ const TestPage = () => {
 								onDragEnd={handleDragEnd}
 							>
 								<SortableContext
-									items={items.map(
-										(item) => item.id
-									)}
+									items={items.map((item) => item.id)}
 									strategy={rectSortingStrategy}
 								>
 									<div
-										className='gap-2 grid w-full'
+										className='grid w-full gap-2'
 										style={{
 											gridTemplateColumns:
 												'repeat(12, 1fr)',
@@ -99,51 +96,31 @@ const TestPage = () => {
 									>
 										{Array.from(
 											{
-												length:
-													12 * gridRows,
+												length: 12 * gridRows,
 											},
 											(_, index) => {
 												const x = index % 12
-												const y =
-													Math.floor(
-														index / 12
-													)
-												const item =
-													items.find(
-														(item) =>
-															item
-																.position
-																.x ===
-																x &&
-															item
-																.position
-																.y ===
-																y
-													)
+												const y = Math.floor(index / 12)
+												const item = items.find(
+													(item) =>
+														item.position.x === x &&
+														item.position.y === y
+												)
 
 												const isLastRow =
-													y ===
-													gridRows - 1
+													y === gridRows - 1
 
 												return (
 													<GridCell
-														key={
-															index
-														}
+														key={index}
 														id={index}
-														isLastRow={
-															isLastRow
-														}
+														isLastRow={isLastRow}
 													>
 														{item && (
 															<GridItem
-																id={
-																	item.id
-																}
+																id={item.id}
 															>
-																{
-																	item.id
-																}
+																{item.id}
 															</GridItem>
 														)}
 													</GridCell>
@@ -154,9 +131,7 @@ const TestPage = () => {
 								</SortableContext>
 								<DragOverlay>
 									{activeId ? (
-										<Item id={activeId}>
-											{activeId}
-										</Item>
+										<Item id={activeId}>{activeId}</Item>
 									) : null}
 								</DragOverlay>
 							</DndContext>

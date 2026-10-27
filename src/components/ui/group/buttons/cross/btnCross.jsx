@@ -1,7 +1,7 @@
 const BtnCross = () => {
 	return (
 		<>
-			<button className='bg-transparent p-2 btn'>
+			<button className='btn bg-transparent p-2'>
 				<svg
 					xmlns='http://www.w3.org/2000/svg'
 					fill='none'

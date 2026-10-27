@@ -1,13 +1,13 @@
 const LoadingRings = () => {
-    return (
+	return (
 		<div className='flex flex-col gap-2'>
-			<span className='loading-ring loading loading-xs'></span>
-			<span className='loading-ring loading loading-sm'></span>
-			<span className='loading-ring loading loading-md'></span>
-			<span className='loading-ring loading loading-lg'></span>
-			<span className='loading-ring loading loading-xl'></span>
+			<span className='loading loading-xs loading-ring'></span>
+			<span className='loading loading-sm loading-ring'></span>
+			<span className='loading loading-md loading-ring'></span>
+			<span className='loading loading-lg loading-ring'></span>
+			<span className='loading loading-xl loading-ring'></span>
 		</div>
-    )
+	)
 }
- 
-export default LoadingRings;
+
+export default LoadingRings

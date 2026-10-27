@@ -12,12 +12,12 @@ const SideNav = ({ className, listItem, changeSelectedComponent }) => {
 			<ul
 				className={classNames(
 					className,
-					'top-12 sticky bg-base-100 text-base-content rounded-box menu z-10 border border-base-200 p-0 overflow-hidden'
+					'menu sticky top-12 z-10 overflow-hidden rounded-box border border-base-200 bg-base-100 p-0 text-base-content'
 				)}
 			>
 				{isObject && listItem
 					? Object.entries(listItem).map(([category, value]) => {
-							//* if element have a single option render it as uniq
+							// Category with a single variant renders as one link
 							try {
 								if (value[0] === undefined) {
 									return (
@@ -40,7 +40,7 @@ const SideNav = ({ className, listItem, changeSelectedComponent }) => {
 										</li>
 									)
 								}
-								//* basic render of element list
+								// Category with several variants renders as a list
 
 								const valueArr = value.map((el) => {
 									return (
@@ -78,7 +78,7 @@ const SideNav = ({ className, listItem, changeSelectedComponent }) => {
 													viewBox='0 0 24 24'
 													strokeWidth='1.5'
 													stroke='currentColor'
-													className='w-4 h-4'
+													className='h-4 w-4'
 												>
 													<path
 														strokeLinecap='round'

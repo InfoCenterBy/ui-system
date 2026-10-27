@@ -4,7 +4,7 @@ const Checkbox = () => {
 			<input
 				type='checkbox'
 				defaultChecked
-				className='checked:shadow-none checkbox'
+				className='checkbox checked:shadow-none'
 				name='type'
 				id='type'
 			/>

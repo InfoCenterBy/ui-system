@@ -1,8 +1,8 @@
 const Dropdown = () => {
 	return (
 		<>
-			{/* change popover-1 and --anchor-1 names. Use unique names for each dropdown */}
-			{/* For TSX uncomment the commented types below */}
+			{/* Use unique popover and anchor names for each dropdown */}
+			{/* For TSX uncomment the type casts below */}
 			<button
 				className='btn'
 				popoverTarget='popover-1'
@@ -16,7 +16,7 @@ const Dropdown = () => {
 			</button>
 
 			<ul
-				className='bg-base-100 shadow-sm rounded-box w-52 dropdown menu'
+				className='menu dropdown w-52 rounded-box bg-base-100 shadow-sm'
 				popover='auto'
 				id='popover-1'
 				style={

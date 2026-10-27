@@ -27,8 +27,10 @@ const ComponentWrapper = ({
 			selectedComponent?.category === category &&
 			selectedComponent?.tab === 'preview' &&
 			selectedComponent?.name &&
-			!selectedComponent?.triggeredByUser //* <--- if user not triggered
+			!selectedComponent?.triggeredByUser // skip when the user switched tabs
 		) {
+			// Temporary until the wrapper rework in the components stage
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setHighlightedComponent(selectedComponent.name)
 			const timer = setTimeout(() => {
 				setHighlightedComponent(null)
@@ -48,21 +50,16 @@ const ComponentWrapper = ({
 		}))
 	}
 
-	//* TabStyle
 	const tabStyle =
 		'[--tab-border-color:var(--fallback-bc,theme(colors.base-200))] text-base-content [--tab-bg:transparent] after:text-base-content hover:text-base-content'
 
-	//* TabStyle
-
 	return (
 		<div
-			className='p-2 border border-base-content rounded-lg'
+			className='rounded-lg border border-base-content p-2'
 			id={`${category}-component`}
 		>
-			<h4 className='h-4 font-semibold text-base-content'>
-				{category}
-			</h4>
-			<div className='mt-2 tabs-border tabs'>
+			<h4 className='h-4 font-semibold text-base-content'>{category}</h4>
+			<div className='tabs tabs-border mt-2'>
 				{/* Preview Tab */}
 				<input
 					type='radio'

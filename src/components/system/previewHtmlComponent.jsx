@@ -13,11 +13,11 @@ const PreviewHtmlComponent = ({ children, htmlCode, setHtmlCode, name }) => {
 	return (
 		<>
 			<div className=''>
-				<div className='block opacity-60 text-sm text-base-content italic select-none pointer-none'>
+				<div className='pointer-none block text-sm text-base-content italic opacity-60 select-none'>
 					{name}
 				</div>
 				<textarea
-					className='bg-base-100 p-2 rounded-[.75rem] focus-within:outline-0 w-full text-base-content resize-none'
+					className='w-full resize-none rounded-[.75rem] bg-base-100 p-2 text-base-content focus-within:outline-0'
 					rows='7'
 					onChange={(e) => setHtmlCode(e.target.value)}
 					defaultValue={htmlCode ? htmlCode : formattedHtml}

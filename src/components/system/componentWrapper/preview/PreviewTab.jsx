@@ -10,7 +10,7 @@ const ComponentWrapperPreviewTab = ({
 	componentRefs,
 }) => {
 	return (
-		<div className='bg-base-300 px-6 py-3 rounded-lg tab-content'>
+		<div className='tab-content rounded-lg bg-base-300 px-6 py-3'>
 			<div className='flex flex-wrap gap-6'>
 				{components.map((el, idx) => (
 					<CopyComponent
@@ -26,23 +26,18 @@ const ComponentWrapperPreviewTab = ({
 					>
 						<div
 							className={classNames(
-								'rounded-lg p-2 w-fit duration-300 ease-out border',
+								'w-fit rounded-lg border p-2 duration-300 ease-out',
 								{
 									'border-base-content':
-										highlightedComponent ===
-										el.name,
+										highlightedComponent === el.name,
 									'border-transparent':
-										highlightedComponent !==
-										el.name,
+										highlightedComponent !== el.name,
 								}
 							)}
 							tabIndex={-1}
 							ref={
 								el.name
-									? (el) =>
-											(componentRefs.current[
-												idx
-											] = el)
+									? (el) => (componentRefs.current[idx] = el)
 									: null
 							}
 						>

@@ -1,8 +1,8 @@
 const Skeleton = () => {
 	return (
 		<>
-			<div className='bg-base-100 p-3 border border-base-content rounded-box'>
-				<div className='w-32 h-32 skeleton'></div>
+			<div className='rounded-box border border-base-content bg-base-100 p-3'>
+				<div className='h-32 w-32 skeleton'></div>
 			</div>
 		</>
 	)

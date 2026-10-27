@@ -3,7 +3,7 @@ const indicatorStatus = () => {
 		<>
 			<div className='indicator'>
 				<span className='indicator-item status status-success'></span>
-				<div className='place-items-center grid bg-base-300 w-32 h-32'>
+				<div className='grid h-32 w-32 place-items-center bg-base-300'>
 					content
 				</div>
 			</div>
