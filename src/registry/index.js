@@ -40,6 +40,7 @@ export const groups = [
 
 export const pages = [
 	{ path: '/', name: 'All components' },
+	{ path: '/favorites', name: 'Favorites' },
 	{ path: '/theme-generator', name: 'Theme generator' },
 	{ path: '/colors', name: 'Colors' },
 ]

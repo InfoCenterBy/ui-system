@@ -1,7 +1,11 @@
 <div class="grid auto-cols-max grid-flow-col gap-5 text-center">
 	<div class="flex flex-col rounded-box bg-neutral p-2 text-neutral-content">
 		<span class="countdown font-mono text-5xl">
-			<span style="--value: 15" aria-live="polite" aria-label="15"
+			<span
+				id="countdown-days"
+				style="--value: 15"
+				aria-live="polite"
+				aria-label="15"
 				>15</span
 			>
 		</span>
@@ -9,7 +13,11 @@
 	</div>
 	<div class="flex flex-col rounded-box bg-neutral p-2 text-neutral-content">
 		<span class="countdown font-mono text-5xl">
-			<span style="--value: 10" aria-live="polite" aria-label="10"
+			<span
+				id="countdown-hours"
+				style="--value: 10"
+				aria-live="polite"
+				aria-label="10"
 				>10</span
 			>
 		</span>
@@ -17,7 +25,11 @@
 	</div>
 	<div class="flex flex-col rounded-box bg-neutral p-2 text-neutral-content">
 		<span class="countdown font-mono text-5xl">
-			<span style="--value: 24" aria-live="polite" aria-label="24"
+			<span
+				id="countdown-min"
+				style="--value: 24"
+				aria-live="polite"
+				aria-label="24"
 				>24</span
 			>
 		</span>
@@ -25,10 +37,38 @@
 	</div>
 	<div class="flex flex-col rounded-box bg-neutral p-2 text-neutral-content">
 		<span class="countdown font-mono text-5xl">
-			<span style="--value: 59" aria-live="polite" aria-label="59"
+			<span
+				id="countdown-sec"
+				style="--value: 59"
+				aria-live="polite"
+				aria-label="59"
 				>59</span
 			>
 		</span>
 		sec
 	</div>
 </div>
+<script>
+	{
+		// Time left until a date 15 days from the first run
+		const end = Date.now() + ((15 * 24 + 10) * 60 + 24) * 60000 + 59000
+		const ids = ['days', 'hours', 'min', 'sec']
+		const tick = () => {
+			const left = Math.max(0, Math.floor((end - Date.now()) / 1000))
+			const values = [
+				Math.floor(left / 86400),
+				Math.floor(left / 3600) % 24,
+				Math.floor(left / 60) % 60,
+				left % 60,
+			]
+			ids.forEach((id, i) => {
+				const el = document.getElementById(`countdown-${id}`)
+				el.style.setProperty('--value', values[i])
+				el.setAttribute('aria-label', values[i])
+				el.textContent = values[i]
+			})
+		}
+		tick()
+		setInterval(tick, 1000)
+	}
+</script>

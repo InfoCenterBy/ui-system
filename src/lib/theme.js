@@ -1,5 +1,5 @@
 import presets from 'daisyui/theme/object.js'
-import { autoContent } from './color'
+import { autoContent, hexToOklch, parseOklch } from './color'
 
 // Light and dark first, the rest alphabetically
 export const PRESET_NAMES = [
@@ -127,4 +127,53 @@ export const decodeTheme = (value) => {
 	} catch {
 		return null
 	}
+}
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
+const expandHex = (hex) =>
+	hex.length === 4 ? `#${[...hex.slice(1)].map((c) => c + c).join('')}` : hex
+
+// Reads a theme back from CSS, a daisyUI plugin block or plain declarations
+export const parseThemeCss = (text) => {
+	const clean = text.replace(/\/\*[\s\S]*?\*\//g, '')
+	const open = clean.indexOf('{')
+	const body =
+		open >= 0 ? clean.slice(open + 1, clean.lastIndexOf('}')) : clean
+	const values = {}
+	for (const declaration of body.split(';')) {
+		const i = declaration.indexOf(':')
+		if (i < 0) continue
+		const key = declaration.slice(0, i).trim()
+		values[key] = declaration
+			.slice(i + 1)
+			.trim()
+			.replace(/^["']|["']$/g, '')
+	}
+	if (!Object.keys(values).some((key) => key.startsWith('--color-'))) {
+		return null
+	}
+
+	const scheme = values['color-scheme'] === 'dark' ? 'dark' : 'light'
+	// Name from the plugin block, or from a [data-theme=name] selector
+	const selectorName = /data-theme\s*=\s*['"]?([\w-]+)/.exec(clean)?.[1]
+	const name =
+		(values.name ?? selectorName ?? '')
+			.toLowerCase()
+			.replace(/[^a-z0-9-]/g, '') || 'mytheme'
+	const theme = createTheme(scheme, name)
+	const skipped = []
+	for (const key of VAR_KEYS) {
+		const value = values[key]
+		if (value === undefined) continue
+		if (!key.startsWith('--color-')) theme.vars[key] = value
+		else if (parseOklch(value)) theme.vars[key] = value
+		else if (HEX.test(value)) theme.vars[key] = hexToOklch(expandHex(value))
+		else skipped.push(key)
+	}
+	// Imported content colors are deliberate, keep them as they are
+	theme.auto = Object.fromEntries(
+		Object.keys(theme.auto).map((k) => [k, false])
+	)
+	return { theme, skipped }
 }

@@ -51,6 +51,7 @@ export const categoryMeta = [
 			'responsive',
 			'custom-width',
 		],
+		previewClass: 'min-h-80',
 	},
 	{
 		slug: 'swap',
@@ -133,6 +134,7 @@ export const categoryMeta = [
 	},
 	{
 		slug: 'carousel',
+		note: 'Карусель листается жестом тачпада, колесом с Shift или кнопками. В превью колесо мыши тоже листает горизонтальные карусели.',
 		name: 'Carousel',
 		group: 'data-display',
 		description: 'Горизонтальная прокрутка набора изображений или карточек',
@@ -162,6 +164,7 @@ export const categoryMeta = [
 	},
 	{
 		slug: 'countdown',
+		note: 'Цифры меняет скрипт из примера. В JSX скрипт не переносится, запускайте ту же логику в useEffect.',
 		showcase: 'boxes',
 		name: 'Countdown',
 		group: 'data-display',
@@ -536,7 +539,15 @@ export const categoryMeta = [
 		name: 'Validator',
 		group: 'data-input',
 		description: 'Подсветка полей формы по правилам HTML-валидации',
-		variants: ['email', 'password', 'number', 'url', 'checkbox'],
+		variants: [
+			'email',
+			'password',
+			'number',
+			'url',
+			'checkbox',
+			'error-state',
+		],
+		note: 'Ошибка появляется после ввода значения и ухода из поля или по кнопке Submit. Вариант Error state показывает её сразу через aria-invalid.',
 		previewClass: 'flex-col',
 	},
 

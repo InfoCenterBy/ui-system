@@ -1,0 +1,268 @@
+<div class="@container flex flex-col gap-6">
+	<div class="navbar rounded-box bg-base-100 shadow-sm">
+		<div class="flex-1">
+			<a class="btn btn-ghost text-xl">Acme</a>
+			<ul class="menu menu-horizontal hidden px-1 @xl:flex">
+				<li><a class="menu-active">Dashboard</a></li>
+				<li><a>Orders</a></li>
+				<li><a>Customers</a></li>
+			</ul>
+		</div>
+		<div class="flex items-center gap-2">
+			<label class="input hidden input-sm @lg:flex">
+				<svg
+					class="h-[1em] opacity-50"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+				>
+					<g
+						stroke-linejoin="round"
+						stroke-linecap="round"
+						stroke-width="2.5"
+						fill="none"
+						stroke="currentColor"
+					>
+						<circle cx="11" cy="11" r="8"></circle>
+						<path d="m21 21-4.3-4.3"></path>
+					</g>
+				</svg>
+				<input type="search" placeholder="Search" />
+			</label>
+			<div class="indicator">
+				<span class="indicator-item badge badge-xs badge-secondary"
+					>3</span
+				>
+				<button
+					class="btn btn-square btn-ghost btn-sm"
+					aria-label="Notifications"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-5"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+						/>
+					</svg>
+				</button>
+			</div>
+			<div class="avatar avatar-placeholder">
+				<div class="w-8 rounded-full bg-neutral text-neutral-content">
+					<span class="text-xs">AK</span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid gap-4 @md:grid-cols-2 @4xl:grid-cols-4">
+		<div class="stats bg-base-100 shadow-sm">
+			<div class="stat">
+				<div class="stat-title">Revenue</div>
+				<div class="stat-value text-primary">$48.2K</div>
+				<div class="stat-desc text-success">↗︎ 12% this month</div>
+			</div>
+		</div>
+		<div class="stats bg-base-100 shadow-sm">
+			<div class="stat">
+				<div class="stat-title">Orders</div>
+				<div class="stat-value">1,284</div>
+				<div class="stat-desc">↗︎ 84 since last week</div>
+			</div>
+		</div>
+		<div class="stats bg-base-100 shadow-sm">
+			<div class="stat">
+				<div class="stat-title">Refunds</div>
+				<div class="stat-value text-error">23</div>
+				<div class="stat-desc text-error">↘︎ 4 more than usual</div>
+			</div>
+		</div>
+		<div class="stats bg-base-100 shadow-sm">
+			<div class="stat">
+				<div class="stat-title">Goal</div>
+				<div class="stat-value text-secondary">76%</div>
+				<div class="stat-desc">
+					<progress
+						class="progress w-full progress-secondary"
+						value="76"
+						max="100"
+					></progress>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid gap-4 @3xl:grid-cols-3">
+		<div class="card bg-base-100 shadow-sm @3xl:col-span-2">
+			<div class="card-body">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<h2 class="card-title">Sales this week</h2>
+					<div role="tablist" class="tabs tabs-box tabs-sm">
+						<a role="tab" class="tab">Day</a>
+						<a role="tab" class="tab tab-active">Week</a>
+						<a role="tab" class="tab">Month</a>
+					</div>
+				</div>
+				<div class="mt-4 flex h-48 items-end gap-3">
+					<div
+						class="flex-1 rounded-t-field bg-primary/30"
+						style="height: 45%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-primary/30"
+						style="height: 62%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-primary/30"
+						style="height: 38%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-primary"
+						style="height: 88%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-primary/30"
+						style="height: 70%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-secondary/40"
+						style="height: 55%"
+					></div>
+					<div
+						class="flex-1 rounded-t-field bg-secondary/40"
+						style="height: 30%"
+					></div>
+				</div>
+				<div class="flex justify-between text-xs text-base-content/60">
+					<span>Mon</span><span>Tue</span><span>Wed</span
+					><span>Thu</span><span>Fri</span><span>Sat</span
+					><span>Sun</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="card bg-base-100 shadow-sm">
+			<div class="card-body">
+				<h2 class="card-title">Quick settings</h2>
+				<fieldset class="fieldset">
+					<label class="label">Store name</label>
+					<input
+						type="text"
+						class="input w-full"
+						value="Acme Store"
+					/>
+					<label class="label">Currency</label>
+					<select class="select w-full">
+						<option>USD</option>
+						<option>EUR</option>
+					</select>
+					<label class="label mt-2 justify-between">
+						Email notifications
+						<input
+							type="checkbox"
+							class="toggle toggle-primary"
+							checked
+						/>
+					</label>
+					<label class="label justify-between">
+						Weekly report
+						<input
+							type="checkbox"
+							class="checkbox checkbox-secondary"
+							checked
+						/>
+					</label>
+				</fieldset>
+				<div class="mt-2 card-actions justify-end">
+					<button class="btn btn-ghost">Cancel</button>
+					<button class="btn btn-primary">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid gap-4 @3xl:grid-cols-3">
+		<div class="card bg-base-100 shadow-sm @3xl:col-span-2">
+			<div class="card-body">
+				<h2 class="card-title">Recent orders</h2>
+				<div class="overflow-x-auto">
+					<table class="table">
+						<thead>
+							<tr>
+								<th>Customer</th>
+								<th>Status</th>
+								<th class="text-right">Total</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Hart Hagerty</td>
+								<td>
+									<span class="badge badge-soft badge-success"
+										>Paid</span
+									>
+								</td>
+								<td class="text-right">$320</td>
+							</tr>
+							<tr>
+								<td>Brice Swyre</td>
+								<td>
+									<span class="badge badge-soft badge-warning"
+										>Pending</span
+									>
+								</td>
+								<td class="text-right">$84</td>
+							</tr>
+							<tr>
+								<td>Marjy Ferencz</td>
+								<td>
+									<span class="badge badge-soft badge-info"
+										>Shipped</span
+									>
+								</td>
+								<td class="text-right">$1,200</td>
+							</tr>
+							<tr>
+								<td>Yancy Tear</td>
+								<td>
+									<span class="badge badge-soft badge-error"
+										>Refunded</span
+									>
+								</td>
+								<td class="text-right">$45</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-3">
+			<div role="alert" class="alert alert-soft alert-info">
+				<span>New version available.</span>
+			</div>
+			<div role="alert" class="alert alert-success">
+				<span>Payout sent to your bank.</span>
+			</div>
+			<div role="alert" class="alert alert-outline alert-warning">
+				<span>Card expires next month.</span>
+			</div>
+			<div role="alert" class="alert alert-dash alert-error">
+				<span>2 orders failed to sync.</span>
+			</div>
+			<div class="flex flex-wrap gap-2">
+				<button class="btn btn-neutral btn-sm">Neutral</button>
+				<button class="btn btn-accent btn-sm">Accent</button>
+				<button class="btn btn-outline btn-secondary btn-sm">
+					Outline
+				</button>
+				<button class="btn btn-soft btn-primary btn-sm">Soft</button>
+			</div>
+		</div>
+	</div>
+</div>

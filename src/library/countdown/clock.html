@@ -1,7 +1,45 @@
 <span class="countdown font-mono text-2xl">
-	<span style="--value: 10" aria-live="polite" aria-label="10">10</span>
+	<span
+		id="countdown-clock-h"
+		style="--value: 10"
+		aria-live="polite"
+		aria-label="10"
+		>10</span
+	>
 	:
-	<span style="--value: 24" aria-live="polite" aria-label="24">24</span>
+	<span
+		id="countdown-clock-m"
+		style="--value: 24"
+		aria-live="polite"
+		aria-label="24"
+		>24</span
+	>
 	:
-	<span style="--value: 59" aria-live="polite" aria-label="59">59</span>
+	<span
+		id="countdown-clock-s"
+		style="--value: 59"
+		aria-live="polite"
+		aria-label="59"
+		>59</span
+	>
 </span>
+<script>
+	{
+		// Shows the current time
+		const parts = ['h', 'm', 's'].map((p) =>
+			document.getElementById(`countdown-clock-${p}`)
+		)
+		const tick = () => {
+			const now = new Date()
+			;[now.getHours(), now.getMinutes(), now.getSeconds()].forEach(
+				(value, i) => {
+					parts[i].style.setProperty('--value', value)
+					parts[i].setAttribute('aria-label', value)
+					parts[i].textContent = value
+				}
+			)
+		}
+		tick()
+		setInterval(tick, 1000)
+	}
+</script>

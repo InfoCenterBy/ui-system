@@ -156,6 +156,10 @@ const renderNode = (node, depth, prev, next) => {
 	if (node.nodeType !== 1) return null
 
 	const tag = node.localName
+	// JSX never runs inline scripts, point to the React way instead
+	if (tag === 'script') {
+		return `${pad}{/* Script from the HTML example is not included, run it in useEffect */}`
+	}
 	const attrs = attributesOf(node)
 	const children =
 		tag === 'textarea'

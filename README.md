@@ -35,22 +35,40 @@ Every example is a plain HTML file, the registry lists them in display order.
 
 1. Add the markup to `src/library/<slug>/<variant>.html`. Use unique ids and radio names, prefixed with the slug.
 2. List the variant in `src/registry/categories.js`. A new component needs `slug`, `name`, `group`, a Russian `description` and `variants`.
-3. Optional fields: `showcase` picks the variant shown on the overview page, `previewClass` adjusts the preview box.
+3. Optional fields: `showcase` picks the variant shown on the overview page, `previewClass` adjusts the preview box, `note` shows a hint under the description.
 
-The JSX tab is generated from the HTML, so there is nothing else to write. A missing file fails the build with a clear error.
+The JSX tab is generated from the HTML, so there is nothing else to write. Inline `<script>` tags run in the preview and are left out of the JSX. A missing file fails the build with a clear error.
 
-Tailwind only generates classes it finds in the source, so classes typed in the live editor work only if they already appear somewhere in the project.
+## Preview sandbox
+
+Every example on a component page runs in its own iframe that reuses the site stylesheet, so it looks exactly like the rest of the site and loads from cache.
+
+- The HTML editor suggests Tailwind utilities, variants and daisyUI classes inside `class=""`, with color swatches and the generated CSS.
+- Once the code is edited, the Tailwind browser build joins in, so any Tailwind class typed in the live editor works.
+- Iframes mount when they get close to the screen and are rebuilt if one fails to load.
+- The iframe grows with its content, open dropdowns and select pickers included. Fixed elements like toast, dock or FAB stay inside it.
+- Links, form submits and browser validation bubbles stay inside the example.
+- The toolbar above the examples switches the preview width (phone, tablet, full) and theme.
+- Horizontal carousels also scroll with the mouse wheel in the preview.
+
+## Catalog
+
+- Search (Ctrl/Cmd+K) forgives typos and finds examples by class name, for example `btn-soft`.
+- The star keeps an example in Favorites, saved in this browser.
+- The link button copies a URL that opens the page scrolled to that example.
 
 ## Theme generator
 
 `#/theme-generator` builds a daisyUI theme on top of any built-in preset: colors, radius, sizes, border and depth.
 
 - Content colors follow their background automatically and keep at least 4.5:1 contrast; turn off "auto" to pick one by hand.
-- The preview shows every library example with the theme applied, the rest of the site is untouched.
+- The contrast section lists every text and background pair with its WCAG ratio and fixes low ones in one click.
+- The preview shows a sample dashboard or every library example with the theme applied, the rest of the site is untouched.
+- Import reads an exported block or any `[data-theme]` rule with OKLCH or HEX colors.
 - Export gives a `@plugin "daisyui/theme"` block in OKLCH. The theme is also kept in the URL, so a link restores it.
 - "Apply to site" saves the theme and adds a Custom option to the theme menu.
 
-Color math and theme logic live in `src/lib/color.js` and `src/lib/theme.js` and are covered by tests.
+Color math, theme logic and search live in `src/lib` and are covered by tests.
 
 ## Code style
 

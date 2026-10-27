@@ -3,6 +3,7 @@ import classNames from 'classnames'
 import HtmlPreview from '../variant/htmlPreview'
 import { PREVIEW_BOX } from '../variant/previewBox'
 import { groupedCategories } from '../../../registry'
+import dashboardHtml from './dashboard.html?raw'
 
 // Rendered once, the theme only changes CSS variables on the wrapper
 const Examples = memo(() =>
@@ -33,12 +34,16 @@ const Examples = memo(() =>
 
 Examples.displayName = 'Examples'
 
-const ThemePreview = ({ style }) => (
+const ThemePreview = ({ style, mode }) => (
 	<div
 		style={style}
-		className='flex min-w-0 flex-col gap-12 rounded-box border border-base-300 bg-base-100 p-4 text-base-content lg:p-8'
+		className='flex min-w-0 flex-col gap-12 rounded-box border border-base-300 bg-base-200 p-4 text-base-content lg:p-8'
 	>
-		<Examples />
+		{mode === 'dashboard' ? (
+			<HtmlPreview html={dashboardHtml} />
+		) : (
+			<Examples />
+		)}
 	</div>
 )
 
