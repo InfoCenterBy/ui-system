@@ -13,7 +13,7 @@ const GridItem = forwardRef(({ id, children }) => {
 		transition,
 	}
 
-	const { isOver } = useDroppable({
+	useDroppable({
 		id: `droppable-${id}`,
 	})
 
@@ -24,7 +24,7 @@ const GridItem = forwardRef(({ id, children }) => {
 			{...attributes}
 			{...listeners}
 			className={classNames(
-				'bg-base-300 p-2 rounded-md w-full h-full text-base-content flex items-center justify-center cursor-move transition-all duration-200',
+				'flex h-full w-full cursor-move items-center justify-center rounded-md bg-base-300 p-2 text-base-content transition-all duration-200',
 				{
 					// 'bg-red-500': !isOver,
 				}

@@ -1,0 +1,19 @@
+<button
+	class="btn"
+	onclick="document.getElementById('modal-responsive').showModal()"
+>
+	Open modal
+</button>
+<dialog id="modal-responsive" class="modal modal-bottom sm:modal-middle">
+	<div class="modal-box">
+		<h3 class="text-lg font-bold">Hello!</h3>
+		<p class="py-4">
+			Bottom sheet on small screens, centered on larger ones
+		</p>
+		<div class="modal-action">
+			<form method="dialog">
+				<button class="btn">Close</button>
+			</form>
+		</div>
+	</div>
+</dialog>

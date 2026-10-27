@@ -43,13 +43,13 @@ const ColorParent = () => {
 	return (
 		<div>
 			<h1 className='text-base-content'>Color Palette</h1>
-			<div className='flex flex-row items-center gap-3 mt-3'>
+			<div className='mt-3 flex flex-row items-center gap-3'>
 				<div className='flex flex-col items-start gap-2'>
 					<label
 						htmlFor='strength'
 						className='block text-base-content'
 					>
-						Сила цвета: {colorStrength}
+						Color strength: {colorStrength}
 					</label>
 					<div className='w-full max-w-xs'>
 						<input
@@ -58,9 +58,7 @@ const ColorParent = () => {
 							id='strength'
 							min={0}
 							max={COLOR_STRENGTHS.length - 1}
-							value={COLOR_STRENGTHS.indexOf(
-								colorStrength
-							)}
+							value={COLOR_STRENGTHS.indexOf(colorStrength)}
 							onChange={(e) =>
 								setColorStrength(
 									COLOR_STRENGTHS[+e.target.value]
@@ -68,7 +66,7 @@ const ColorParent = () => {
 							}
 							className='range range-xs'
 						/>
-						<div className='flex justify-between gap-2 mt-2 px-2 text-xs'>
+						<div className='mt-2 flex justify-between gap-2 px-2 text-xs'>
 							{COLOR_STRENGTHS.map((element) => {
 								return (
 									<span
@@ -83,27 +81,22 @@ const ColorParent = () => {
 					</div>
 				</div>
 				<div className='flex flex-row items-center gap-2'>
-					<label
-						htmlFor='type'
-						className='block text-base-content'
-					>
+					<label htmlFor='type' className='block text-base-content'>
 						Color name
 					</label>
 					<input
 						type='checkbox'
 						defaultChecked
-						className='checked:shadow-none checkbox'
+						className='checkbox checked:shadow-none'
 						name='type'
 						id='type'
 						onChange={(e) =>
-							setColorType(
-								e.target.checked ? 'name' : 'color'
-							)
+							setColorType(e.target.checked ? 'name' : 'color')
 						}
 					/>
 				</div>
 			</div>
-			<div className='flex flex-wrap gap-2 mt-3 p-2 border border-base-content rounded-lg'>
+			<div className='mt-3 flex flex-wrap gap-2 rounded-lg border border-base-content p-2'>
 				<ColorBlock
 					colorFromParent='bg-black'
 					colorType={colorType}
@@ -114,13 +107,11 @@ const ColorParent = () => {
 					colorType={colorType}
 					textColor='text-black'
 				/>
-				{/* Ниже для всех, где есть -500, применяем силу */}
+				{/* Apply the selected strength to every -500 class below */}
 				{COLOR_NAMES.map((color, key) => {
 					return (
 						<ColorBlock
-							colorFromParent={applyStrength(
-								`bg-${color}`
-							)}
+							colorFromParent={applyStrength(`bg-${color}`)}
 							colorType={colorType}
 							key={key}
 						/>

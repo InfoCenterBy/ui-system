@@ -1,12 +1,10 @@
 {
-     "recommendations": [
-          "stivo.tailwind-fold",
-          "zarifprogrammer.tailwind-snippets",
-          "bradlc.vscode-tailwindcss",
-          "box-of-hats.bemhelper",
-          "dejmedus.tailwind-sorter",
-          "cipchk.cssrem",
-          "streetsidesoftware.code-spell-checker",
-          "usernamehw.todo-md"
-     ]
+	"recommendations": [
+		"esbenp.prettier-vscode",
+		"dbaeumer.vscode-eslint",
+		"editorconfig.editorconfig",
+		"bradlc.vscode-tailwindcss",
+		"streetsidesoftware.code-spell-checker",
+		"cipchk.cssrem"
+	]
 }

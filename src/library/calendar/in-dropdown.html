@@ -1,0 +1,41 @@
+<button
+	popovertarget="calendar-popover"
+	class="input"
+	id="calendar-button"
+	style="anchor-name: --calendar-anchor"
+>
+	Pick a date
+</button>
+<div
+	popover
+	id="calendar-popover"
+	class="dropdown rounded-box bg-base-100 shadow-lg"
+	style="position-anchor: --calendar-anchor"
+>
+	<calendar-date
+		class="cally"
+		onchange="
+			document.getElementById('calendar-button').innerText = this.value
+		"
+	>
+		<svg
+			aria-label="Previous"
+			class="size-4 fill-current"
+			slot="previous"
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 24 24"
+		>
+			<path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
+		</svg>
+		<svg
+			aria-label="Next"
+			class="size-4 fill-current"
+			slot="next"
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 24 24"
+		>
+			<path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+		</svg>
+		<calendar-month></calendar-month>
+	</calendar-date>
+</div>

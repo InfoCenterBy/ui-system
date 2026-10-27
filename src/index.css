@@ -1,8 +1,6 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
-	theme: light, dark;
-	--base-content: black;
-	--base-600: #ff0000;
+@plugin 'daisyui' {
+	themes: all;
 }
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -23,7 +21,28 @@ body {
 	flex-direction: column;
 	min-height: 100vh;
 }
-main,
+@theme {
+	--animate-toast-in: toast-in 0.2s ease-out;
+	--animate-variant-highlight: variant-highlight 1.8s ease-out;
+
+	@keyframes toast-in {
+		from {
+			opacity: 0;
+			translate: 0 -0.5rem;
+		}
+	}
+
+	@keyframes variant-highlight {
+		0%,
+		40% {
+			box-shadow: 0 0 0 3px var(--color-primary);
+		}
+		100% {
+			box-shadow: 0 0 0 3px transparent;
+		}
+	}
+}
+
 #root {
 	flex-grow: 1;
 	width: 100%;
@@ -31,4 +50,3 @@ main,
 	display: flex;
 	flex-direction: column;
 }
-/* @use "./App.scss"; */

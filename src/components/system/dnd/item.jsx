@@ -5,7 +5,7 @@ export const Item = forwardRef(({ id, children, ...props }, ref) => {
 		<div
 			{...props}
 			ref={ref}
-			className='bg-base-300 p-2 rounded-md w-[100px] h-[100px] text-base-content'
+			className='h-[100px] w-[100px] rounded-md bg-base-300 p-2 text-base-content'
 		>
 			{children || id}
 		</div>
