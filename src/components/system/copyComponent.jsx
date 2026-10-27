@@ -34,7 +34,7 @@ const CopyComponent = ({ children, objToCopy, copyName, id, name }) => {
 		}
 	}
 	return (
-		<div className='' id={id}>
+		<div className='scroll-mt-24' id={id}>
 			<div className='flex items-center justify-between gap-2'>
 				<div className='pointer-none block text-sm text-base-content italic opacity-60 select-none'>
 					{name}

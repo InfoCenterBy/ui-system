@@ -1,4 +1,3 @@
-import SideNav from '../components/system/sidenav'
 import {
 	closestCenter,
 	DndContext,
@@ -71,10 +70,9 @@ const TestPage = () => {
 
 	return (
 		<>
-			<main>
+			<div>
 				<div className='flex h-full w-full flex-row flex-wrap content-start items-start gap-x-6 pt-2 lg:flex-nowrap'>
-					<SideNav className={'w-full lg:w-[20%]'} />
-					<div className='w-full lg:w-[80%]'>
+					<div className='w-full'>
 						<div className='bg-base-100 p-4'>
 							<DndContext
 								sensors={sensors}
@@ -138,7 +136,7 @@ const TestPage = () => {
 						</div>
 					</div>
 				</div>
-			</main>
+			</div>
 		</>
 	)
 }
