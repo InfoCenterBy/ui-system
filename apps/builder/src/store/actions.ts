@@ -2,21 +2,24 @@ import {
 	addRepeatItem,
 	cloneNode,
 	duplicateNode,
-	isElement,
 	findElement,
+	isElement,
 	locate,
+	moveNode,
+	parseHtml,
 	parseSection,
 	randomId,
 	removeNode,
 	removeRepeatItem,
+	sectionOf,
 	replaceChildren,
 	shiftRepeatItem,
 	updateElement,
 	walk,
 	type ElementNode,
 	type ElementPatch,
-	type SlotKind,
 	type NodeId,
+	type SlotKind,
 	type TreeNode,
 } from '@ui-system/core'
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
@@ -159,6 +162,12 @@ export const deleteSelected = () => {
 	const { header, footer } = useDocument.getState().doc!.partials
 	const roots = [header, ...page.sections, footer].filter((n) => n !== null)
 	const node = findElement(roots, selectedId)
+	const section = sectionOf(roots, selectedId)
+	// Anything inside an unlocked section can go
+	if (node && section && !section.section?.locked && section.id !== node.id) {
+		deleteNode(selectedId)
+		return
+	}
 	if (node?.repeat) {
 		try {
 			removeItem(selectedId)
@@ -274,3 +283,61 @@ export const fillMenuWithPages = () =>
 		at.list.splice(0, at.list.length, ...kept)
 		at.list.splice(insertAt, 0, ...items)
 	})
+
+// Unlocked sections are edited as a free tree of elements
+export const setSectionLocked = (id: NodeId, locked: boolean) =>
+	editNode(locked ? 'Lock section' : 'Unlock section', id, (list) => {
+		const node = findElement(list, id)
+		if (node?.section) node.section.locked = locked
+	})
+
+// Typing in the class field merges into one undo step per element
+export const setClasses = (id: NodeId, classes: string) =>
+	editNode(
+		'Change classes',
+		id,
+		(list) => updateElement(list, id, { classes }),
+		`classes:${id}`
+	)
+
+// Inserts parsed HTML into a parent element at an index and selects the first new element
+export const insertHtml = (parentId: NodeId, index: number, html: string) => {
+	const nodes = parseHtml(html, randomId)
+	editNode('Insert element', parentId, (list) => {
+		const parent = findElement(list, parentId)
+		if (!parent) return
+		parent.children.splice(
+			Math.max(0, Math.min(index, parent.children.length)),
+			0,
+			...nodes
+		)
+	})
+	const first = nodes.find(isElement)
+	if (first) useProject.getState().select(first.id)
+	return first?.id ?? null
+}
+
+// Moves a node inside the same section, parentId is the new parent element
+export const moveNodeTo = (id: NodeId, parentId: NodeId, index: number) =>
+	editNode('Move element', id, (list) => {
+		if (!findElement(list, parentId)) return
+		moveNode(list, id, parentId, index)
+	})
+
+export const wrapNode = (id: NodeId, tag = 'div') => {
+	const wrapperId = randomId()
+	editNode('Wrap element', id, (list) => {
+		const at = locate(list, id)
+		if (!at) return
+		const [node] = at.list.splice(at.index, 1)
+		at.list.splice(at.index, 0, {
+			id: wrapperId,
+			type: 'element',
+			tag,
+			classes: '',
+			attrs: {},
+			children: [node],
+		})
+	})
+	useProject.getState().select(wrapperId)
+}

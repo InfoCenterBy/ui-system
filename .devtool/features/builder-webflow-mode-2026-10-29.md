@@ -1,11 +1,11 @@
 ---
 id: "builder-webflow-mode-2026-10-29"
-status: "backlog"
+status: "in-progress"
 priority: "medium"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T11:59:09.000Z"
 completedAt: null
 labels: ["конструктор", "этап-5"]
 order: "a1"

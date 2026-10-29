@@ -3,9 +3,16 @@ import {
 	ArrowUpIcon,
 	CopyIcon,
 	ListIcon,
+	LockIcon,
+	LockOpenIcon,
 	Trash2Icon,
 } from 'lucide-react'
-import { ancestorsOf, findElement, sectionOf } from '@ui-system/core'
+import {
+	ancestorsOf,
+	findElement,
+	sectionOf,
+	type ElementNode,
+} from '@ui-system/core'
 import { Button } from '@/components/ui/button'
 import { labelOf } from '@/editor/canvas/nodes'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
@@ -19,6 +26,7 @@ import {
 	fillMenuWithPages,
 	moveSection,
 	setPartial,
+	setSectionLocked,
 } from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
@@ -60,6 +68,29 @@ function SectionActions({ id }: { id: string }) {
 }
 
 // Shared sections are changed for the whole site, not per page
+// Locked sections edit only their slots, unlocked ones every element
+function LockToggle({ section }: { section: ElementNode }) {
+	const locked = section.section?.locked ?? true
+	return (
+		<div className='flex flex-col gap-1.5 text-sm'>
+			<Button
+				size='sm'
+				variant={locked ? 'outline' : 'secondary'}
+				className='w-fit'
+				onClick={() => setSectionLocked(section.id, !locked)}
+			>
+				{locked ? <LockOpenIcon /> : <LockIcon />}
+				{locked ? 'Unlock structure' : 'Lock structure'}
+			</Button>
+			<p className='text-muted-foreground text-xs'>
+				{locked
+					? 'Unlock to select any element, change its classes and move it around.'
+					: 'Every element is editable. Lock again to keep the layout safe.'}
+			</p>
+		</div>
+	)
+}
+
 function PartialActions({ name }: { name: 'header' | 'footer' }) {
 	return (
 		<div className='flex flex-col gap-2 text-sm'>
@@ -148,6 +179,7 @@ export function Properties() {
 				<h2 className='text-sm font-medium'>{labelOf(node)}</h2>
 			</div>
 			<div className='flex flex-col gap-4 p-3'>
+				{node.section && <LockToggle section={node} />}
 				{partialName && <PartialActions name={partialName} />}
 				{node.section && !partialName && (
 					<>
