@@ -1,6 +1,6 @@
 import classNames from 'classnames'
-import { contrastRatio } from '../../../lib/color'
-import { CONTENT_OF, getColor, setAuto } from '../../../lib/theme'
+import { contrastRatio } from '@ui-system/theme'
+import { CONTENT_OF, getColor, setAuto } from '@ui-system/theme'
 
 const MIN_CONTRAST = 4.5
 

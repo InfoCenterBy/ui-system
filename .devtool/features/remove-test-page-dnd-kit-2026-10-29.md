@@ -1,11 +1,11 @@
 ---
 id: "remove-test-page-dnd-kit-2026-10-29"
-status: "in-progress"
+status: "review"
 priority: "medium"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:21:14.000Z"
+modified: "2026-10-29T09:30:57.000Z"
 completedAt: null
 labels: ["конструктор", "этап-0"]
 order: "a3"
@@ -17,5 +17,5 @@ order: "a3"
 
 ## Критерии готовности
 
-- [ ] Удалены testPage, компоненты dnd и маршрут
-- [ ] dnd-kit удалён из зависимостей
+- [x] Удалены testPage, компоненты dnd и маршрут
+- [x] dnd-kit удалён из зависимостей

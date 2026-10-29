@@ -1,6 +1,6 @@
 import { __unstable__loadDesignSystem as loadDesignSystem } from 'tailwindcss'
 import themeCss from 'tailwindcss/theme.css?raw'
-import { DAISY_THEME_CSS } from './tailwindTheme'
+import { DAISY_THEME_CSS } from '@ui-system/theme'
 import {
 	annotateCss,
 	classesFromRules,

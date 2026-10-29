@@ -1,18 +1,21 @@
 // OKLCH helpers for daisyUI theme colors, based on the OKLab reference matrices
 
-const round = (value, digits) => Number(value.toFixed(digits))
+export type Oklch = { l: number; c: number; h: number }
+export type Rgb = [number, number, number]
 
-export const parseOklch = (value) => {
+const round = (value: number, digits: number) => Number(value.toFixed(digits))
+
+export const parseOklch = (value: string): Oklch | null => {
 	const match = /oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/i.exec(value)
 	if (!match) return null
 	const l = Number(match[1]) / (match[2] ? 100 : 1)
 	return { l, c: Number(match[3]), h: Number(match[4]) }
 }
 
-export const formatOklch = ({ l, c, h }) =>
+export const formatOklch = ({ l, c, h }: Oklch): string =>
 	`oklch(${round(l * 100, 2)}% ${round(c, 3)} ${round(c < 0.0005 ? 0 : h, 3)})`
 
-const oklchToLinearRgb = ({ l, c, h }) => {
+const oklchToLinearRgb = ({ l, c, h }: Oklch): Rgb => {
 	const rad = (h * Math.PI) / 180
 	const a = c * Math.cos(rad)
 	const b = c * Math.sin(rad)
@@ -26,7 +29,7 @@ const oklchToLinearRgb = ({ l, c, h }) => {
 	]
 }
 
-const linearRgbToOklch = ([r, g, b]) => {
+const linearRgbToOklch = ([r, g, b]: Rgb): Oklch => {
 	const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
 	const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
 	const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
@@ -37,15 +40,15 @@ const linearRgbToOklch = ([r, g, b]) => {
 	return { l: L, c: Math.hypot(A, B), h: (h + 360) % 360 }
 }
 
-const toGamma = (x) =>
+const toGamma = (x: number) =>
 	x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055
-const toLinear = (x) =>
+const toLinear = (x: number) =>
 	x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
 
-const inGamut = (rgb) => rgb.every((x) => x >= -0.0001 && x <= 1.0001)
+const inGamut = (rgb: Rgb) => rgb.every((x) => x >= -0.0001 && x <= 1.0001)
 
 // Lowers chroma until the color fits sRGB, keeps lightness and hue
-const toSrgbGamut = (color) => {
+const toSrgbGamut = (color: Oklch): Oklch => {
 	if (inGamut(oklchToLinearRgb(color))) return color
 	let low = 0
 	let high = color.c
@@ -57,9 +60,9 @@ const toSrgbGamut = (color) => {
 	return { ...color, c: low }
 }
 
-const clamp01 = (x) => Math.min(1, Math.max(0, x))
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
 
-export const oklchToHex = (value) => {
+export const oklchToHex = (value: string | Oklch): string => {
 	const color = typeof value === 'string' ? parseOklch(value) : value
 	if (!color) return '#000000'
 	return (
@@ -74,29 +77,27 @@ export const oklchToHex = (value) => {
 	)
 }
 
-export const hexToOklch = (hex) => {
-	const rgb = hex
-		.replace('#', '')
-		.match(/../g)
-		.map((x) => toLinear(parseInt(x, 16) / 255))
-	return formatOklch(linearRgbToOklch(rgb))
+export const hexToOklch = (hex: string): string => {
+	const rgb = hex.replace('#', '').match(/../g) as string[]
+	const linear = rgb.map((x) => toLinear(parseInt(x, 16) / 255)) as Rgb
+	return formatOklch(linearRgbToOklch(linear))
 }
 
-const luminance = (color) => {
+const luminance = (color: Oklch) => {
 	const [r, g, b] = oklchToLinearRgb(toSrgbGamut(color)).map(clamp01)
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-export const contrastRatio = (a, b) => {
-	const la = luminance(typeof a === 'string' ? parseOklch(a) : a)
-	const lb = luminance(typeof b === 'string' ? parseOklch(b) : b)
+export const contrastRatio = (a: string | Oklch, b: string | Oklch): number => {
+	const la = luminance(typeof a === 'string' ? (parseOklch(a) as Oklch) : a)
+	const lb = luminance(typeof b === 'string' ? (parseOklch(b) as Oklch) : b)
 	return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
 }
 
 const MIN_CONTRAST = 4.5
 
 // Readable text color in the same hue, like the daisyUI themes do
-export const autoContent = (value) => {
+export const autoContent = (value: string): string => {
 	const bg = parseOklch(value)
 	if (!bg) return value
 	const darkText =
@@ -115,4 +116,5 @@ export const autoContent = (value) => {
 	return formatOklch(text)
 }
 
-export const isReadable = (bg, text) => contrastRatio(bg, text) >= MIN_CONTRAST
+export const isReadable = (bg: string | Oklch, text: string | Oklch): boolean =>
+	contrastRatio(bg, text) >= MIN_CONTRAST

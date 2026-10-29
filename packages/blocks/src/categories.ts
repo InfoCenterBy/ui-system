@@ -1,5 +1,34 @@
 // Variant markup lives in src/library/<slug>/<variant>.html
-export const categoryMeta = [
+export type GroupId =
+	| 'actions'
+	| 'data-display'
+	| 'navigation'
+	| 'feedback'
+	| 'data-input'
+	| 'layout'
+	| 'mockup'
+
+export type Group = { id: GroupId; name: string }
+
+export type CategoryMeta = {
+	slug: string
+	name: string
+	group: GroupId
+	description: string
+	variants: string[]
+	showcase?: string
+	note?: string
+	previewClass?: string
+}
+
+export type Variant = { name: string; title: string; html: string }
+
+export type Category = Omit<CategoryMeta, 'variants' | 'showcase'> & {
+	variants: Variant[]
+	showcase: Variant
+}
+
+export const categoryMeta: CategoryMeta[] = [
 	// Actions
 	{
 		slug: 'button',

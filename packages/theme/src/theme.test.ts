@@ -78,7 +78,7 @@ describe('theme', () => {
 			'primary',
 			'oklch(60% 0.2 30)'
 		)
-		const { theme: imported, skipped } = parseThemeCss(themeCss(theme))
+		const { theme: imported, skipped } = parseThemeCss(themeCss(theme))!
 		expect(skipped).toEqual([])
 		expect(imported.name).toBe('night')
 		expect(imported.vars).toEqual(theme.vars)
@@ -94,7 +94,7 @@ describe('theme', () => {
 				--color-accent: rgb(0 0 255);
 				--radius-box: 1rem;
 			}
-		`)
+		`)!
 		expect(theme.vars['--color-primary']).toBe('oklch(62.8% 0.258 29.234)')
 		expect(theme.vars['--color-secondary']).toMatch(/^oklch\(/)
 		expect(theme.vars['--radius-box']).toBe('1rem')

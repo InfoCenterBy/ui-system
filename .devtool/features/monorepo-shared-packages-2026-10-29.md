@@ -1,11 +1,11 @@
 ---
 id: "monorepo-shared-packages-2026-10-29"
-status: "todo"
+status: "review"
 priority: "high"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T09:40:03.000Z"
 completedAt: null
 labels: ["конструктор", "этап-0"]
 order: "a1"
@@ -17,6 +17,6 @@ order: "a1"
 
 ## Критерии готовности
 
-- [ ] packages/theme: color, theme и их тесты
-- [ ] packages/blocks: library и registry
-- [ ] Каталог импортирует пакеты, сборка и тесты проходят
+- [x] packages/theme: color, theme и их тесты
+- [x] packages/blocks: library и registry
+- [x] Каталог импортирует пакеты, сборка и тесты проходят

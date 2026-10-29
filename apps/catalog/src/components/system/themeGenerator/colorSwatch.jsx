@@ -1,5 +1,5 @@
 import classNames from 'classnames'
-import { hexToOklch, oklchToHex } from '../../../lib/color'
+import { hexToOklch, oklchToHex } from '@ui-system/theme'
 
 // Native color picker shown as a swatch, stores the value as OKLCH
 const ColorSwatch = ({ label, value, onChange, className }) => (

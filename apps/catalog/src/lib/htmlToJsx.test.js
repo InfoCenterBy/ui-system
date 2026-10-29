@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { htmlToJsx } from './htmlToJsx'
 
-const LIBRARY = 'src/library'
+const LIBRARY = '../../packages/blocks/src/library'
 
 const libraryFiles = readdirSync(LIBRARY).flatMap((dir) =>
 	readdirSync(`${LIBRARY}/${dir}`).map((file) => `${dir}/${file}`)

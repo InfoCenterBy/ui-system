@@ -23,10 +23,12 @@
 		"husky": "^9.1.7",
 		"lint-staged": "^17.6.0",
 		"prettier": "^3.9.10",
-		"prettier-plugin-tailwindcss": "^0.8.1"
+		"prettier-plugin-tailwindcss": "^0.8.1",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.46.0"
 	},
 	"lint-staged": {
-		"*.{js,jsx}": [
+		"*.{js,jsx,ts,tsx}": [
 			"eslint --fix",
 			"prettier --write"
 		],

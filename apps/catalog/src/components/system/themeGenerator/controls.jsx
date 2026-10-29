@@ -1,14 +1,14 @@
 import classNames from 'classnames'
 import ColorSwatch from './colorSwatch'
 import ContrastSummary from './contrastSummary'
-import { isReadable } from '../../../lib/color'
+import { isReadable } from '@ui-system/theme'
 import {
 	PRESET_NAMES,
 	getColor,
 	setAuto,
 	setColor,
 	setVar,
-} from '../../../lib/theme'
+} from '@ui-system/theme'
 
 const BASE_COLORS = ['base-100', 'base-200', 'base-300']
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
 import tailwindUrl from '@tailwindcss/browser?url'
 import callyUrl from 'cally?url'
-import { DAISY_THEME_CSS } from '../../../lib/tailwindTheme'
+import { DAISY_THEME_CSS } from '@ui-system/theme'
 
 const ROOT_CLASS =
 	'flex min-h-32 flex-wrap items-center justify-center gap-4 p-6'

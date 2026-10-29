@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseThemeCss } from '../../../lib/theme'
+import { parseThemeCss } from '@ui-system/theme'
 import { toast } from '../../../lib/toast'
 
 const PLACEHOLDER = `@plugin "daisyui/theme" {

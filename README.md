@@ -10,31 +10,41 @@ React 19, Vite, Tailwind CSS 4, daisyUI 5, React Router (hash routing for GitHub
 
 ## Getting started
 
-Requires Node.js 24.
+Requires Node.js 24 and pnpm. Run `corepack enable` once to get pnpm. Corepack reads the pnpm version from `packageManager` in `package.json`.
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
+
+## Repository layout
+
+This is a pnpm workspace.
+
+- `apps/catalog`: the daisyUI component catalog (Vite app).
+- `packages/theme`: `@ui-system/theme`, colors, theme presets and the theme generator logic.
+- `packages/blocks`: `@ui-system/blocks`, HTML component examples and their registry.
+- `apps/builder`: a local site builder. Planned, not added yet.
 
 ## Scripts
 
-| Script                 | What it does                        |
-| ---------------------- | ----------------------------------- |
-| `npm run dev`          | Start the dev server                |
-| `npm run build`        | Build to `dist`                     |
-| `npm run preview`      | Serve the production build locally  |
-| `npm run lint`         | Run ESLint                          |
-| `npm test`             | Run unit tests with Vitest          |
-| `npm run format`       | Format the whole repo with Prettier |
-| `npm run format:check` | Check formatting without writing    |
+| Script              | What it does                                |
+| ------------------- | ------------------------------------------- |
+| `pnpm dev`          | Start the catalog dev server                |
+| `pnpm build`        | Build the catalog to `apps/catalog/dist`    |
+| `pnpm preview`      | Serve the production build locally          |
+| `pnpm lint`         | Run ESLint                                  |
+| `pnpm typecheck`    | Run TypeScript checks in every package      |
+| `pnpm test`         | Run unit tests with Vitest in every package |
+| `pnpm format`       | Format the whole repo with Prettier         |
+| `pnpm format:check` | Check formatting without writing            |
 
 ## Adding a component
 
 Every example is a plain HTML file, the registry lists them in display order.
 
-1. Add the markup to `src/library/<slug>/<variant>.html`. Use unique ids and radio names, prefixed with the slug.
-2. List the variant in `src/registry/categories.js`. A new component needs `slug`, `name`, `group`, a Russian `description` and `variants`.
+1. Add the markup to `packages/blocks/src/library/<slug>/<variant>.html`. Use unique ids and radio names, prefixed with the slug.
+2. List the variant in `packages/blocks/src/categories.ts`. A new component needs `slug`, `name`, `group`, a Russian `description` and `variants`.
 3. Optional fields: `showcase` picks the variant shown on the overview page, `previewClass` adjusts the preview box, `note` shows a hint under the description.
 
 The JSX tab is generated from the HTML, so there is nothing else to write. Inline `<script>` tags run in the preview and are left out of the JSX. A missing file fails the build with a clear error.
@@ -68,7 +78,7 @@ Every example on a component page runs in its own iframe that reuses the site st
 - Export gives a `@plugin "daisyui/theme"` block in OKLCH. The theme is also kept in the URL, so a link restores it.
 - "Apply to site" saves the theme and adds a Custom option to the theme menu.
 
-Color math, theme logic and search live in `src/lib` and are covered by tests.
+Color math, theme logic and search are covered by tests. Run them with `pnpm test`.
 
 ## Code style
 
@@ -84,4 +94,8 @@ Color math, theme logic and search live in `src/lib` and are covered by tests.
 
 ## Deploy
 
-Every push to `main` runs the `Deploy to GitHub Pages` workflow: format check, lint, tests, build, publish `dist`.
+Every push to `main` runs the `Deploy to GitHub Pages` workflow: pnpm install, format check, lint, typecheck, tests, build, publish `apps/catalog/dist`.
+
+## Task board
+
+Tasks are markdown cards in `.devtool/features`. Each card has YAML frontmatter with its status and priority. The `kanban-markdown` VS Code extension shows them as a board.

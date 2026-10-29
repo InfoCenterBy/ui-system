@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Icon from '../icon'
-import { themeCss } from '../../../lib/theme'
+import { themeCss } from '@ui-system/theme'
 import { copyText } from '../../../lib/toast'
 
 // Shows the theme as a daisyUI plugin block ready to paste into CSS

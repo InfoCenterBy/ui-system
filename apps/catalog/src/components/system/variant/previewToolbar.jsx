@@ -6,7 +6,7 @@ import {
 	usePreviewTheme,
 	usePreviewWidth,
 } from '../../../lib/preferences'
-import { PRESET_NAMES } from '../../../lib/theme'
+import { PRESET_NAMES } from '@ui-system/theme'
 
 const WIDTHS = [
 	['phone', 'phone', 'Phone, 375px'],

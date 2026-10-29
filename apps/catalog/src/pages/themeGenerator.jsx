@@ -7,7 +7,12 @@ import ImportDialog from '../components/system/themeGenerator/importDialog'
 import ThemePreview from '../components/system/themeGenerator/themePreview'
 import Icon from '../components/system/icon'
 import { useTheme } from '../contexts/themeContext'
-import { createTheme, decodeTheme, encodeTheme, themeStyle } from '../lib/theme'
+import {
+	createTheme,
+	decodeTheme,
+	encodeTheme,
+	themeStyle,
+} from '@ui-system/theme'
 import { toast } from '../lib/toast'
 
 const STORAGE_KEY = 'theme-generator'
