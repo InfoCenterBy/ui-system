@@ -8,9 +8,11 @@ export default defineConfig({
 	resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
 	server: {
 		port: 5180,
+		// Falling back to 5181 would make the proxy call itself
+		strictPort: true,
 		proxy: {
-			'/api': 'http://localhost:5181',
-			'/assets': 'http://localhost:5181',
+			'/api': 'http://127.0.0.1:5181',
+			'/assets': 'http://127.0.0.1:5181',
 		},
 	},
 })

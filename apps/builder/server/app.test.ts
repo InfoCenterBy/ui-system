@@ -275,3 +275,46 @@ describe('path traversal', () => {
 		expect(open.status).toBe(400)
 	})
 })
+
+describe('css', () => {
+	const build = (body: unknown) =>
+		app.request('/api/css', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		})
+
+	it('builds Tailwind and daisyUI classes with theme overrides', async () => {
+		const res = await build({
+			classes: ['btn', 'btn-primary', 'md:p-8'],
+			theme: {
+				name: 'light',
+				vars: { '--color-primary': 'oklch(50% 0.2 30)' },
+			},
+		})
+		expect(res.status).toBe(200)
+		const { css } = await res.json()
+		expect(css).toContain('.btn-primary')
+		expect(css).toContain(String.raw`.md\:p-8`)
+		expect(css).toContain('--color-primary: oklch(50% 0.2 30);')
+	})
+
+	it('rejects bad input', async () => {
+		expect(
+			(
+				await build({
+					classes: 'btn',
+					theme: { name: 'light', vars: {} },
+				})
+			).status
+		).toBe(400)
+		expect(
+			(
+				await build({
+					classes: [],
+					theme: { name: 'bad name', vars: {} },
+				})
+			).status
+		).toBe(400)
+	})
+})

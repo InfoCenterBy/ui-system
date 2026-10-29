@@ -209,10 +209,15 @@ export interface SerializeOptions {
 	// One element per line with indentation where it does not change rendering
 	pretty?: boolean
 	indent?: string
+	// Adds data-node-id so the canvas can map DOM elements back to the tree
+	nodeIds?: boolean
 }
 
-const attributes = (node: ElementNode, markers: boolean) => {
+export const NODE_ID_ATTR = 'data-node-id'
+
+const attributes = (node: ElementNode, markers: boolean, nodeIds: boolean) => {
 	const entries: [string, string][] = []
+	if (nodeIds) entries.push([NODE_ID_ATTR, node.id])
 	if (node.classes) entries.push(['class', node.classes])
 	entries.push(...Object.entries(node.attrs))
 	if (markers && node.slot) entries.push([EDIT_ATTR, node.slot])
@@ -238,7 +243,12 @@ export const serializeHtml = (
 	nodes: TreeNode[],
 	options: SerializeOptions = {}
 ): string => {
-	const { markers = false, pretty = true, indent = '\t' } = options
+	const {
+		markers = false,
+		pretty = true,
+		indent = '\t',
+		nodeIds = false,
+	} = options
 
 	const render = (
 		node: TreeNode,
@@ -250,7 +260,7 @@ export const serializeHtml = (
 		const tag = node.tag
 		const lower = tag.toLowerCase()
 		const inSvg = svg || lower === 'svg'
-		const open = `<${tag}${attributes(node, markers)}`
+		const open = `<${tag}${attributes(node, markers, nodeIds)}`
 		if (VOID.has(lower)) return `${open}>`
 		if (inSvg && node.children.length === 0) return `${open} />`
 		const childRaw = raw || RAW_TEXT.has(lower)

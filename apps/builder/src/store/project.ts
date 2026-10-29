@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { Page, Partials, Site } from '@ui-system/core'
 import type { Project } from '@/api'
+import { useDocument } from '@/store/document'
 
 export const CANVAS_WIDTHS = [
 	{ label: 'Phone', width: 375 },
@@ -9,44 +9,54 @@ export const CANVAS_WIDTHS = [
 	{ label: 'xl', width: 1280 },
 ] as const
 
+// Editor state that is not saved to the project
 interface ProjectState {
 	projectPath: string | null
-	site: Site | null
-	pages: Page[]
-	partials: Partials
 	currentPageId: string | null
 	canvasWidth: number
+	selectedId: string | null
+	hoveredId: string | null
 	openProject: (project: Project) => void
 	closeProject: () => void
 	setCurrentPage: (id: string) => void
 	setCanvasWidth: (width: number) => void
+	select: (id: string | null) => void
+	hover: (id: string | null) => void
 }
-
-const emptyPartials: Partials = { header: null, footer: null }
 
 export const useProject = create<ProjectState>((set) => ({
 	projectPath: null,
-	site: null,
-	pages: [],
-	partials: emptyPartials,
 	currentPageId: null,
 	canvasWidth: 1280,
-	openProject: (project) =>
+	selectedId: null,
+	hoveredId: null,
+	openProject: (project) => {
+		useDocument.getState().load(project)
 		set({
 			projectPath: project.path,
-			site: project.site,
-			pages: project.pages,
-			partials: project.partials,
-			currentPageId: project.pages[0]?.id ?? null,
-		}),
-	closeProject: () =>
+			currentPageId: project.site.pages[0] ?? null,
+			selectedId: null,
+			hoveredId: null,
+		})
+	},
+	closeProject: () => {
+		useDocument.getState().clear()
 		set({
 			projectPath: null,
-			site: null,
-			pages: [],
-			partials: emptyPartials,
 			currentPageId: null,
-		}),
-	setCurrentPage: (id) => set({ currentPageId: id }),
+			selectedId: null,
+			hoveredId: null,
+		})
+	},
+	setCurrentPage: (id) =>
+		set({ currentPageId: id, selectedId: null, hoveredId: null }),
 	setCanvasWidth: (width) => set({ canvasWidth: width }),
+	select: (id) => set({ selectedId: id }),
+	hover: (id) => set({ hoveredId: id }),
 }))
+
+// The page shown on the canvas
+export const useCurrentPage = () => {
+	const id = useProject((s) => s.currentPageId)
+	return useDocument((s) => (id ? s.doc?.pages[id] : undefined))
+}

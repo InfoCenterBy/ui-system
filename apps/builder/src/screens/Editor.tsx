@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -7,8 +8,12 @@ import { Canvas } from '@/editor/Canvas'
 import { LeftPanel } from '@/editor/LeftPanel'
 import { Properties } from '@/editor/Properties'
 import { TopBar } from '@/editor/TopBar'
+import { useShortcuts } from '@/editor/useShortcuts'
+import { startAutosave } from '@/store/autosave'
 
 export function Editor() {
+	useShortcuts()
+	useEffect(() => startAutosave(), [])
 	return (
 		<div className='flex h-svh flex-col'>
 			<TopBar />

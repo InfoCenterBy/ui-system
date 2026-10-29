@@ -50,6 +50,8 @@ export const api = {
 		request<{ ok: true }>('DELETE', `/api/project/pages/${id}`),
 	savePartial: (name: keyof Partials, value: ElementNode | null) =>
 		request<{ ok: true }>('PUT', `/api/project/partials/${name}`, value),
+	css: (classes: string[], theme: Site['theme']) =>
+		request<{ css: string }>('POST', '/api/css', { classes, theme }),
 	upload: (file: File) => {
 		const form = new FormData()
 		form.append('file', file)

@@ -50,9 +50,15 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.14)
+      '@tailwindcss/node':
+        specifier: ^4.3.3
+        version: 4.3.3
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      '@ui-system/blocks':
+        specifier: workspace:*
+        version: link:../../packages/blocks
       '@ui-system/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -62,9 +68,15 @@ importers:
       cn:
         specifier: ^0.5.0
         version: 0.5.0
+      daisyui:
+        specifier: ^5.7.50
+        version: 5.7.50
       hono:
         specifier: ^4.13.14
         version: 4.13.14
+      immer:
+        specifier: ^11.2.9
+        version: 11.2.9
       lucide-react:
         specifier: ^1.63.0
         version: 1.63.0(@types/react@19.3.0)(react@19.3.1)

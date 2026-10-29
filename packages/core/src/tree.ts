@@ -205,3 +205,12 @@ export const shiftRepeatItem = (list: TreeNode[], id: NodeId, step: -1 | 1) => {
 	const [node] = at.list.splice(from, 1)
 	at.list.splice(to, 0, node)
 }
+
+// Every class token used in the tree, the input for the CSS build
+export const collectClasses = (list: TreeNode[], into = new Set<string>()) => {
+	walk(list, (node) => {
+		if (!isElement(node)) return
+		for (const name of node.classes.split(/\s+/)) if (name) into.add(name)
+	})
+	return into
+}

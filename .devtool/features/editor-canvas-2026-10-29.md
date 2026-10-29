@@ -1,11 +1,11 @@
 ---
 id: "editor-canvas-2026-10-29"
-status: "todo"
+status: "in-progress"
 priority: "high"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T10:43:51.000Z"
 completedAt: null
 labels: ["конструктор", "этап-2"]
 order: "a8"

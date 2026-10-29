@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { saveUpload } from './assets'
+import { CssBuilder } from './css'
 import { HttpError } from './errors'
 import { resolveInside } from './fs-utils'
 import { ProjectStore, type PartialName } from './project'
@@ -30,6 +31,7 @@ function pathBody(v: unknown): string {
 export function createApp(options: AppOptions = {}) {
 	const recentFile = options.recentFile ?? defaultRecentFile()
 	const store = new ProjectStore()
+	const css = new CssBuilder()
 	const app = new Hono()
 
 	app.onError((err, c) => {
@@ -118,6 +120,33 @@ export function createApp(options: AppOptions = {}) {
 			throw new HttpError(400, 'Field file is missing')
 		const name = await saveUpload(dir, file)
 		return c.json({ path: `assets/${name}` })
+	})
+
+	// Canvas styles, built by the same Tailwind and daisyUI setup as the export
+	app.post('/api/css', async (c) => {
+		const data = (await body(c)) as {
+			classes?: unknown
+			theme?: { name?: unknown; vars?: unknown }
+		}
+		const { classes, theme } = data
+		if (
+			!Array.isArray(classes) ||
+			!classes.every((name) => typeof name === 'string')
+		) {
+			throw new HttpError(400, 'classes must be a list of strings')
+		}
+		if (
+			typeof theme?.name !== 'string' ||
+			typeof theme.vars !== 'object' ||
+			theme.vars === null
+		) {
+			throw new HttpError(400, 'theme needs a name and vars')
+		}
+		const text = await css.build(classes, {
+			name: theme.name,
+			vars: theme.vars as Record<string, string>,
+		})
+		return c.json({ css: text })
 	})
 
 	app.get('/assets/*', async (c) => {

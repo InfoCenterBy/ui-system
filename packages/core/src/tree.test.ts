@@ -4,6 +4,7 @@ import { counterIds } from './ids'
 import { parseHtml } from './html'
 import {
 	addRepeatItem,
+	collectClasses,
 	ancestorsOf,
 	duplicateNode,
 	findElement,
@@ -105,5 +106,14 @@ describe('tree', () => {
 				addRepeatItem(draft, 'n7', counterIds())
 			})
 		).toThrow(/Not a repeat item/)
+	})
+})
+
+describe('collectClasses', () => {
+	it('gathers unique class tokens from the whole tree', () => {
+		const tree = parseHtml(
+			'<div class="card  p-4"><p class="p-4 text-lg">a</p></div>'
+		)
+		expect([...collectClasses(tree)]).toEqual(['card', 'p-4', 'text-lg'])
 	})
 })

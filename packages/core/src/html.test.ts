@@ -165,3 +165,12 @@ describe('block text edges', () => {
 		expect(serializeHtml([span])).toBe('<span> a </span>')
 	})
 })
+
+describe('node ids', () => {
+	it('marks elements for the canvas when asked', () => {
+		const tree = parseHtml('<p class="a">x</p>', counterIds())
+		expect(serializeHtml(tree, { nodeIds: true })).toBe(
+			'<p data-node-id="n1" class="a">x</p>'
+		)
+	})
+})
