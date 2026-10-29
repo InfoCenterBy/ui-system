@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { listAssets, saveUpload } from './assets'
+import { registerClassRoutes } from './classes'
 import { CssBuilder } from './css'
 import { exportSite, type Optimize } from './export'
 import { faceCss, toChoices, toSiteFonts } from './fontCss'
@@ -53,6 +54,7 @@ export function createApp(options: AppOptions = {}) {
 	const css = new CssBuilder()
 	const app = new Hono()
 	registerFontRoutes(app, () => store.assetsDir(), options.fetch ?? fetch)
+	registerClassRoutes(app)
 
 	app.onError((err, c) => {
 		if (err instanceof HttpError) {

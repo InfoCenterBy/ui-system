@@ -54,6 +54,11 @@ async function request<T>(
 	return data as T
 }
 
+export interface ComponentClass {
+	name: string
+	css: string
+}
+
 export interface ExportResult {
 	dir: string
 	pages: string[]
@@ -107,6 +112,8 @@ export const api = {
 		for (const file of input.files) form.append('files', file)
 		return request<FontChoice>('POST', '/api/project/fonts/local', form)
 	},
+	componentClasses: () =>
+		request<ComponentClass[]>('GET', '/api/classes/components'),
 	assets: () => request<Asset[]>('GET', '/api/project/assets'),
 	exportSite: () => request<ExportResult>('POST', '/api/project/export'),
 	reveal: (folder: 'dist' | 'project') =>

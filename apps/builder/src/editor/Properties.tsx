@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { labelOf } from '@/editor/canvas/nodes'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
+import { ClassField } from '@/editor/style/ClassField'
+import { StylePanel } from '@/editor/style/StylePanel'
 import { RepeatProperties } from '@/editor/properties/RepeatProperties'
 import { VariantSelect } from '@/editor/properties/VariantSelect'
 import { useRoots } from '@/editor/canvas/useRoots'
@@ -160,6 +162,7 @@ export function Properties() {
 	}
 
 	const section = sectionOf(roots, node.id)
+	const unlocked = section?.section?.locked === false
 	const item = node.repeat
 		? node
 		: ancestorsOf(roots, node.id).findLast((a) => a.repeat)
@@ -195,7 +198,9 @@ export function Properties() {
 					</p>
 				)}
 				{item && <RepeatProperties item={item} />}
+				{unlocked && <ClassField node={node} />}
 			</div>
+			{unlocked && <StylePanel node={node} />}
 		</aside>
 	)
 }

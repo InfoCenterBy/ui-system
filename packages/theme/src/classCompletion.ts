@@ -1,6 +1,6 @@
 // Splits the class being typed into its variant prefix and the class itself
-export const classToken = (valueBeforeCursor) => {
-	const word = /[^\s"']*$/.exec(valueBeforeCursor)[0]
+export const classToken = (valueBeforeCursor: string) => {
+	const word = /[^\s"']*$/.exec(valueBeforeCursor)?.[0] ?? ''
 	let depth = 0
 	let split = 0
 	for (let i = 0; i < word.length; i++) {
@@ -13,7 +13,7 @@ export const classToken = (valueBeforeCursor) => {
 }
 
 // Custom properties declared in a stylesheet
-export const themeVars = (css) =>
+export const themeVars = (css: string): Record<string, string> =>
 	Object.fromEntries(
 		[...css.matchAll(/(--[\w-]+)\s*:\s*([^;{}]+);/g)].map(([, k, v]) => [
 			k,
@@ -22,7 +22,7 @@ export const themeVars = (css) =>
 	)
 
 // Replaces var() references the map knows, the rest stay as they are
-export const resolveVars = (value, vars) => {
+export const resolveVars = (value: string, vars: Record<string, string>) => {
 	let result = value
 	for (let i = 0; i < 4; i++) {
 		const next = result.replace(
@@ -39,7 +39,10 @@ const COLOR_PROPERTY =
 	/(?:^|[\s;{])(?:color|background-color|border(?:-[a-z]+)*-color|outline-color|text-decoration-color|fill|stroke|accent-color|caret-color|--tw-(?:ring|shadow|inset-ring|inset-shadow|gradient-from|gradient-via|gradient-to)-color|--tw-gradient-(?:from|via|to))\s*:\s*([^;}]+)/
 
 // Color a class paints with, for the swatch next to it
-export const colorOf = (css, vars = {}) => {
+export const colorOf = (
+	css: string | null | undefined,
+	vars: Record<string, string> = {}
+) => {
 	const value = COLOR_PROPERTY.exec(css ?? '')?.[1]?.trim()
 	if (!value || /^(inherit|currentcolor|initial|unset)$/i.test(value)) {
 		return null
@@ -50,8 +53,16 @@ export const colorOf = (css, vars = {}) => {
 const CLASS_IN_SELECTOR = /\.((?:[\w-]|\\.)+)/g
 
 // Component classes from the site stylesheet that Tailwind itself does not know
-export const classesFromRules = (rules, known) => {
-	const declarations = new Map()
+export interface StyleRule {
+	selector: string
+	css: string
+}
+
+export const classesFromRules = (
+	rules: StyleRule[],
+	known: ReadonlySet<string>
+): Map<string, string | null> => {
+	const declarations = new Map<string, string[]>()
 	for (const { selector, css } of rules) {
 		for (const [, raw] of selector.matchAll(CLASS_IN_SELECTOR)) {
 			const name = raw.replace(/\\(.)/g, '$1')
@@ -61,12 +72,12 @@ export const classesFromRules = (rules, known) => {
 			if (selector.trim() === `.${raw}`) {
 				declarations
 					.get(name)
-					.push(...css.split(';').map((d) => d.trim()))
+					?.push(...css.split(';').map((d) => d.trim()))
 			}
 		}
 	}
 	return new Map(
-		[...declarations].map(([name, list]) => {
+		[...declarations].map(([name, list]): [string, string | null] => {
 			const unique = [...new Set(list.filter(Boolean))]
 			const css = unique.map((d) => `  ${d};`).join('\n')
 			return [name, unique.length ? `.${name} {\n${css}\n}` : null]
@@ -75,7 +86,7 @@ export const classesFromRules = (rules, known) => {
 }
 
 // Tailwind output with resolved theme values noted at the end of each line
-export const annotateCss = (css, vars) =>
+export const annotateCss = (css: string, vars: Record<string, string>) =>
 	css
 		.split('\n')
 		.map((line) => {

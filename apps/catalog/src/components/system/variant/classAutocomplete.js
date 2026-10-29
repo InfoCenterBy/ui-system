@@ -1,7 +1,7 @@
 import { autocompletion } from '@codemirror/autocomplete'
 import { syntaxTree } from '@codemirror/language'
 import { htmlLanguage } from '@codemirror/lang-html'
-import { classToken } from '../../../lib/classCompletion'
+import { classToken } from '@ui-system/theme'
 
 // Rules of the site stylesheet, daisyUI component classes come from here
 const siteRules = () => {
@@ -43,7 +43,7 @@ let indexPromise = null
 
 // Tailwind loads on first use and is kept for every editor on the page
 export const preloadClassIndex = () => {
-	indexPromise ??= import('../../../lib/tailwindClasses')
+	indexPromise ??= import('@ui-system/theme/classes')
 		.then(({ loadClassIndex }) => loadClassIndex(siteRules()))
 		.then((loaded) => {
 			const info = (completion) => {

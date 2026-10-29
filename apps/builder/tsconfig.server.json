@@ -9,5 +9,5 @@
 		"lib": ["ES2023", "DOM"],
 		"types": ["node"]
 	},
-	"include": ["server"]
+	"include": ["server", "../../packages/theme/src/daisyui.d.ts"]
 }

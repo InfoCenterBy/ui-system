@@ -1,30 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-import type { ElementNode } from '@ui-system/core'
+import {
+	ChevronDown,
+	ChevronRight,
+	ChevronUp,
+	Lock,
+	LockOpen,
+} from 'lucide-react'
+import { ancestorsOf, type ElementNode } from '@ui-system/core'
 import {
 	draggable,
 	dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Button } from '@/components/ui/button'
-import { useCanvas } from '@/editor/canvas/canvasStore'
-import { elementFor } from '@/editor/canvas/frame'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { labelOf } from '@/editor/canvas/nodes'
 import { asLayer, layerDrag } from '@/editor/dnd'
-import { moveSection } from '@/store/actions'
+import { AddMenu } from '@/editor/navigator/AddMenu'
+import { asNode, canDropNode, dropNode } from '@/editor/navigator/dragHelpers'
+import { ElementRow, selectAndReveal } from '@/editor/navigator/ElementRow'
+import { useNav } from '@/editor/navigator/navState'
+import {
+	flattenVisible,
+	iconKeyOf,
+	elementChildren,
+} from '@/editor/navigator/structure'
+import { deleteNode, moveSection, setSectionLocked } from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
 
 type Edge = 'top' | 'bottom'
 
 function useRowActions(id: string) {
-	const select = useProject((s) => s.select)
 	const hover = useProject((s) => s.hover)
 	return {
-		choose: () => {
-			select(id)
-			const doc = useCanvas.getState().doc
-			if (doc) elementFor(doc, id)?.scrollIntoView({ block: 'nearest' })
-		},
+		choose: () => selectAndReveal(id),
 		onEnter: () => hover(id),
 		onLeave: () => hover(null),
 	}
@@ -63,9 +76,14 @@ function SectionRow({
 	const ref = useRef<HTMLDivElement>(null)
 	const [edge, setEdge] = useState<Edge | null>(null)
 	const [dragging, setDragging] = useState(false)
+	const [inside, setInside] = useState(false)
 	const selected = useProject((s) => s.selectedId === node.id)
+	const open = useNav((s) => Boolean(s.open[node.id]))
+	const toggle = useNav((s) => s.toggle)
 	const { choose, onEnter, onLeave } = useRowActions(node.id)
 	const id = node.id
+	const locked = node.section?.locked ?? false
+	const expandable = !locked && elementChildren(node).length > 0
 
 	useEffect(() => {
 		const el = ref.current
@@ -113,26 +131,83 @@ function SectionRow({
 				if (to !== null) moveSection(layer.id, to)
 			},
 		})
+		// Elements of this section can be dropped on its row to become last children
+		const stopNodeDrop = dropTargetForElements({
+			element: el,
+			canDrop: ({ source }) => {
+				const drag = asNode(source.data)
+				return drag !== null && canDropNode(drag.id, id)
+			},
+			onDragEnter: () => setInside(true),
+			onDragLeave: () => setInside(false),
+			onDrop: ({ source }) => {
+				setInside(false)
+				const drag = asNode(source.data)
+				if (drag) dropNode(drag.id, id, 'inside')
+			},
+		})
 		return () => {
 			stopDrag()
 			stopDrop()
+			stopNodeDrop()
 		}
 	}, [id])
 
 	return (
 		<div
 			ref={ref}
+			data-nav-row={id}
 			onMouseEnter={onEnter}
 			onMouseLeave={onLeave}
-			className={`relative flex h-8 items-center rounded-md pr-1 pl-2 text-sm ${selected ? 'bg-accent' : 'hover:bg-accent/50'} ${dragging ? 'opacity-50' : ''}`}
+			className={`relative flex h-8 items-center gap-1 rounded-md pr-1 pl-1 text-sm ${selected ? 'bg-accent' : 'hover:bg-accent/50'} ${dragging ? 'opacity-50' : ''} ${inside ? 'ring-1 ring-blue-500 ring-inset' : ''}`}
 		>
+			{locked ? (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span className='text-muted-foreground flex size-4 shrink-0 items-center justify-center [&_svg]:size-3.5'>
+							<Lock />
+						</span>
+					</TooltipTrigger>
+					<TooltipContent>
+						Unlock the section to edit its structure
+					</TooltipContent>
+				</Tooltip>
+			) : (
+				<button
+					type='button'
+					tabIndex={-1}
+					aria-label={open ? 'Collapse' : 'Expand'}
+					className={`text-muted-foreground flex size-4 shrink-0 items-center justify-center outline-none [&_svg]:size-3.5 ${expandable ? '' : 'invisible'}`}
+					onClick={() => toggle(id)}
+				>
+					{open ? <ChevronDown /> : <ChevronRight />}
+				</button>
+			)}
 			<button
 				type='button'
+				tabIndex={-1}
 				className='flex-1 cursor-grab truncate text-left outline-none'
 				onClick={choose}
 			>
 				{labelOf(node)}
 			</button>
+			{locked && (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant='ghost'
+							size='icon-xs'
+							aria-label='Unlock'
+							onClick={() => setSectionLocked(id, false)}
+						>
+							<LockOpen />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						Unlock the section to edit its structure
+					</TooltipContent>
+				</Tooltip>
+			)}
 			<Button
 				variant='ghost'
 				size='icon-xs'
@@ -164,22 +239,103 @@ export function LayersPanel() {
 	const page = useCurrentPage()
 	const header = useDocument((s) => s.doc?.partials.header ?? null)
 	const footer = useDocument((s) => s.doc?.partials.footer ?? null)
-	if (!page) return null
+	const open = useNav((s) => s.open)
+	const selectedId = useProject((s) => s.selectedId)
+	const sections = page?.sections
+
+	// Reveal the selected element when it was picked on the canvas
+	useEffect(() => {
+		if (!sections || !selectedId) return
+		const chain = ancestorsOf(sections, selectedId)
+		if (chain[0]?.section?.locked === false) {
+			useNav.getState().setOpen(chain.map((a) => a.id))
+		}
+		document
+			.querySelector(`[data-nav-row="${CSS.escape(selectedId)}"]`)
+			?.scrollIntoView({ block: 'nearest' })
+	}, [sections, selectedId])
+
+	if (!page || !sections) return null
+	const rows = flattenVisible(sections, open)
+
+	const onKeyDown = (e: React.KeyboardEvent) => {
+		const target = e.target as HTMLElement
+		if (target.closest('[role=menu], input, textarea')) return
+		const at = rows.findIndex((r) => r.node.id === selectedId)
+		const row = rows[at]
+		const go = (id: string | undefined) => {
+			if (!id) return
+			e.preventDefault()
+			selectAndReveal(id)
+		}
+		const nav = useNav.getState()
+		switch (e.key) {
+			case 'ArrowDown':
+				go(rows[at < 0 ? 0 : at + 1]?.node.id)
+				break
+			case 'ArrowUp':
+				go(rows[at < 0 ? 0 : at - 1]?.node.id)
+				break
+			case 'ArrowRight':
+				if (!row || elementChildren(row.node).length === 0) break
+				if (row.node.section?.locked) break
+				e.preventDefault()
+				if (!open[row.node.id]) nav.setOpen([row.node.id])
+				else go(elementChildren(row.node)[0]?.id)
+				break
+			case 'ArrowLeft':
+				if (!row) break
+				e.preventDefault()
+				if (open[row.node.id]) nav.setOpen([row.node.id], false)
+				else go(row.parentId ?? undefined)
+				break
+			case 'Enter':
+				if (row) go(row.node.id)
+				break
+			case 'Delete':
+			case 'Backspace':
+				// Section roots are removed elsewhere
+				if (!row?.parentId) break
+				e.preventDefault()
+				e.stopPropagation()
+				deleteNode(row.node.id)
+				selectAndReveal(row.parentId)
+				break
+		}
+	}
+
 	return (
-		<div className='flex flex-col gap-0.5 p-2'>
+		<div
+			tabIndex={0}
+			onKeyDown={onKeyDown}
+			className='flex w-0 min-w-full flex-col gap-0.5 p-2 outline-none'
+		>
+			<div className='flex items-center justify-between pb-1'>
+				<span className='text-muted-foreground px-1 text-xs'>
+					Structure
+				</span>
+				<AddMenu />
+			</div>
 			{page.showHeader && header && <FixedRow node={header} />}
-			{page.sections.length === 0 && (
+			{sections.length === 0 && (
 				<p className='text-muted-foreground p-2 text-sm'>
 					No sections yet
 				</p>
 			)}
-			{page.sections.map((node, i) => (
-				<SectionRow
-					key={node.id}
-					node={node}
-					index={i}
-					count={page.sections.length}
-				/>
+			{sections.map((node, i) => (
+				<div key={node.id} className='flex flex-col gap-0.5'>
+					<SectionRow node={node} index={i} count={sections.length} />
+					{flattenVisible([node], open)
+						.slice(1)
+						.map((r) => (
+							<ElementRow
+								key={r.node.id}
+								node={r.node}
+								depth={r.depth}
+								icon={iconKeyOf(r.node)}
+							/>
+						))}
+				</div>
 			))}
 			{page.showFooter && footer && <FixedRow node={footer} />}
 		</div>

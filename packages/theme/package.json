@@ -4,14 +4,16 @@
 	"version": "0.0.0",
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./classes": "./src/classes.ts"
 	},
 	"scripts": {
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"daisyui": "^5.7.50"
+		"daisyui": "^5.7.50",
+		"tailwindcss": "^4.3.3"
 	},
 	"devDependencies": {
 		"typescript": "^5.9.3",

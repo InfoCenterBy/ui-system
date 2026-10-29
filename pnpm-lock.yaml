@@ -285,6 +285,9 @@ importers:
       daisyui:
         specifier: ^5.7.50
         version: 5.7.50
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
     devDependencies:
       typescript:
         specifier: ^5.9.3
