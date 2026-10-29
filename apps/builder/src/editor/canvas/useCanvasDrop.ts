@@ -6,7 +6,7 @@ import {
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { PAGE_ROOT } from '@/editor/canvas/frame'
 import { asPreset } from '@/editor/dnd'
-import { addSection } from '@/store/actions'
+import { placePreset } from '@/store/actions'
 import { useCurrentPage } from '@/store/project'
 
 export interface DropPoint {
@@ -79,7 +79,7 @@ export function useCanvasDrop(scale: number) {
 			onDrop: ({ source, location }) => {
 				const preset = asPreset(source.data)
 				if (!preset) return
-				addSection(
+				placePreset(
 					preset.presetId,
 					locate(location.current.input.clientY).index
 				)

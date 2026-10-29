@@ -4,16 +4,31 @@ import type { SectionPreset } from '@ui-system/core'
 export interface SectionCategory {
 	id: string
 	name: string
+	// Presets of this category become the site-wide header or footer
+	shared?: 'header' | 'footer'
 }
 
 export const sectionCategories: SectionCategory[] = [
+	{ id: 'header', name: 'Header', shared: 'header' },
 	{ id: 'hero', name: 'Hero' },
 	{ id: 'features', name: 'Features' },
-	{ id: 'footer', name: 'Footer' },
+	{ id: 'footer', name: 'Footer', shared: 'footer' },
 ]
 
 // Order inside a category is the order in the builder catalog
 const presetMeta: Omit<SectionPreset, 'html'>[] = [
+	{
+		id: 'header-simple',
+		name: 'Simple',
+		category: 'header',
+		group: 'header',
+	},
+	{
+		id: 'header-cta',
+		name: 'With button',
+		category: 'header',
+		group: 'header',
+	},
 	{ id: 'hero-centered', name: 'Centered', category: 'hero', group: 'hero' },
 	{ id: 'hero-image', name: 'With image', category: 'hero', group: 'hero' },
 	{ id: 'features-cards', name: 'Cards', category: 'features' },
@@ -36,3 +51,8 @@ export const sectionPresets: SectionPreset[] = presetMeta.map((meta) => {
 
 export const getSectionPreset = (id: string) =>
 	sectionPresets.find((preset) => preset.id === id)
+
+export const sharedRoleOf = (presetId: string) => {
+	const preset = getSectionPreset(presetId)
+	return sectionCategories.find((c) => c.id === preset?.category)?.shared
+}

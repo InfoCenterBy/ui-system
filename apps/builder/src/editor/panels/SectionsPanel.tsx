@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { presetDrag } from '@/editor/dnd'
 import { usePresetCss } from '@/editor/panels/presetCss'
 import { SectionPreview } from '@/editor/panels/SectionPreview'
-import { addSection } from '@/store/actions'
+import { placePreset } from '@/store/actions'
 
 function PresetCard({
 	preset,
@@ -32,7 +32,7 @@ function PresetCard({
 
 	const add = () => {
 		try {
-			addSection(preset.id)
+			placePreset(preset.id)
 		} catch (e) {
 			toast.error((e as Error).message)
 		}

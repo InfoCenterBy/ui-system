@@ -1,4 +1,10 @@
-import { ArrowDownIcon, ArrowUpIcon, CopyIcon, Trash2Icon } from 'lucide-react'
+import {
+	ArrowDownIcon,
+	ArrowUpIcon,
+	CopyIcon,
+	ListIcon,
+	Trash2Icon,
+} from 'lucide-react'
 import { ancestorsOf, findElement, sectionOf } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
 import { labelOf } from '@/editor/canvas/nodes'
@@ -10,6 +16,7 @@ import { useRoots } from '@/editor/canvas/useRoots'
 import {
 	deleteNode,
 	duplicateSection,
+	fillMenuWithPages,
 	moveSection,
 	setPartial,
 } from '@/store/actions'
@@ -60,6 +67,17 @@ function PartialActions({ name }: { name: 'header' | 'footer' }) {
 				Shared {name}: changes appear on every page. A page can hide it
 				in its settings.
 			</p>
+			{name === 'header' && (
+				<Button
+					size='sm'
+					variant='outline'
+					className='w-fit'
+					title='Replace the menu items with links to the site pages'
+					onClick={fillMenuWithPages}
+				>
+					<ListIcon /> Fill menu with pages
+				</Button>
+			)}
 			<Button
 				size='sm'
 				variant='outline'
