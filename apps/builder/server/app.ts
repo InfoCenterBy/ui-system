@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { listAssets, saveUpload } from './assets'
 import { CssBuilder } from './css'
+import { exportSite, type Optimize } from './export'
 import { faceCss, toChoices, toSiteFonts } from './fontCss'
 import { registerFontRoutes, type FetchFn } from './fonts'
 import { HttpError } from './errors'
@@ -16,6 +18,19 @@ export interface AppOptions {
 	recentFile?: string
 	// Used for Google Fonts, replaced in tests
 	fetch?: FetchFn
+	// Image optimizer for the export, replaced in tests
+	optimize?: Optimize
+}
+
+// Opens a folder in the system file manager
+const revealFolder = (dir: string) => {
+	const command =
+		process.platform === 'win32'
+			? 'explorer'
+			: process.platform === 'darwin'
+				? 'open'
+				: 'xdg-open'
+	spawn(command, [dir], { detached: true, stdio: 'ignore' }).unref()
 }
 
 async function body(c: Context): Promise<unknown> {
@@ -183,6 +198,25 @@ export function createApp(options: AppOptions = {}) {
 		}
 		const type = getMimeType(file) ?? 'application/octet-stream'
 		return c.body(new Uint8Array(data), 200, { 'Content-Type': type })
+	})
+
+	app.post('/api/project/export', async (c) => {
+		const optimize =
+			options.optimize ?? (await import('./images')).optimizeImage
+		return c.json(await exportSite(store.require(), optimize))
+	})
+
+	app.post('/api/project/reveal', async (c) => {
+		const project = store.require()
+		const target = (
+			(await body(c).catch(() => ({}))) as { folder?: unknown } | null
+		)?.folder
+		const dir =
+			target === 'dist'
+				? resolveInside(project.path, 'dist')
+				: project.path
+		revealFolder(dir)
+		return c.json({ ok: true })
 	})
 
 	return app

@@ -1,11 +1,11 @@
 ---
 id: "export-css-2026-10-29"
-status: "todo"
+status: "review"
 priority: "high"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T11:52:53.000Z"
 completedAt: null
 labels: ["конструктор", "этап-4"]
 order: "aK"
@@ -17,6 +17,6 @@ Tailwind 4 с плагином daisyUI в Node, только использов�
 
 ## Критерии готовности
 
-- [ ] Один сжатый CSS на сайт
-- [ ] Тема и шрифты внутри
-- [ ] Размер заметно меньше полного daisyUI
+- [x] Один сжатый CSS на сайт
+- [x] Тема и шрифты внутри
+- [x] Размер заметно меньше полного daisyUI

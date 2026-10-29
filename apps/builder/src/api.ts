@@ -54,6 +54,15 @@ async function request<T>(
 	return data as T
 }
 
+export interface ExportResult {
+	dir: string
+	pages: string[]
+	files: number
+	cssBytes: number
+	script: boolean
+	warnings: string[]
+}
+
 export const api = {
 	recent: () => request<RecentProject[]>('GET', '/api/projects/recent'),
 	create: (path: string, name: string) =>
@@ -99,6 +108,9 @@ export const api = {
 		return request<FontChoice>('POST', '/api/project/fonts/local', form)
 	},
 	assets: () => request<Asset[]>('GET', '/api/project/assets'),
+	exportSite: () => request<ExportResult>('POST', '/api/project/export'),
+	reveal: (folder: 'dist' | 'project') =>
+		request<{ ok: true }>('POST', '/api/project/reveal', { folder }),
 	upload: (file: File) => {
 		const form = new FormData()
 		form.append('file', file)

@@ -80,3 +80,17 @@ export const startAutosave = (delay = 700) => {
 		window.removeEventListener('beforeunload', warn)
 	}
 }
+
+// Writes pending edits right away, before closing or exporting
+export const flushSave = async () => {
+	const state = useDocument.getState()
+	if (!state.doc || state.dirty.size === 0) return
+	const keys = state.takeDirty()
+	try {
+		await saveKeys(state.doc, keys)
+		useDocument.getState().finishSave(keys, true)
+	} catch (error) {
+		useDocument.getState().finishSave(keys, false)
+		throw error
+	}
+}

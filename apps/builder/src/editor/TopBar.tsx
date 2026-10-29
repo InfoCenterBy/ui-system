@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { PageSettings } from '@/editor/settings/PageSettings'
+import { ExportButton } from '@/editor/ExportButton'
 import { SiteSettingsDialog } from '@/editor/settings/SiteSettingsDialog'
-import { saveKeys } from '@/store/autosave'
+import { flushSave } from '@/store/autosave'
 import { useDocument, type SaveState } from '@/store/document'
 import { CANVAS_WIDTHS, useProject } from '@/store/project'
 
@@ -44,12 +45,7 @@ export function TopBar() {
 	async function close() {
 		try {
 			// Pending edits are written before the project closes
-			const state = useDocument.getState()
-			if (state.doc && state.dirty.size) {
-				const keys = state.takeDirty()
-				await saveKeys(state.doc, keys)
-				state.finishSave(keys, true)
-			}
+			await flushSave()
 			await api.close()
 			closeProject()
 		} catch (e) {
@@ -138,6 +134,7 @@ export function TopBar() {
 				{SAVE_LABEL[saveState]}
 			</span>
 			<SiteSettingsDialog />
+			<ExportButton />
 			<Button variant='outline' size='sm' onClick={() => void close()}>
 				Close project
 			</Button>

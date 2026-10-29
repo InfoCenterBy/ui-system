@@ -24,7 +24,8 @@ This is a pnpm workspace.
 - `apps/catalog`: the daisyUI component catalog (Vite app).
 - `packages/theme`: `@ui-system/theme`, colors, theme presets and the theme generator logic.
 - `packages/blocks`: `@ui-system/blocks`, HTML component examples and their registry.
-- `apps/builder`: a local site builder. Planned, not added yet.
+- `apps/builder`: a local site builder that exports static HTML and CSS, see below.
+- `packages/core`: `@ui-system/core`, the page tree model, HTML parsing and serialization.
 
 ## Scripts
 
@@ -79,6 +80,17 @@ Every example on a component page runs in its own iframe that reuses the site st
 - "Apply to site" saves the theme and adds a Custom option to the theme menu.
 
 Color math, theme logic and search are covered by tests. Run them with `pnpm test`.
+
+## Site builder
+
+`pnpm builder` starts the builder at http://localhost:5180 (the API runs on 5181; set `BUILDER_PORT` to run a copy on other ports). Type a folder path and create or open a project.
+
+- A project is a folder: `site.json` (name, language, theme, fonts, page order), `pages/*.json`, `partials/header.json` and `footer.json`, `assets/` for uploads and `dist/` for the export. Keep it in git if you like, the JSON is stable and readable.
+- Pages are built from section presets (`packages/blocks/src/sections`). Presets are plain HTML: `data-edit="text|rich|image|link"` marks editable places, `data-repeat` marks items that can be added, removed and reordered. Header and footer presets become shared parts of every page.
+- Double-click text on the canvas to edit it. Images, links, repeat items and section variants are edited in the right panel. Ctrl+Z and Ctrl+Y undo and redo, edits are saved automatically.
+- Site settings hold the language, the asset path prefix, the daisyUI theme and fonts. Fonts come from Google Fonts or local files and are stored in the project, the exported site never calls Google.
+- Export writes `dist/`: one HTML file per page, `assets/site.css` with only the classes in use, `assets/site.js` when a section has inline scripts, images as WebP in several widths with `srcset`, fonts and other files. The canvas and the export CSS come from the same Tailwind and daisyUI build on the server, so the export looks like the canvas.
+- For Bitrix set the asset path prefix to the template folder, for example `/local/templates/site/`, and copy `dist/assets` there.
 
 ## Code style
 
