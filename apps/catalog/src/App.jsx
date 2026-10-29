@@ -5,7 +5,6 @@ import ComponentPage from './pages/componentPage'
 import Colors from './pages/colors'
 import Favorites from './pages/favorites'
 import ThemeGenerator from './pages/themeGenerator'
-import TestPage from './pages/testPage'
 
 function App() {
 	return (
@@ -16,7 +15,6 @@ function App() {
 				<Route path='favorites' element={<Favorites />} />
 				<Route path='colors' element={<Colors />} />
 				<Route path='theme-generator' element={<ThemeGenerator />} />
-				<Route path='test' element={<TestPage />} />
 				<Route path='*' element={<Navigate to='/' replace />} />
 			</Route>
 		</Routes>
