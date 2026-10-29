@@ -156,7 +156,9 @@ export const deleteSelected = () => {
 		deleteNode(selectedId)
 		return
 	}
-	const node = findElement(page.sections, selectedId)
+	const { header, footer } = useDocument.getState().doc!.partials
+	const roots = [header, ...page.sections, footer].filter((n) => n !== null)
+	const node = findElement(roots, selectedId)
 	if (node?.repeat) {
 		try {
 			removeItem(selectedId)

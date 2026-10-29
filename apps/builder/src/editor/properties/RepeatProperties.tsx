@@ -2,11 +2,10 @@ import { ArrowDownIcon, ArrowUpIcon, CopyIcon, Trash2Icon } from 'lucide-react'
 import { repeatItems, type ElementNode } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
 import { addItem, removeItem, shiftItem } from '@/store/actions'
-import { useCurrentPage } from '@/store/project'
+import { useRoots } from '@/editor/canvas/useRoots'
 
 export function RepeatProperties({ item }: { item: ElementNode }) {
-	const page = useCurrentPage()
-	const items = page ? repeatItems(page.sections, item.id) : []
+	const items = repeatItems(useRoots(), item.id)
 	const position = items.findIndex((i) => i.id === item.id)
 	if (position < 0) return null
 	return (

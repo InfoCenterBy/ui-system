@@ -1,11 +1,11 @@
 ---
 id: "site-theme-2026-10-29"
-status: "todo"
+status: "in-progress"
 priority: "medium"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T11:19:29.000Z"
 completedAt: null
 labels: ["конструктор", "этап-3"]
 order: "aG"

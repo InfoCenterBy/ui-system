@@ -9,6 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
+import { SiteSettingsDialog } from '@/editor/settings/SiteSettingsDialog'
 import { saveKeys } from '@/store/autosave'
 import { useDocument, type SaveState } from '@/store/document'
 import { CANVAS_WIDTHS, useProject } from '@/store/project'
@@ -120,6 +121,7 @@ export function TopBar() {
 			>
 				{SAVE_LABEL[saveState]}
 			</span>
+			<SiteSettingsDialog />
 			<Button variant='outline' size='sm' onClick={() => void close()}>
 				Close project
 			</Button>

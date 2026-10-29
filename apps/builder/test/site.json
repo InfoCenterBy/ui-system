@@ -1,0 +1,15 @@
+{
+	"version": 1,
+	"name": "test-site",
+	"lang": "ru",
+	"pathPrefix": "",
+	"theme": {
+		"name": "light",
+		"vars": {}
+	},
+	"fonts": {
+		"heading": null,
+		"body": null
+	},
+	"pages": ["home"]
+}

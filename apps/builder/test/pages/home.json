@@ -1,0 +1,118 @@
+{
+	"id": "home",
+	"slug": "index",
+	"name": "Home",
+	"meta": {
+		"title": "test-site",
+		"description": "",
+		"ogImage": null
+	},
+	"showHeader": true,
+	"showFooter": true,
+	"sections": [
+		{
+			"id": "wjdiwn6yvg",
+			"type": "element",
+			"tag": "section",
+			"classes": "hero min-h-[28rem] bg-base-200",
+			"attrs": {},
+			"children": [
+				{
+					"id": "thyybpkwty",
+					"type": "element",
+					"tag": "div",
+					"classes": "hero-content text-center",
+					"attrs": {},
+					"children": [
+						{
+							"id": "c2v8dn2dx4",
+							"type": "element",
+							"tag": "div",
+							"classes": "max-w-xl",
+							"attrs": {},
+							"children": [
+								{
+									"id": "7zyds7ocon",
+									"type": "element",
+									"tag": "h1",
+									"classes": "text-4xl font-bold md:text-5xl",
+									"attrs": {},
+									"children": [
+										{
+											"id": "smlvro5jt0",
+											"type": "text",
+											"text": "Build pages from ready sections"
+										}
+									],
+									"slot": "text"
+								},
+								{
+									"id": "wb70874bkw",
+									"type": "element",
+									"tag": "p",
+									"classes": "py-6 text-base-content/70",
+									"attrs": {},
+									"children": [
+										{
+											"id": "8a8q3yj7l3",
+											"type": "text",
+											"text": "Pick a section, change the texts and images, export clean HTML."
+										}
+									],
+									"slot": "rich"
+								},
+								{
+									"id": "2gzbnn5ha6",
+									"type": "element",
+									"tag": "div",
+									"classes": "flex flex-wrap justify-center gap-3",
+									"attrs": {},
+									"children": [
+										{
+											"id": "tehby5i3h2",
+											"type": "element",
+											"tag": "a",
+											"classes": "btn btn-primary",
+											"attrs": {
+												"href": "#"
+											},
+											"children": [
+												{
+													"id": "s9zyg5yqzt",
+													"type": "text",
+													"text": "Get started123"
+												}
+											],
+											"slot": "link"
+										},
+										{
+											"id": "zfw1qoqvg0",
+											"type": "element",
+											"tag": "a",
+											"classes": "btn btn-ghost",
+											"attrs": {
+												"href": "#"
+											},
+											"children": [
+												{
+													"id": "kpp3xor0bv",
+													"type": "text",
+													"text": "Learn more"
+												}
+											],
+											"slot": "link"
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			],
+			"section": {
+				"preset": "hero-centered",
+				"locked": true
+			}
+		}
+	]
+}
