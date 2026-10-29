@@ -1,11 +1,11 @@
 ---
 id: "builder-app-shell-2026-10-29"
-status: "todo"
+status: "review"
 priority: "high"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T10:42:56.000Z"
 completedAt: null
 labels: ["конструктор", "этап-1"]
 order: "a4"
@@ -17,6 +17,6 @@ order: "a4"
 
 ## Критерии готовности
 
-- [ ] Vite, React, TS, Tailwind, shadcn/ui
-- [ ] Раскладка: панель слева, холст, панель справа
-- [ ] Одна команда запускает сервер и интерфейс
+- [x] Vite, React, TS, Tailwind, shadcn/ui
+- [x] Раскладка: панель слева, холст, панель справа
+- [x] Одна команда запускает сервер и интерфейс

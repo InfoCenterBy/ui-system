@@ -4,13 +4,19 @@
 	"version": "0.0.0",
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./sections": "./src/sections/index.ts"
 	},
 	"scripts": {
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
 	},
 	"devDependencies": {
 		"typescript": "^5.9.3",
-		"vite": "^8.3.5"
+		"vite": "^8.3.5",
+		"vitest": "^5.0.5"
+	},
+	"dependencies": {
+		"@ui-system/core": "workspace:*"
 	}
 }

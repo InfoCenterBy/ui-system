@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"composite": true,
+		"emitDeclarationOnly": true,
+		"noEmit": false,
+		"outDir": "./node_modules/.tmp/app",
+		"tsBuildInfoFile": "./node_modules/.tmp/app.tsbuildinfo",
+		"jsx": "react-jsx",
+		"types": ["vite/client"],
+		"baseUrl": ".",
+		"paths": { "@/*": ["./src/*"] }
+	},
+	"include": ["src", "vite.config.ts"]
+}

@@ -1,11 +1,11 @@
 ---
 id: "core-tree-model-2026-10-29"
-status: "todo"
+status: "review"
 priority: "high"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T09:20:34.000Z"
+modified: "2026-10-29T10:06:09.000Z"
 completedAt: null
 labels: ["конструктор", "этап-1"]
 order: "a5"
@@ -17,6 +17,6 @@ order: "a5"
 
 ## Критерии готовности
 
-- [ ] Типы Site, Page, Node, Slot
-- [ ] Операции вставки, удаления, перемещения, правки с тестами
-- [ ] Стабильные id узлов
+- [x] Типы Site, Page, Node, Slot
+- [x] Операции вставки, удаления, перемещения, правки с тестами
+- [x] Стабильные id узлов
