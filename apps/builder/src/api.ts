@@ -7,6 +7,13 @@ export interface Project {
 	partials: Partials
 }
 
+export interface Asset {
+	path: string
+	name: string
+	size: number
+	kind: 'image' | 'font'
+}
+
 export interface RecentProject {
 	path: string
 	name: string
@@ -52,6 +59,7 @@ export const api = {
 		request<{ ok: true }>('PUT', `/api/project/partials/${name}`, value),
 	css: (classes: string[], theme: Site['theme']) =>
 		request<{ css: string }>('POST', '/api/css', { classes, theme }),
+	assets: () => request<Asset[]>('GET', '/api/project/assets'),
 	upload: (file: File) => {
 		const form = new FormData()
 		form.append('file', file)

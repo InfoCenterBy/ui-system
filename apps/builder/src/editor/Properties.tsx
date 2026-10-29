@@ -1,7 +1,11 @@
 import { ArrowDownIcon, ArrowUpIcon, CopyIcon, Trash2Icon } from 'lucide-react'
-import { findElement } from '@ui-system/core'
+import { ancestorsOf, findElement, sectionOf } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
 import { labelOf } from '@/editor/canvas/nodes'
+import { ImageProperties } from '@/editor/properties/ImageProperties'
+import { LinkProperties } from '@/editor/properties/LinkProperties'
+import { RepeatProperties } from '@/editor/properties/RepeatProperties'
+import { VariantSelect } from '@/editor/properties/VariantSelect'
 import { deleteNode, duplicateSection, moveSection } from '@/store/actions'
 import { useCurrentPage, useProject } from '@/store/project'
 
@@ -43,24 +47,69 @@ function SectionActions({ id }: { id: string }) {
 
 export function Properties() {
 	const selectedId = useProject((s) => s.selectedId)
+	const select = useProject((s) => s.select)
 	const page = useCurrentPage()
 	const node =
 		selectedId && page ? findElement(page.sections, selectedId) : null
 
+	if (!page || !node) {
+		return (
+			<aside className='flex h-full flex-col'>
+				<h2 className='border-b px-3 py-2 text-sm font-medium'>
+					{page?.name ?? 'Properties'}
+				</h2>
+				{page && (
+					<div className='flex flex-col gap-1 p-3 text-sm'>
+						<p>
+							{page.sections.length}{' '}
+							{page.sections.length === 1
+								? 'section'
+								: 'sections'}
+						</p>
+						<p className='text-muted-foreground'>
+							Select an element on the canvas to edit it
+						</p>
+					</div>
+				)}
+			</aside>
+		)
+	}
+
+	const section = sectionOf(page.sections, node.id)
+	const item = node.repeat
+		? node
+		: ancestorsOf(page.sections, node.id).findLast((a) => a.repeat)
+
 	return (
-		<aside className='flex h-full flex-col'>
-			<h2 className='border-b px-3 py-2 text-sm font-medium'>
-				{node ? labelOf(node) : 'Properties'}
-			</h2>
-			{node ? (
-				<div className='flex flex-col gap-3 p-3'>
-					{node.section && <SectionActions id={node.id} />}
-				</div>
-			) : (
-				<p className='text-muted-foreground p-3 text-sm'>
-					Select an element
-				</p>
-			)}
+		<aside className='flex h-full flex-col overflow-y-auto'>
+			<div className='flex flex-col gap-0.5 border-b px-3 py-2'>
+				{section && section.id !== node.id && (
+					<button
+						type='button'
+						className='text-muted-foreground hover:text-foreground w-fit text-xs'
+						onClick={() => select(section.id)}
+					>
+						{labelOf(section)}
+					</button>
+				)}
+				<h2 className='text-sm font-medium'>{labelOf(node)}</h2>
+			</div>
+			<div className='flex flex-col gap-4 p-3'>
+				{node.section && (
+					<>
+						<VariantSelect section={node} />
+						<SectionActions id={node.id} />
+					</>
+				)}
+				{node.slot === 'image' && <ImageProperties node={node} />}
+				{node.slot === 'link' && <LinkProperties node={node} />}
+				{(node.slot === 'text' || node.slot === 'rich') && (
+					<p className='text-muted-foreground text-sm'>
+						Double-click the text on the canvas to edit it
+					</p>
+				)}
+				{item && <RepeatProperties item={item} />}
+			</div>
 		</aside>
 	)
 }

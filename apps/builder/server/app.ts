@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
-import { saveUpload } from './assets'
+import { listAssets, saveUpload } from './assets'
 import { CssBuilder } from './css'
 import { HttpError } from './errors'
 import { resolveInside } from './fs-utils'
@@ -109,6 +109,10 @@ export function createApp(options: AppOptions = {}) {
 		await store.savePartial(name as PartialName, value)
 		return c.json({ ok: true })
 	})
+
+	app.get('/api/project/assets', async (c) =>
+		c.json(await listAssets(store.assetsDir()))
+	)
 
 	app.post('/api/project/assets', async (c) => {
 		const dir = store.assetsDir()

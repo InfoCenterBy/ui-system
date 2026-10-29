@@ -1,6 +1,8 @@
 import {
 	addRepeatItem,
+	cloneNode,
 	duplicateNode,
+	isElement,
 	findElement,
 	locate,
 	parseSection,
@@ -10,7 +12,10 @@ import {
 	replaceChildren,
 	shiftRepeatItem,
 	updateElement,
+	walk,
+	type ElementNode,
 	type ElementPatch,
+	type SlotKind,
 	type NodeId,
 	type TreeNode,
 } from '@ui-system/core'
@@ -159,4 +164,57 @@ export const deleteSelected = () => {
 			// The last item of a group stays
 		}
 	}
+}
+
+const slotsByKind = (section: ElementNode) => {
+	const found: Record<SlotKind, ElementNode[]> = {
+		text: [],
+		rich: [],
+		image: [],
+		link: [],
+	}
+	walk(section.children, (node) => {
+		if (isElement(node) && node.slot) found[node.slot].push(node)
+	})
+	return found
+}
+
+// Replaces a section with another preset, slot contents carry over by order of kind
+export const switchVariant = (sectionId: NodeId, presetId: string) => {
+	const preset = getSectionPreset(presetId)
+	if (!preset) throw new Error(`Unknown section ${presetId}`)
+	useDocument.getState().edit('Switch variant', (draft) => {
+		const sections = draft.pages[pageId()].sections
+		const index = sections.findIndex((s) => s.id === sectionId)
+		if (index < 0) return
+		const next = parseSection(preset)
+		const from = slotsByKind(sections[index])
+		const to = slotsByKind(next)
+		for (const kind of ['text', 'rich', 'link'] as const) {
+			to[kind].forEach((target, n) => {
+				const source = from[kind][n]
+				if (!source) return
+				target.children = source.children.map((child) =>
+					cloneNode(child, randomId)
+				)
+				if (kind !== 'link') return
+				for (const name of ['href', 'target', 'rel']) {
+					if (name in source.attrs)
+						target.attrs[name] = source.attrs[name]
+					else delete target.attrs[name]
+				}
+			})
+		}
+		to.image.forEach((target, n) => {
+			const source = from.image[n]
+			if (!source) return
+			for (const name of ['src', 'alt']) {
+				if (name in source.attrs)
+					target.attrs[name] = source.attrs[name]
+			}
+		})
+		next.id = sectionId
+		sections[index] = next
+	})
+	useProject.getState().select(sectionId)
 }

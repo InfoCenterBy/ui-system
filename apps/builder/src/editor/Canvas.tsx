@@ -8,8 +8,12 @@ import {
 	syncRoots,
 } from '@/editor/canvas/frame'
 import { pickTarget } from '@/editor/canvas/nodes'
+import { DropIndicator } from '@/editor/canvas/DropIndicator'
+import { InlineToolbar } from '@/editor/canvas/InlineToolbar'
 import { Overlay } from '@/editor/canvas/Overlay'
 import { useCanvasCss } from '@/editor/canvas/useCanvasCss'
+import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
+import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
 import { useRoots } from '@/editor/canvas/useRoots'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
@@ -63,6 +67,7 @@ export function Canvas() {
 	}, [doc, cache, roots, editingRoot])
 
 	useCanvasCss(doc, roots, theme)
+	useInlineEditing(doc, rootsRef)
 
 	// Pointer and form events stay inside the canvas
 	useEffect(() => {
@@ -99,6 +104,7 @@ export function Canvas() {
 	const available = Math.max(size.width - PADDING * 2, 100)
 	const scale = Math.min(1, available / width)
 	const height = Math.max(size.height - PADDING * 2, 100) / scale
+	const drop = useCanvasDrop(scale)
 
 	return (
 		<div
@@ -130,6 +136,8 @@ export function Canvas() {
 					}
 				/>
 				<Overlay scale={scale} />
+				<DropIndicator drop={drop} scale={scale} />
+				<InlineToolbar scale={scale} />
 			</div>
 		</div>
 	)

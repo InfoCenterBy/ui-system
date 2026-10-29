@@ -1,4 +1,11 @@
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import {
+	mkdtemp,
+	readFile,
+	readdir,
+	rm,
+	utimes,
+	writeFile,
+} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -231,6 +238,31 @@ describe('assets', () => {
 		expect(res.headers.get('Content-Type')).toBe('image/png')
 		expect(await res.text()).toBe('abc')
 		expect((await app.request('/assets/missing.png')).status).toBe(404)
+	})
+
+	it('lists assets, images first and newest first', async () => {
+		const { dir } = await createProject()
+		await upload('old.png', 'a')
+		await upload('face.woff2', 'f', 'font/woff2')
+		await upload('new.png', 'bb')
+		const now = Date.now() / 1000
+		await utimes(path.join(dir, 'assets/old.png'), now - 100, now - 100)
+		const res = await app.request('/api/project/assets')
+		expect(res.status).toBe(200)
+		expect(await res.json()).toEqual([
+			{ path: 'assets/new.png', name: 'new.png', size: 2, kind: 'image' },
+			{ path: 'assets/old.png', name: 'old.png', size: 1, kind: 'image' },
+			{
+				path: 'assets/face.woff2',
+				name: 'face.woff2',
+				size: 1,
+				kind: 'font',
+			},
+		])
+	})
+
+	it('answers 404 for the asset list when no project is open', async () => {
+		expect((await app.request('/api/project/assets')).status).toBe(404)
 	})
 
 	it('rejects disallowed types and big files', async () => {
