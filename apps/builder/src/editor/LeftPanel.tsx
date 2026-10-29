@@ -1,6 +1,7 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LayersPanel } from '@/editor/panels/LayersPanel'
+import { PagesPanel } from '@/editor/panels/PagesPanel'
 import { SectionsPanel } from '@/editor/panels/SectionsPanel'
 
 const TABS = ['Sections', 'Pages', 'Layers'] as const
@@ -23,9 +24,7 @@ export function LeftPanel() {
 						) : t === 'Layers' ? (
 							<LayersPanel />
 						) : (
-							<p className='text-muted-foreground p-3 text-sm'>
-								{t} go here.
-							</p>
+							<PagesPanel />
 						)}
 					</ScrollArea>
 				</TabsContent>

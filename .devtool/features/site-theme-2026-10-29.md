@@ -1,11 +1,11 @@
 ---
 id: "site-theme-2026-10-29"
-status: "in-progress"
+status: "review"
 priority: "medium"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T11:19:29.000Z"
+modified: "2026-10-29T11:43:23.000Z"
 completedAt: null
 labels: ["конструктор", "этап-3"]
 order: "aG"
@@ -17,6 +17,6 @@ order: "aG"
 
 ## Критерии готовности
 
-- [ ] Выбор пресета и правка цветов, радиусов
-- [ ] Холст сразу показывает тему
-- [ ] Тема сохраняется в site.json
+- [x] Выбор пресета и правка цветов, радиусов
+- [x] Холст сразу показывает тему
+- [x] Тема сохраняется в site.json

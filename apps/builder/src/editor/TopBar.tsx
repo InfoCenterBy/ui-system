@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChevronDownIcon, Redo2Icon, Undo2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/api'
@@ -6,9 +7,11 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
+import { PageSettings } from '@/editor/settings/PageSettings'
 import { SiteSettingsDialog } from '@/editor/settings/SiteSettingsDialog'
 import { saveKeys } from '@/store/autosave'
 import { useDocument, type SaveState } from '@/store/document'
@@ -36,6 +39,7 @@ export function TopBar() {
 	const setCanvasWidth = useProject((s) => s.setCanvasWidth)
 	const closeProject = useProject((s) => s.closeProject)
 	const page = pages.find((p) => p.id === currentPageId)
+	const [pageSettings, setPageSettings] = useState(false)
 
 	async function close() {
 		try {
@@ -74,8 +78,20 @@ export function TopBar() {
 							{p.name}
 						</DropdownMenuItem>
 					))}
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						disabled={!page}
+						onSelect={() => setPageSettings(true)}
+					>
+						Page settings…
+					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
+			<PageSettings
+				pageId={currentPageId}
+				open={pageSettings}
+				onOpenChange={setPageSettings}
+			/>
 
 			<div className='mx-auto flex gap-1'>
 				{CANVAS_WIDTHS.map(({ label, width }) => (

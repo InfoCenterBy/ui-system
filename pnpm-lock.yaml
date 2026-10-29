@@ -65,6 +65,9 @@ importers:
       '@ui-system/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ui-system/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

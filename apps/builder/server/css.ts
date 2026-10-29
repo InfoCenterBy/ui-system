@@ -2,6 +2,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compile } from '@tailwindcss/node'
 import { HttpError } from './errors'
+import { fontCss, type SiteFonts } from './fontCss'
+
+export { fontCss }
 
 export interface SiteTheme {
 	name: string
@@ -39,7 +42,11 @@ const checkTheme = (theme: SiteTheme) => {
 export class CssBuilder {
 	private compilers = new Map<string, Promise<Compiler>>()
 
-	async build(classes: Iterable<string>, theme: SiteTheme) {
+	async build(
+		classes: Iterable<string>,
+		theme: SiteTheme,
+		fonts?: SiteFonts
+	) {
 		checkTheme(theme)
 		let compiler = this.compilers.get(theme.name)
 		if (!compiler) {
@@ -47,16 +54,22 @@ export class CssBuilder {
 			this.compilers.set(theme.name, compiler)
 		}
 		const css = (await compiler).build([...classes])
-		return css + themeOverrides(theme.vars)
+		return css + themeOverrides(theme.vars) + fontCss(fonts, '')
 	}
 }
 
 // Export CSS holds exactly the classes of the site, nothing left from editing
 export const buildExportCss = async (
 	classes: Iterable<string>,
-	theme: SiteTheme
+	theme: SiteTheme,
+	fonts?: SiteFonts,
+	prefix = ''
 ) => {
 	checkTheme(theme)
 	const compiler = await createCompiler(theme.name)
-	return compiler.build([...classes]) + themeOverrides(theme.vars)
+	return (
+		compiler.build([...classes]) +
+		themeOverrides(theme.vars) +
+		fontCss(fonts, prefix)
+	)
 }

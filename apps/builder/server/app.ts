@@ -3,6 +3,8 @@ import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { listAssets, saveUpload } from './assets'
 import { CssBuilder } from './css'
+import { faceCss, toChoices, toSiteFonts } from './fontCss'
+import { registerFontRoutes, type FetchFn } from './fonts'
 import { HttpError } from './errors'
 import { resolveInside } from './fs-utils'
 import { ProjectStore, type PartialName } from './project'
@@ -12,6 +14,8 @@ import { assertPage, assertPartial, assertSite, assertString } from './validate'
 export interface AppOptions {
 	// Where recent projects are stored, defaults to ~/.ui-builder/recent.json
 	recentFile?: string
+	// Used for Google Fonts, replaced in tests
+	fetch?: FetchFn
 }
 
 async function body(c: Context): Promise<unknown> {
@@ -33,6 +37,7 @@ export function createApp(options: AppOptions = {}) {
 	const store = new ProjectStore()
 	const css = new CssBuilder()
 	const app = new Hono()
+	registerFontRoutes(app, () => store.assetsDir(), options.fetch ?? fetch)
 
 	app.onError((err, c) => {
 		if (err instanceof HttpError) {
@@ -131,6 +136,7 @@ export function createApp(options: AppOptions = {}) {
 		const data = (await body(c)) as {
 			classes?: unknown
 			theme?: { name?: unknown; vars?: unknown }
+			fonts?: unknown
 		}
 		const { classes, theme } = data
 		if (
@@ -146,11 +152,18 @@ export function createApp(options: AppOptions = {}) {
 		) {
 			throw new HttpError(400, 'theme needs a name and vars')
 		}
-		const text = await css.build(classes, {
-			name: theme.name,
-			vars: theme.vars as Record<string, string>,
-		})
+		const text = await css.build(
+			classes,
+			{ name: theme.name, vars: theme.vars as Record<string, string> },
+			toSiteFonts(data.fonts)
+		)
 		return c.json({ css: text })
+	})
+
+	// Font rules for the settings dialog, files are served from /assets
+	app.post('/api/fonts/css', async (c) => {
+		const data = (await body(c)) as { choices?: unknown }
+		return c.json({ css: faceCss(toChoices(data.choices), '/') })
 	})
 
 	app.get('/assets/*', async (c) => {

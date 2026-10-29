@@ -17,6 +17,7 @@
 		"@tailwindcss/vite": "^4.3.3",
 		"@ui-system/blocks": "workspace:*",
 		"@ui-system/core": "workspace:*",
+		"@ui-system/theme": "workspace:*",
 		"class-variance-authority": "^0.7.1",
 		"cn": "^0.5.0",
 		"daisyui": "^5.7.50",

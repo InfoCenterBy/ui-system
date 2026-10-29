@@ -24,3 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 .publish/
+
+# Local builder projects made while trying the app
+apps/builder/test/

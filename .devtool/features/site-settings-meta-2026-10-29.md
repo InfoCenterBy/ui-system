@@ -1,11 +1,11 @@
 ---
 id: "site-settings-meta-2026-10-29"
-status: "in-progress"
+status: "review"
 priority: "medium"
 assignee: null
 dueDate: null
 created: "2026-10-29T09:20:34.000Z"
-modified: "2026-10-29T11:19:29.000Z"
+modified: "2026-10-29T11:43:24.000Z"
 completedAt: null
 labels: ["конструктор", "этап-3"]
 order: "aI"
@@ -17,5 +17,5 @@ order: "aI"
 
 ## Критерии готовности
 
-- [ ] Название сайта, язык, префикс путей
-- [ ] title, description, og:image у страницы
+- [x] Название сайта, язык, префикс путей
+- [x] title, description, og:image у страницы

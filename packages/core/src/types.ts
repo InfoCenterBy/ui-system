@@ -53,7 +53,15 @@ export interface Page {
 export interface FontChoice {
 	family: string
 	// Files in assets/fonts, imported from Google Fonts or from disk
-	files: { weight: number; style: 'normal' | 'italic'; file: string }[]
+	files: FontFile[]
+}
+
+export interface FontFile {
+	weight: number
+	style: 'normal' | 'italic'
+	file: string
+	// Set for Google Fonts subsets so each file only covers its own characters
+	unicodeRange?: string
 }
 
 export interface Site {

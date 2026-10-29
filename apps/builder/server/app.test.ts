@@ -10,6 +10,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from './app'
+import { GOOGLE_SAMPLE, METADATA_SAMPLE } from './fonts.fixture'
 
 let tmp: string
 let app: ReturnType<typeof createApp>
@@ -348,5 +349,153 @@ describe('css', () => {
 				})
 			).status
 		).toBe(400)
+	})
+})
+
+describe('fonts', () => {
+	const googleFetch = async (url: string) => {
+		if (url.includes('fonts.googleapis.com')) {
+			return url.includes('Nope')
+				? new Response('bad', { status: 400 })
+				: new Response(GOOGLE_SAMPLE)
+		}
+		if (url.includes('fonts.google.com/metadata')) {
+			return new Response(METADATA_SAMPLE)
+		}
+		return new Response(new Uint8Array([1, 2, 3]))
+	}
+
+	const withFetch = (fn: (url: string) => Promise<Response>) => {
+		app = createApp({
+			recentFile: path.join(tmp, 'recent.json'),
+			fetch: fn,
+		})
+	}
+
+	const importFont = (family: string, italic = false) =>
+		send('POST', '/api/project/fonts/google', {
+			family,
+			weights: [400, 700],
+			italic,
+		})
+
+	const localForm = (name: string, family = 'My Font') => {
+		const form = new FormData()
+		form.append('family', family)
+		form.append('weight', '600')
+		form.append('style', 'italic')
+		form.append('files', new File(['a'], name))
+		return form
+	}
+
+	it('imports a Google family into assets/fonts', async () => {
+		withFetch(googleFetch)
+		const { dir } = await createProject()
+		const res = await importFont('Inter', true)
+		expect(res.status).toBe(200)
+		const choice = await res.json()
+		expect(choice.family).toBe('Inter')
+		expect(choice.files.map((f: { file: string }) => f.file)).toEqual([
+			'assets/fonts/inter-400-cyrillic.woff2',
+			'assets/fonts/inter-700-italic-latin.woff2',
+		])
+		expect(choice.files[1].unicodeRange).toBe('U+0000-00FF, U+0131')
+		const names = await readdir(path.join(dir, 'assets', 'fonts'))
+		expect(names).toContain('inter-400-cyrillic.woff2')
+		const list = await (await send('GET', '/api/project/fonts')).json()
+		expect(list).toEqual([choice])
+	})
+
+	it('answers 404 for an unknown family', async () => {
+		withFetch(googleFetch)
+		await createProject()
+		const res = await importFont('Nope')
+		expect(res.status).toBe(404)
+		expect((await res.json()).error).toContain('Nope')
+	})
+
+	it('answers 502 when the network fails', async () => {
+		withFetch(async () => {
+			throw new TypeError('fetch failed')
+		})
+		await createProject()
+		const res = await importFont('Inter')
+		expect(res.status).toBe(502)
+		expect((await res.json()).error).toContain('connection')
+	})
+
+	it('rejects a bad family name', async () => {
+		withFetch(googleFetch)
+		await createProject()
+		expect((await importFont('../x')).status).toBe(400)
+	})
+
+	it('suggests families, prefix matches first', async () => {
+		withFetch(googleFetch)
+		const res = await send('GET', '/api/fonts/google/search?q=in')
+		const names = (await res.json()).map(
+			(f: { family: string }) => f.family
+		)
+		expect(names).toEqual(['Intel One', 'Inter', 'Mint'])
+	})
+
+	it('returns no suggestions when the list is unreachable', async () => {
+		withFetch(async () => {
+			throw new TypeError('fetch failed')
+		})
+		const res = await send('GET', '/api/fonts/google/search?q=in')
+		expect(await res.json()).toEqual([])
+	})
+
+	it('saves local font files and lists the family', async () => {
+		const { dir } = await createProject()
+		const post = (form: FormData) =>
+			app.request('/api/project/fonts/local', {
+				method: 'POST',
+				body: form,
+			})
+		const res = await post(localForm('My Font.woff2'))
+		expect(res.status).toBe(200)
+		const second = await (await post(localForm('Other.ttf'))).json()
+		expect(second.files.map((f: { file: string }) => f.file)).toEqual([
+			'assets/fonts/my-font.woff2',
+			'assets/fonts/other.ttf',
+		])
+		expect(await readdir(path.join(dir, 'assets', 'fonts'))).toContain(
+			'other.ttf'
+		)
+		expect(await (await send('GET', '/api/project/fonts')).json()).toEqual([
+			second,
+		])
+	})
+
+	it('refuses local files that are not fonts', async () => {
+		await createProject()
+		const res = await app.request('/api/project/fonts/local', {
+			method: 'POST',
+			body: localForm('x.png'),
+		})
+		expect(res.status).toBe(415)
+	})
+
+	it('adds fonts to the canvas css and serves dialog face rules', async () => {
+		const body = {
+			family: 'Inter',
+			files: [
+				{ weight: 400, style: 'normal', file: 'assets/fonts/a.woff2' },
+			],
+		}
+		const res = await send('POST', '/api/css', {
+			classes: ['p-4'],
+			theme: { name: 'light', vars: {} },
+			fonts: { heading: null, body },
+		})
+		const { css } = await res.json()
+		expect(css).toContain('@font-face')
+		expect(css).toContain('url("assets/fonts/a.woff2")')
+		const faces = await send('POST', '/api/fonts/css', { choices: [body] })
+		expect((await faces.json()).css).toContain(
+			'url("/assets/fonts/a.woff2")'
+		)
 	})
 })
