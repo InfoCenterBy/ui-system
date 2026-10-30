@@ -8,6 +8,7 @@ const SLOT_KINDS: SlotKind[] = ['text', 'rich', 'image', 'link']
 // Builder markers in section HTML, they never reach the export
 const EDIT_ATTR = 'data-edit'
 const REPEAT_ATTR = 'data-repeat'
+const LABEL_ATTR = 'data-label'
 
 const RAW_TEXT = new Set(['script', 'style'])
 const KEEP_WHITESPACE = new Set(['pre', 'textarea', 'script', 'style'])
@@ -143,6 +144,7 @@ const toTree = (
 			class: classes = '',
 			[EDIT_ATTR]: edit,
 			[REPEAT_ATTR]: repeat,
+			[LABEL_ATTR]: label,
 			...attrs
 		} = node.attribs
 		const element: ElementNode = {
@@ -162,6 +164,7 @@ const toTree = (
 			element.slot = edit as SlotKind
 		}
 		if (repeat !== undefined) element.repeat = repeat || 'item'
+		if (label) element.label = label
 		result.push(element)
 	}
 	return result
@@ -179,7 +182,7 @@ export const parseHtml = (
 	return toTree(doc.children, newId, false)
 }
 
-// A preset becomes one locked section element
+// A preset becomes one section element, locked unless the preset opts out
 export const parseSection = (
 	preset: SectionPreset,
 	newId: IdFactory = randomId
@@ -193,7 +196,7 @@ export const parseSection = (
 			`Section "${preset.id}" must have exactly one root element`
 		)
 	}
-	root.section = { preset: preset.id, locked: true }
+	root.section = { preset: preset.id, locked: preset.locked ?? true }
 	return root
 }
 
@@ -204,7 +207,7 @@ const escapeAttr = (value: string) =>
 	value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 
 export interface SerializeOptions {
-	// Keep data-edit and data-repeat, for section presets
+	// Keep data-edit, data-repeat and data-label, for section presets
 	markers?: boolean
 	// One element per line with indentation where it does not change rendering
 	pretty?: boolean
@@ -223,6 +226,7 @@ const attributes = (node: ElementNode, markers: boolean, nodeIds: boolean) => {
 	if (markers && node.slot) entries.push([EDIT_ATTR, node.slot])
 	if (markers && node.repeat)
 		entries.push([REPEAT_ATTR, node.repeat === 'item' ? '' : node.repeat])
+	if (markers && node.label) entries.push([LABEL_ATTR, node.label])
 	return entries
 		.map(([name, value]) =>
 			value === '' && (BOOLEAN_ATTRS.has(name) || name === REPEAT_ATTR)

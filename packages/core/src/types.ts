@@ -15,6 +15,8 @@ export interface ElementNode {
 	slot?: SlotKind
 	// Items sharing a repeat group can be added, removed and reordered
 	repeat?: string
+	// Name shown in the layers panel, set with data-label in library HTML
+	label?: string
 	section?: SectionInfo
 	// Set on the root of a component instance
 	instance?: InstanceInfo
@@ -104,5 +106,7 @@ export interface SectionPreset {
 	category: string
 	// Presets in one group are layout variants of each other
 	group?: string
+	// Presets start locked unless this is false
+	locked?: boolean
 	html: string
 }

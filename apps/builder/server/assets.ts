@@ -81,3 +81,24 @@ export async function listAssets(dir: string): Promise<AssetInfo[]> {
 		kind: item.kind,
 	}))
 }
+
+// Neutral 16:9 stand-in for demo images in inserted library elements
+export const PLACEHOLDER_NAME = 'placeholder.svg'
+
+const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+	<rect width="640" height="360" fill="#e5e7eb"/>
+	<g fill="none" stroke="#9ca3af" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+		<rect x="240" y="120" width="160" height="120" rx="12"/>
+		<path d="M240 220l45-45 35 35 25-25 55 55"/>
+	</g>
+	<circle cx="296" cy="160" r="12" fill="#9ca3af"/>
+</svg>
+`
+
+// Writes the placeholder when missing, an edited copy stays as it is
+export async function ensurePlaceholder(dir: string): Promise<string> {
+	const file = path.join(dir, PLACEHOLDER_NAME)
+	if (!(await stat(file).catch(() => null)))
+		await writeAtomic(file, PLACEHOLDER_SVG)
+	return PLACEHOLDER_NAME
+}

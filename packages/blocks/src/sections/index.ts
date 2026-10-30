@@ -23,6 +23,7 @@ export const sectionCategories: SectionCategory[] = [
 	{ id: 'blog', name: 'Blog' },
 	{ id: 'gallery', name: 'Gallery' },
 	{ id: 'content', name: 'Content' },
+	{ id: 'custom', name: 'Custom' },
 	{ id: 'contact', name: 'Contact' },
 	{ id: 'cta', name: 'Call to action' },
 	{ id: 'error', name: 'Error pages' },
@@ -197,6 +198,14 @@ const presetMeta: Omit<SectionPreset, 'html'>[] = [
 		name: 'Article',
 		category: 'content',
 		group: 'content',
+	},
+	{
+		id: 'custom-block',
+		name: 'Custom block',
+		category: 'custom',
+		group: 'custom',
+		// Starts as a free tree, the user fills it with library elements
+		locked: false,
 	},
 	{ id: 'error-404', name: 'Not found', category: 'error', group: 'error' },
 	{

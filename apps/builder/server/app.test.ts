@@ -390,6 +390,24 @@ describe('assets', () => {
 		expect((await upload('big.png', big)).status).toBe(413)
 	})
 
+	it('creates the placeholder once and keeps an edited copy', async () => {
+		const { dir } = await createProject()
+		const res = await send('POST', '/api/project/assets/placeholder')
+		expect(await res.json()).toEqual({ path: 'assets/placeholder.svg' })
+		const file = path.join(dir, 'assets/placeholder.svg')
+		expect(await readFile(file, 'utf8')).toMatch(/^<svg/)
+		await writeFile(file, 'mine')
+		await send('POST', '/api/project/assets/placeholder')
+		expect(await readFile(file, 'utf8')).toBe('mine')
+		const served = await app.request('/assets/placeholder.svg')
+		expect(served.headers.get('Content-Type')).toContain('image/svg')
+	})
+
+	it('answers 404 for the placeholder when no project is open', async () => {
+		const res = await send('POST', '/api/project/assets/placeholder')
+		expect(res.status).toBe(404)
+	})
+
 	it('rejects a request without a file', async () => {
 		await createProject()
 		const res = await app.request('/api/project/assets', {

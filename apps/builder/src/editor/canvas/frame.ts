@@ -1,6 +1,16 @@
-import { NODE_ID_ATTR, serializeHtml, type ElementNode } from '@ui-system/core'
+import {
+	NODE_ID_ATTR,
+	isElement,
+	serializeHtml,
+	walk,
+	type ElementNode,
+} from '@ui-system/core'
+import { EMPTY_HINT_LABELS } from '@/editor/layoutPresets'
 
 export const PAGE_ROOT = 'page'
+
+// Editor-only mark on empty containers, never part of the saved or exported HTML
+export const EMPTY_SLOT_ATTR = 'data-editor-empty'
 
 // Empty document the canvas fills in, assets resolve against the builder origin
 export const frameSrcdoc = () => `<!doctype html>
@@ -15,6 +25,8 @@ export const frameSrcdoc = () => `<!doctype html>
 	[data-empty] { display: grid; place-items: center; min-height: 60vh; color: #888; font: 14px system-ui; }
 	[contenteditable] { outline: none; cursor: text; }
 	a, button, label { cursor: default; }
+	[${EMPTY_SLOT_ATTR}] { position: relative; min-height: 6rem; outline: 1px dashed #94a3b8; outline-offset: -1px; }
+	[${EMPTY_SLOT_ATTR}]::after { content: 'Add elements from the Elements tab'; position: absolute; inset: 0; display: grid; place-items: center; padding: 0.5rem; text-align: center; color: #94a3b8; font: 14px system-ui; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -27,7 +39,19 @@ const EMPTY = 'Add a section from the left panel'
 const renderNode = (doc: Document, node: ElementNode) => {
 	const template = doc.createElement('template')
 	template.innerHTML = serializeHtml([node], { nodeIds: true, pretty: false })
-	return template.content.firstElementChild as HTMLElement
+	const el = template.content.firstElementChild as HTMLElement
+	walk([node], (n) => {
+		if (!isElement(n) || !n.label || !EMPTY_HINT_LABELS.includes(n.label)) {
+			return
+		}
+		if (n.children.some((c) => c.type !== 'text' || c.text.trim() !== '')) {
+			return
+		}
+		const sel = `[${NODE_ID_ATTR}="${CSS.escape(n.id)}"]`
+		const target = el.matches(sel) ? el : el.querySelector(sel)
+		target?.setAttribute(EMPTY_SLOT_ATTR, '')
+	})
+	return el
 }
 
 // Root nodes keep their DOM while the node object is unchanged

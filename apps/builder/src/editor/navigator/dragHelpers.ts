@@ -5,12 +5,14 @@ import {
 	sectionOf,
 	type ElementNode,
 } from '@ui-system/core'
+import { toast } from 'sonner'
 import { scopeOf } from '@/editor/canvas/nodes'
-import { moveNodeTo } from '@/store/actions'
+import { insertElement, moveNodeTo } from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
 import { resolveDrop, type Zone } from './dropPosition'
 import { useNav } from './navState'
+import { canContain } from './structure'
 
 export interface NodeDrag {
 	kind: 'node'
@@ -81,4 +83,40 @@ export const dropNode = (sourceId: string, targetId: string, zone: Zone) => {
 	moveNodeTo(sourceId, place.parentId, place.index)
 	useNav.getState().setOpen([place.parentId])
 	useProject.getState().select(sourceId)
+}
+
+// A palette element can go next to or into free-scope elements, not into instances
+export const canDropElement = (targetId: string) => {
+	const roots = currentSections()
+	const editing = Boolean(useProject.getState().editingComponentId)
+	return (
+		findElement(roots, targetId) !== null &&
+		scopeOf(roots, targetId, editing) === 'free'
+	)
+}
+
+export const dropElement = (html: string, targetId: string, zone: Zone) => {
+	if (!canDropElement(targetId)) return
+	const sections = currentSections()
+	const target = locate(sections, targetId)
+	if (!target) return
+	const targetNode = target.list[target.index] as ElementNode
+	if (zone === 'inside' && (targetNode.instance || !canContain(targetNode))) {
+		return
+	}
+	// No source to move, so the index never shifts
+	const place = resolveDrop(
+		zone,
+		{
+			id: targetId,
+			parentId: target.parent?.id ?? null,
+			index: target.index,
+			childCount: targetNode.children.length,
+		},
+		{ parentId: '', index: 0 }
+	)
+	if (!place) return
+	insertElement(place.parentId, place.index, html).catch((e: Error) =>
+		toast.error(e.message)
+	)
 }

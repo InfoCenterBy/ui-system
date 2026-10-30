@@ -15,6 +15,7 @@ import {
 	moveNode,
 	parseHtml,
 	parseSection,
+	prepareInsert,
 	randomId,
 	removeNode,
 	removeRepeatItem,
@@ -31,8 +32,10 @@ import {
 } from '@ui-system/core'
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
 import { scopeOf } from '@/editor/canvas/nodes'
+import { api } from '@/api'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
+import { useNav } from '@/editor/navigator/navState'
 import { useProject } from '@/store/project'
 
 type PartialName = 'header' | 'footer'
@@ -444,6 +447,58 @@ export const insertHtml = (parentId: NodeId, index: number, html: string) => {
 	const first = nodes.find(isElement)
 	if (!done) return null
 	if (first) useProject.getState().select(first.id)
+	return first?.id ?? null
+}
+
+// One placeholder request per open project, a failure means no image swap
+let placeholder: {
+	project: string | null
+	path: Promise<string | undefined>
+} | null = null
+const placeholderPath = () => {
+	const project = useProject.getState().projectPath
+	if (!placeholder || placeholder.project !== project) {
+		const path = api.placeholder().then(
+			(r) => r.path,
+			() => undefined
+		)
+		placeholder = { project, path }
+	}
+	return placeholder.path
+}
+
+// Inserts a library element: fresh ids and names, local placeholder image, one undo step
+export const insertElement = async (
+	parentId: NodeId,
+	index: number,
+	html: string
+) => {
+	const imageSrc = await placeholderPath()
+	const nodes = prepareInsert(parseHtml(html, randomId), {
+		newId: () => randomId().slice(0, 6),
+		imageSrc,
+	})
+	let done = false
+	editNode(
+		'Insert element',
+		parentId,
+		(list) => {
+			const parent = findElement(list, parentId)
+			if (!parent || parent.instance) return
+			done = true
+			parent.children.splice(
+				Math.max(0, Math.min(index, parent.children.length)),
+				0,
+				...nodes
+			)
+		},
+		undefined,
+		inFreeScope
+	)
+	if (!done) return null
+	const first = nodes.find(isElement)
+	if (first) useProject.getState().select(first.id)
+	useNav.getState().setOpen([parentId])
 	return first?.id ?? null
 }
 

@@ -26,6 +26,17 @@ export const presetDrag = (presetId: string): PresetDrag => ({
 
 export const layerDrag = (id: string): LayerDrag => ({ kind: 'layer', id })
 
+// A palette element dragged to the layers, html is ready to insert
+export interface ElementDrag {
+	kind: 'element'
+	html: string
+}
+
+export const elementDrag = (html: string): ElementDrag => ({
+	kind: 'element',
+	html,
+})
+
 type Data = Record<string | symbol, unknown>
 
 export const asPreset = (data: Data): PresetDrag | null =>
@@ -41,4 +52,9 @@ export const asComponent = (data: Data): ComponentDrag | null =>
 export const asLayer = (data: Data): LayerDrag | null =>
 	data.kind === 'layer' && typeof data.id === 'string'
 		? { kind: 'layer', id: data.id }
+		: null
+
+export const asElement = (data: Data): ElementDrag | null =>
+	data.kind === 'element' && typeof data.html === 'string'
+		? { kind: 'element', html: data.html }
 		: null

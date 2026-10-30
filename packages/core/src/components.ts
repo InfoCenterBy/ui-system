@@ -119,6 +119,7 @@ const build = (
 		ref: master.id,
 	}
 	if (slot) node.slot = slot
+	if (master.label) node.label = master.label
 	if (root) {
 		node.instance = { component: ctx.componentId }
 		if (master.section) node.section = { ...master.section, locked: true }
@@ -267,9 +268,11 @@ export const detachInstance = (
 		if (isElement(source)) {
 			delete copy.slot
 			delete copy.repeat
+			delete copy.label
 			delete copy.section
 			if (source.slot) copy.slot = source.slot
 			if (source.repeat) copy.repeat = source.repeat
+			if (source.label) copy.label = source.label
 			if (source.section) copy.section = { ...source.section }
 		} else if (!master) {
 			delete copy.slot

@@ -19,7 +19,7 @@ export const labelOf = (node: ElementNode) => {
 	}
 	if (node.slot) return SLOT_LABEL[node.slot]
 	if (node.repeat) return 'Item'
-	return node.tag
+	return node.label ?? node.tag
 }
 
 export type Scope = 'free' | 'slots'

@@ -117,7 +117,7 @@ export const moveNode = (
 export type ElementPatch = Partial<
 	Pick<
 		ElementNode,
-		'tag' | 'classes' | 'attrs' | 'slot' | 'repeat' | 'section'
+		'tag' | 'classes' | 'attrs' | 'slot' | 'repeat' | 'label' | 'section'
 	>
 >
 

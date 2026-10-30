@@ -26,3 +26,21 @@ export const insertPlace = (
 	if (!parent || !at) return null
 	return { parentId: parent.id, index: at.index + 1 }
 }
+
+// Why nothing can be inserted for this selection, null when a place exists
+export const insertBlocker = (
+	roots: ElementNode[],
+	selectedId: string | null,
+	editing = false
+): string | null => {
+	if (insertPlace(roots, selectedId, editing)) return null
+	const node = selectedId ? findElement(roots, selectedId) : null
+	if (!selectedId || !node) {
+		return 'Select a container in an unlocked section or a Custom block'
+	}
+	const chain = [...ancestorsOf(roots, node.id), node]
+	if (chain.some((el) => el.instance)) {
+		return 'Elements cannot be added inside a component instance'
+	}
+	return 'Unlock the section to add elements'
+}

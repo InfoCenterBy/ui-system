@@ -174,3 +174,35 @@ describe('node ids', () => {
 		)
 	})
 })
+
+describe('labels', () => {
+	const html = '<div class="a" data-label="Card"><span>x</span></div>'
+
+	it('reads data-label into label and keeps it out of attrs', () => {
+		const [div] = parseHtml(html, counterIds()) as ElementNode[]
+		expect(div.label).toBe('Card')
+		expect(div.attrs).toEqual({})
+	})
+
+	it('writes data-label only with markers', () => {
+		const tree = parseHtml(html, counterIds())
+		expect(serializeHtml(tree)).toBe('<div class="a"><span>x</span></div>')
+		expect(serializeHtml(tree, { markers: true })).toBe(
+			'<div class="a" data-label="Card"><span>x</span></div>'
+		)
+	})
+})
+
+describe('preset lock', () => {
+	const preset = { id: 'p', name: 'P', category: 'c', html: '<section />' }
+
+	it('locks by default and honours locked: false', () => {
+		expect(parseSection(preset).section).toEqual({
+			preset: 'p',
+			locked: true,
+		})
+		expect(parseSection({ ...preset, locked: false }).section?.locked).toBe(
+			false
+		)
+	})
+})

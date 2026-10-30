@@ -19,9 +19,15 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { labelOf } from '@/editor/canvas/nodes'
-import { asLayer, layerDrag } from '@/editor/dnd'
+import { asElement, asLayer, layerDrag } from '@/editor/dnd'
 import { AddMenu } from '@/editor/navigator/AddMenu'
-import { asNode, canDropNode, dropNode } from '@/editor/navigator/dragHelpers'
+import {
+	asNode,
+	canDropElement,
+	canDropNode,
+	dropElement,
+	dropNode,
+} from '@/editor/navigator/dragHelpers'
 import { ElementRow } from '@/editor/navigator/ElementRow'
 import { useNav } from '@/editor/navigator/navState'
 import { selectAndReveal } from '@/editor/navigator/reveal'
@@ -145,7 +151,13 @@ function SectionRow({
 			element: el,
 			canDrop: ({ source }) => {
 				const drag = asNode(source.data)
-				return drag !== null && canDropNode(drag.id, id)
+				if (drag) return canDropNode(drag.id, id)
+				return (
+					asElement(source.data) !== null &&
+					!locked &&
+					!isInstance &&
+					canDropElement(id)
+				)
 			},
 			onDragEnter: () => setInside(true),
 			onDragLeave: () => setInside(false),
@@ -153,6 +165,8 @@ function SectionRow({
 				setInside(false)
 				const drag = asNode(source.data)
 				if (drag) dropNode(drag.id, id, 'inside')
+				const element = asElement(source.data)
+				if (element) dropElement(element.html, id, 'inside')
 			},
 		})
 		return () => {
@@ -160,7 +174,7 @@ function SectionRow({
 			stopDrop()
 			stopNodeDrop()
 		}
-	}, [id])
+	}, [id, locked, isInstance])
 
 	return (
 		<div

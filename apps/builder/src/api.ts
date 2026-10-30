@@ -128,6 +128,8 @@ export const api = {
 	exportSite: () => request<ExportResult>('POST', '/api/project/export'),
 	reveal: (folder: 'dist' | 'project') =>
 		request<{ ok: true }>('POST', '/api/project/reveal', { folder }),
+	placeholder: () =>
+		request<{ path: string }>('POST', '/api/project/assets/placeholder'),
 	upload: (file: File) => {
 		const form = new FormData()
 		form.append('file', file)

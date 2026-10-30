@@ -21,7 +21,8 @@ describe('section presets', () => {
 		(_, preset) => {
 			const section = parseSection(preset)
 			expect(section.section?.preset).toBe(preset.id)
-			expect(hasSlot(section)).toBe(true)
+			// Unlocked presets start empty and have no editable places
+			expect(hasSlot(section)).toBe(preset.locked !== false)
 			expect(serializeHtml([section])).not.toMatch(
 				/data-edit|data-repeat/
 			)

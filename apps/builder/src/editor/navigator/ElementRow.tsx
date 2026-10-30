@@ -17,9 +17,17 @@ import {
 	dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { labelOf } from '@/editor/canvas/nodes'
+import { asElement } from '@/editor/dnd'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
-import { asNode, canDropNode, dropNode, nodeDrag } from './dragHelpers'
+import {
+	asNode,
+	canDropElement,
+	canDropNode,
+	dropElement,
+	dropNode,
+	nodeDrag,
+} from './dragHelpers'
 import { zoneAt, type Zone } from './dropPosition'
 import { useNav } from './navState'
 import { selectAndReveal } from './reveal'
@@ -83,7 +91,8 @@ export function ElementRow({ node, depth, icon }: Props) {
 			element: el,
 			canDrop: ({ source }) => {
 				const drag = asNode(source.data)
-				return drag !== null && canDropNode(drag.id, id)
+				if (drag) return canDropNode(drag.id, id)
+				return asElement(source.data) !== null && canDropElement(id)
 			},
 			onDrag: ({ location }) =>
 				setZone(zoneFor(location.current.input.clientY)),
@@ -91,13 +100,10 @@ export function ElementRow({ node, depth, icon }: Props) {
 			onDrop: ({ source, location }) => {
 				setZone(null)
 				const drag = asNode(source.data)
-				if (drag) {
-					dropNode(
-						drag.id,
-						id,
-						zoneFor(location.current.input.clientY)
-					)
-				}
+				const zone = zoneFor(location.current.input.clientY)
+				if (drag) dropNode(drag.id, id, zone)
+				const element = asElement(source.data)
+				if (element) dropElement(element.html, id, zone)
 			},
 		})
 		return () => {

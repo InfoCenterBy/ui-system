@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
-import { listAssets, saveUpload } from './assets'
+import { ensurePlaceholder, listAssets, saveUpload } from './assets'
 import { registerClassRoutes } from './classes'
 import { CssBuilder } from './css'
 import { exportSite, type Optimize } from './export'
@@ -169,6 +169,11 @@ export function createApp(options: AppOptions = {}) {
 		if (!(file instanceof File))
 			throw new HttpError(400, 'Field file is missing')
 		const name = await saveUpload(dir, file)
+		return c.json({ path: `assets/${name}` })
+	})
+
+	app.post('/api/project/assets/placeholder', async (c) => {
+		const name = await ensurePlaceholder(store.assetsDir())
 		return c.json({ path: `assets/${name}` })
 	})
 

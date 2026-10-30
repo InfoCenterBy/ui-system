@@ -253,3 +253,12 @@ describe('serialize', () => {
 		)
 	})
 })
+
+describe('labels', () => {
+	it('survive materialize and detach', () => {
+		const m = master('<div data-label="Card"><p>x</p></div>')
+		const inst = materialize(m, 'c', counterIds('i'))
+		expect(inst.label).toBe('Card')
+		expect(detachInstance(inst, m).label).toBe('Card')
+	})
+})
