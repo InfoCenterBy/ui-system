@@ -29,15 +29,27 @@ const variantNames = (variants: VariantEntry[]) =>
 		...v.values.map((value) => `${v.name}${v.hasDash ? '-' : ''}${value}`),
 	])
 
-// Every Tailwind utility and variant plus the component classes found in the given rules
+// A component class with its ready-made preview, as served by the builder API
+export interface ClassPreview {
+	name: string
+	css: string
+}
+
+// Every Tailwind utility and variant plus the component classes found in the
+// given rules or already described by previews
 export const loadClassIndex = async (
-	rules: StyleRule[] = []
+	rules: StyleRule[] = [],
+	previews: ClassPreview[] = []
 ): Promise<ClassIndex> => {
 	const design = await loadDesignSystem(
 		`${themeCss}\n@tailwind utilities;\n${DAISY_THEME_CSS}`
 	)
 	const utilities = design.getClassList().map(([name]) => name)
 	const components = classesFromRules(rules, new Set(utilities))
+	const isUtility = new Set(utilities)
+	for (const { name, css } of previews) {
+		if (!isUtility.has(name)) components.set(name, css || null)
+	}
 	const vars = themeVars(themeCss)
 	const cssCache = new Map<string, string | null>()
 

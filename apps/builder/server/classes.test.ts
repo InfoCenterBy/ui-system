@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { componentClasses, parseRules } from './classes'
@@ -30,7 +32,30 @@ describe('componentClasses', () => {
 			'btn-soft',
 		])
 		expect(list[0].css).toContain('display: inline-flex;')
-		expect(list[2].css).toBe('')
+		expect(list[2].css).toBe('.btn-soft {\n  color: blue;\n}')
+	})
+})
+
+describe('componentClasses on daisyUI', () => {
+	it('gives nearly every class a preview of plain rule blocks', async () => {
+		const file = createRequire(import.meta.url).resolve(
+			'daisyui/daisyui.css'
+		)
+		const list = componentClasses(await readFile(file, 'utf8'))
+		const css = (name: string) => list.find((c) => c.name === name)?.css
+		for (const name of [
+			'btn-outline',
+			'btn-active',
+			'card-sm',
+			'collapse',
+			'divider-primary',
+			'avatar-online',
+		]) {
+			expect(css(name), name).not.toBe('')
+		}
+		expect(css('btn-md')?.match(/\.btn-md \{/g)).toHaveLength(1)
+		expect(css('card-sm')).toContain('.card-sm .card-body {')
+		expect(list.filter((c) => !c.css).length).toBeLessThan(10)
 	})
 })
 

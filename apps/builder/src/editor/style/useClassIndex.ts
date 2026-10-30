@@ -4,8 +4,6 @@ import { api } from '@/api'
 
 let promise: Promise<ClassIndex> | null = null
 
-const escapeClass = (name: string) => name.replace(/[^\w-]/g, '\\$&')
-
 // Tailwind and the daisyUI component list load once, on first use
 const loadIndex = () => {
 	promise ??= (async () => {
@@ -14,12 +12,8 @@ const loadIndex = () => {
 			// Without the component list only Tailwind classes are suggested
 			api.componentClasses().catch(() => []),
 		])
-		return loadClassIndex(
-			components.map(({ name, css }) => ({
-				selector: `.${escapeClass(name)}`,
-				css,
-			}))
-		)
+		// Previews are finished rule blocks, so they bypass the rule parsing
+		return loadClassIndex([], components)
 	})().catch((error: unknown) => {
 		promise = null
 		throw error

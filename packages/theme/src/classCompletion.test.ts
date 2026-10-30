@@ -3,6 +3,7 @@ import {
 	annotateCss,
 	classToken,
 	classesFromRules,
+	splitSelectorList,
 	colorOf,
 	resolveVars,
 	themeVars,
@@ -53,7 +54,73 @@ describe('classCompletion', () => {
 		)
 		expect([...found.keys()]).toEqual(['btn', 'btn-soft'])
 		expect(found.get('btn')).toContain('display: inline-flex;')
-		expect(found.get('btn-soft')).toBeNull()
+		expect(found.get('btn-soft')).toBe('.btn-soft {\n  color: red;\n}')
+	})
+
+	it('reads grouped selectors and keeps :where() commas together', () => {
+		const found = classesFromRules(
+			[
+				{
+					selector: '.btn-outline,.btn-dash',
+					css: 'border: 1px solid;',
+				},
+				{ selector: ':where(.a, .b) .x', css: 'color: red;' },
+			],
+			new Set()
+		)
+		expect(found.get('btn-outline')).toBe(
+			'.btn-outline {\n  border: 1px solid;\n}'
+		)
+		expect(found.get('btn-dash')).toBe(
+			'.btn-dash {\n  border: 1px solid;\n}'
+		)
+		expect(
+			splitSelectorList(':where(.a, .b) .x, .y[data-a="1,2"]')
+		).toEqual([':where(.a, .b) .x', '.y[data-a="1,2"]'])
+	})
+
+	it('falls back to rules mentioning a class without its own rule', () => {
+		const found = classesFromRules(
+			[
+				{
+					selector: '.card-sm .card-body',
+					css: '--card-p: 1rem; gap: 1px;',
+				},
+				{
+					selector: '.btn:disabled, .btn-disabled, .x',
+					css: 'opacity: 0.5;',
+				},
+				{ selector: '.empty .card-sm', css: '' },
+			],
+			new Set()
+		)
+		expect(found.get('card-sm')).toBe(
+			'.card-sm .card-body {\n  --card-p: 1rem;\n  gap: 1px;\n}'
+		)
+		expect(found.get('btn-disabled')).toBe(
+			'.btn-disabled {\n  opacity: 0.5;\n}'
+		)
+		expect(found.get('empty')).toBe(
+			'.empty .card-sm {\n}'.slice(0, 0) || null
+		)
+	})
+
+	it('caps fallback previews', () => {
+		const rules = Array.from({ length: 8 }, (_, i) => ({
+			selector: `.big .part${i}`,
+			css: Array.from({ length: 10 }, (_, j) => `p${j}: ${i}`).join('; '),
+		}))
+		const css = classesFromRules(rules, new Set()).get('big') ?? ''
+		expect(css.match(/\{/g)).toHaveLength(2)
+		expect(css.match(/;/g)).toHaveLength(20)
+	})
+
+	it('shows previews without wrapping them twice', async () => {
+		const index = await loadClassIndex(
+			[],
+			[{ name: 'btn-md', css: '.btn-md {\n  --btn-p: 1rem;\n}' }]
+		)
+		expect(index.cssOf('btn-md')).toBe('.btn-md {\n  --btn-p: 1rem;\n}')
 	})
 
 	it('notes resolved values next to variables', () => {
