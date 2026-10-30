@@ -90,17 +90,17 @@ function ComponentRow({
 	const isSection = Boolean(component.root.section)
 	const preview = useMemo(() => previewOf(component), [component])
 
-	// Only section components can be dragged to the canvas
+	// Section components land between sections, the rest inside unlocked sections
 	useEffect(() => {
 		const el = ref.current
-		if (!el || !isSection) return
+		if (!el) return
 		return draggable({
 			element: el,
 			getInitialData: () => ({ ...componentDrag(component.id) }),
 			onDragStart: () => setDragging(true),
 			onDrop: () => setDragging(false),
 		})
-	}, [component.id, isSection])
+	}, [component.id])
 
 	const add = () => {
 		try {

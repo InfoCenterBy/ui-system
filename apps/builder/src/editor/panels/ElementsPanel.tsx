@@ -56,12 +56,12 @@ function VariantItem({
 		if (!el) return
 		return draggable({
 			element: el,
-			canDrag: () => enabled,
+			// Dropping on the canvas does not need a selection
 			getInitialData: () => ({ ...elementDrag(html) }),
 			onDragStart: () => setDragging(true),
 			onDrop: () => setDragging(false),
 		})
-	}, [html, enabled])
+	}, [html])
 
 	return (
 		<div
@@ -78,7 +78,7 @@ function VariantItem({
 					onAdd(html)
 				}
 			}}
-			className={`focus-visible:ring-ring/50 flex flex-col gap-1 rounded-md border border-transparent p-1 outline-none focus-visible:ring-[3px] ${enabled ? 'hover:border-ring cursor-grab' : 'cursor-not-allowed opacity-50'} ${dragging ? 'opacity-50' : ''}`}
+			className={`focus-visible:ring-ring/50 hover:border-ring flex cursor-grab flex-col gap-1 rounded-md border border-transparent p-1 outline-none focus-visible:ring-[3px] ${enabled ? '' : 'opacity-70'} ${dragging ? 'opacity-50' : ''}`}
 		>
 			<ElementPreview html={html} css={css} title={title} />
 			<span className='px-0.5 text-xs'>{title}</span>

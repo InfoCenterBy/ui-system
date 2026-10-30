@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
-import { findElement } from '@ui-system/core'
+import { useEffect, useRef, useState } from 'react'
+import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { findElement, locate } from '@ui-system/core'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { elementFor } from '@/editor/canvas/frame'
-import { labelOf } from '@/editor/canvas/nodes'
+import { labelOf, scopeOf } from '@/editor/canvas/nodes'
+import { nodeDrag } from '@/editor/navigator/dragHelpers'
 import { useRoots } from '@/editor/canvas/useRoots'
 import { useProject } from '@/store/project'
 
@@ -59,15 +61,54 @@ const measure = (doc: Document | null, id: string | null): Box | null => {
 	}
 }
 
+// Label chip, a drag handle when the element may be moved on the canvas
+function Chip({
+	label,
+	dragId,
+	component,
+	scale,
+}: {
+	label: string
+	dragId?: string
+	component: boolean
+	scale: number
+}) {
+	const ref = useRef<HTMLSpanElement>(null)
+	useEffect(() => {
+		const el = ref.current
+		if (!el || !dragId) return
+		return draggable({
+			element: el,
+			getInitialData: () => ({ ...nodeDrag(dragId) }),
+		})
+	}, [dragId])
+	return (
+		<span
+			ref={ref}
+			title={dragId ? 'Drag to move' : undefined}
+			className={`absolute left-0 rounded-sm ${component ? 'bg-purple-600' : 'bg-blue-500'} px-1.5 py-0.5 font-sans font-medium whitespace-nowrap text-white ${dragId ? 'pointer-events-auto cursor-grab active:cursor-grabbing' : ''}`}
+			style={{
+				bottom: '100%',
+				fontSize: 11 / scale,
+				transformOrigin: 'bottom left',
+			}}
+		>
+			{label}
+		</span>
+	)
+}
+
 function Frame({
 	box,
 	label,
+	dragId,
 	selected,
 	scale,
 	component = false,
 }: {
 	box: Box
 	label?: string
+	dragId?: string
 	selected: boolean
 	scale: number
 	// Components are drawn in purple
@@ -90,16 +131,12 @@ function Frame({
 			}}
 		>
 			{label && (
-				<span
-					className={`absolute left-0 rounded-sm ${component ? 'bg-purple-600' : 'bg-blue-500'} px-1.5 py-0.5 font-sans font-medium whitespace-nowrap text-white`}
-					style={{
-						bottom: '100%',
-						fontSize: 11 / scale,
-						transformOrigin: 'bottom left',
-					}}
-				>
-					{label}
-				</span>
+				<Chip
+					label={label}
+					dragId={dragId}
+					component={component}
+					scale={scale}
+				/>
 			)}
 		</div>
 	)
@@ -117,6 +154,12 @@ export function Overlay({ scale }: { scale: number }) {
 	const hovered = hoveredId !== selectedId ? measure(doc, hoveredId) : null
 	const node = selectedId ? findElement(roots, selectedId) : null
 	const hoverNode = hoveredId ? findElement(roots, hoveredId) : null
+	const editing = useProject((s) => s.editingComponentId)
+	// Free scope below a section root, the same rule the canvas drop applies
+	const movable =
+		selectedId !== null &&
+		locate(roots, selectedId)?.parent != null &&
+		scopeOf(roots, selectedId, Boolean(editing)) === 'free'
 
 	return (
 		<div className='pointer-events-none absolute inset-0 overflow-hidden'>
@@ -136,6 +179,7 @@ export function Overlay({ scale }: { scale: number }) {
 					scale={scale}
 					component={Boolean(node?.instance)}
 					label={node ? labelOf(node) : undefined}
+					dragId={movable ? (selectedId ?? undefined) : undefined}
 				/>
 			)}
 		</div>
