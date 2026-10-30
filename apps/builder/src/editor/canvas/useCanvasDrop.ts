@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import {
 	dropTargetForElements,
 	monitorForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { PAGE_ROOT } from '@/editor/canvas/frame'
-import { asPreset } from '@/editor/dnd'
-import { placePreset } from '@/store/actions'
-import { useCurrentPage } from '@/store/project'
+import { asComponent, asPreset } from '@/editor/dnd'
+import { addInstanceSection, placePreset } from '@/store/actions'
+import { useCurrentPage, useProject } from '@/store/project'
 
 export interface DropPoint {
 	index: number
@@ -36,6 +37,11 @@ const pointAt = (doc: Document, ids: string[], y: number): DropPoint => {
 	return { index, y: line }
 }
 
+// Presets and section components can be dropped, pages only, not in component mode
+const droppable = (data: Parameters<typeof asPreset>[0]) =>
+	!useProject.getState().editingComponentId &&
+	(asPreset(data) !== null || asComponent(data) !== null)
+
 // Lets catalog presets be dropped on the canvas iframe. A transparent element
 // above the iframe takes the drag events while a preset drag is active.
 export function useCanvasDrop(scale: number) {
@@ -50,7 +56,7 @@ export function useCanvasDrop(scale: number) {
 	useEffect(
 		() =>
 			monitorForElements({
-				canMonitor: ({ source }) => asPreset(source.data) !== null,
+				canMonitor: ({ source }) => droppable(source.data),
 				onDragStart: () => setActive(true),
 				onDrop: () => {
 					setActive(false)
@@ -72,17 +78,22 @@ export function useCanvasDrop(scale: number) {
 			)
 		return dropTargetForElements({
 			element: target,
-			canDrop: ({ source }) => asPreset(source.data) !== null,
+			canDrop: ({ source }) => droppable(source.data),
 			onDrag: ({ location }) =>
 				setPoint(locate(location.current.input.clientY)),
 			onDragLeave: () => setPoint(null),
 			onDrop: ({ source, location }) => {
+				const index = locate(location.current.input.clientY).index
 				const preset = asPreset(source.data)
-				if (!preset) return
-				placePreset(
-					preset.presetId,
-					locate(location.current.input.clientY).index
-				)
+				const component = asComponent(source.data)
+				try {
+					if (preset) placePreset(preset.presetId, index)
+					else if (component) {
+						addInstanceSection(component.componentId, index)
+					}
+				} catch (e) {
+					toast.error((e as Error).message)
+				}
 			},
 		})
 	}, [target, doc, scale, sectionIds])

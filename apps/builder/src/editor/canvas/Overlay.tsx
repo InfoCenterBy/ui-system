@@ -64,18 +64,21 @@ function Frame({
 	label,
 	selected,
 	scale,
+	component = false,
 }: {
 	box: Box
 	label?: string
 	selected: boolean
 	scale: number
+	// Components are drawn in purple
+	component?: boolean
 }) {
 	return (
 		<div
 			className={
 				selected
-					? 'pointer-events-none absolute outline-blue-500'
-					: 'pointer-events-none absolute outline-blue-400/70 outline-dashed'
+					? `pointer-events-none absolute ${component ? 'outline-purple-500' : 'outline-blue-500'}`
+					: `pointer-events-none absolute outline-dashed ${component ? 'outline-purple-500/70' : 'outline-blue-400/70'}`
 			}
 			style={{
 				top: box.top,
@@ -88,7 +91,7 @@ function Frame({
 		>
 			{label && (
 				<span
-					className='absolute left-0 rounded-sm bg-blue-500 px-1.5 py-0.5 font-sans font-medium whitespace-nowrap text-white'
+					className={`absolute left-0 rounded-sm ${component ? 'bg-purple-600' : 'bg-blue-500'} px-1.5 py-0.5 font-sans font-medium whitespace-nowrap text-white`}
 					style={{
 						bottom: '100%',
 						fontSize: 11 / scale,
@@ -113,15 +116,25 @@ export function Overlay({ scale }: { scale: number }) {
 	const selected = measure(doc, selectedId)
 	const hovered = hoveredId !== selectedId ? measure(doc, hoveredId) : null
 	const node = selectedId ? findElement(roots, selectedId) : null
+	const hoverNode = hoveredId ? findElement(roots, hoveredId) : null
 
 	return (
 		<div className='pointer-events-none absolute inset-0 overflow-hidden'>
-			{hovered && <Frame box={hovered} selected={false} scale={scale} />}
+			{hovered && (
+				<Frame
+					box={hovered}
+					selected={false}
+					scale={scale}
+					component={Boolean(hoverNode?.instance)}
+					label={hoverNode?.instance ? labelOf(hoverNode) : undefined}
+				/>
+			)}
 			{selected && (
 				<Frame
 					box={selected}
 					selected
 					scale={scale}
+					component={Boolean(node?.instance)}
 					label={node ? labelOf(node) : undefined}
 				/>
 			)}

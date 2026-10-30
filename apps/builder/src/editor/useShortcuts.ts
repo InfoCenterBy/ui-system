@@ -27,8 +27,12 @@ export function useShortcuts() {
 				return
 			}
 			if (isTyping(e.target)) return
-			const { selectedId, select } = useProject.getState()
-			if (key === 'escape') select(null)
+			const { selectedId, select, editingComponentId, exitComponent } =
+				useProject.getState()
+			if (key === 'escape') {
+				if (editingComponentId) exitComponent()
+				else select(null)
+			}
 			if ((key === 'delete' || key === 'backspace') && selectedId) {
 				e.preventDefault()
 				deleteSelected()

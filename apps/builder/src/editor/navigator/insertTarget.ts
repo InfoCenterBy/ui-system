@@ -2,22 +2,23 @@ import {
 	ancestorsOf,
 	findElement,
 	locate,
-	sectionOf,
 	type ElementNode,
 } from '@ui-system/core'
+import { scopeOf } from '@/editor/canvas/nodes'
 import type { Place } from './dropPosition'
 import { canContain } from './structure'
 
-// Where a palette element goes: last child of the selection, or right after it
+// Where a palette element goes: last child of the selection, or right after it.
+// Only free scope takes elements, never the inside of an instance
 export const insertPlace = (
 	roots: ElementNode[],
-	selectedId: string | null
+	selectedId: string | null,
+	editing = false
 ): Place | null => {
 	if (!selectedId) return null
 	const node = findElement(roots, selectedId)
-	const section = sectionOf(roots, selectedId)
-	if (!node || !section?.section || section.section.locked) return null
-	if (node.section || canContain(node)) {
+	if (!node || scopeOf(roots, selectedId, editing) !== 'free') return null
+	if (!node.instance && (node.section || canContain(node))) {
 		return { parentId: node.id, index: node.children.length }
 	}
 	const parent = ancestorsOf(roots, node.id).at(-1)

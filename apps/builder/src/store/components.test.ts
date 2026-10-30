@@ -17,6 +17,7 @@ import {
 	insertInstance,
 	isComponentRoot,
 	renameComponent,
+	resetAllContent,
 	resetContent,
 	setClasses,
 	setSectionLocked,
@@ -274,11 +275,72 @@ describe('instances', () => {
 	it('refuses instances while a master is edited', () => {
 		const id = createComponentFrom(A, 'Card')
 		useProject.getState().editComponent(id)
-		expect(() => addInstanceSection(id)).toThrow(/inside a component/)
-		expect(() => insertInstance(id, A, 0)).toThrow(/inside a component/)
-		expect(() => detach(A)).toThrow(/inside a component/)
+		expect(() => addInstanceSection(id)).toThrow(/editing the component/)
+		expect(() => insertInstance(id, A, 0)).toThrow(/editing the component/)
+		expect(() => detach(A)).toThrow(/editing the component/)
 		expect(() => createComponentFrom(B, 'Other')).toThrow(
-			/inside a component/
+			/editing the component/
 		)
+	})
+})
+
+describe('resetAllContent', () => {
+	it('resets every override of an instance with one undo step', () => {
+		const pair = parseSection({
+			id: 'pair',
+			name: 'pair',
+			category: 'test',
+			html: '<section><h2 data-edit="text">One</h2><h3 data-edit="text">Two</h3></section>',
+		})
+		useProject.getState().openProject({
+			path: '/p',
+			site,
+			pages: [page('home', 'index', [pair]), page('about', 'about', [])],
+			partials: { header: null, footer: null },
+			components: [],
+		})
+		const id = createComponentFrom(home()[0].id, 'Pair')
+		const instance = () => home()[0]
+		setSlotContent(find(instance(), 'h2')!.id, text('Changed one'))
+		setSlotContent(find(instance(), 'h3')!.id, text('Changed two'))
+
+		const past = useDocument.getState().past.length
+		resetAllContent(instance().id)
+		expect(textOf(instance(), 'h2')).toBe('One')
+		expect(textOf(instance(), 'h3')).toBe('Two')
+		expect(useDocument.getState().past.length).toBe(past + 1)
+		expect(instance().instance).toEqual({ component: id })
+
+		useDocument.getState().undo()
+		expect(textOf(instance(), 'h2')).toBe('Changed one')
+		expect(textOf(instance(), 'h3')).toBe('Changed two')
+	})
+})
+
+describe('shared header and footer', () => {
+	it('refuses header and footer parts and their children', () => {
+		const header = parseSection({
+			id: 'header',
+			name: 'header',
+			category: 'test',
+			html: '<header><h2 data-edit="text">Brand</h2></header>',
+		})
+		useProject.getState().openProject({
+			path: '/p',
+			site,
+			pages: [
+				page('home', 'index', [card('a')]),
+				page('about', 'about', []),
+			],
+			partials: { header, footer: null },
+			components: [],
+		})
+		expect(() => createComponentFrom(header.id, 'Head')).toThrow(
+			/Header and footer/
+		)
+		expect(() =>
+			createComponentFrom(find(header, 'h2')!.id, 'Brand')
+		).toThrow(/Header and footer/)
+		expect(doc().components).toEqual({})
 	})
 })

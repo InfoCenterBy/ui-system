@@ -74,7 +74,11 @@ export function Canvas() {
 		if (!doc) return
 		const { hover, select } = useProject.getState()
 		const target = (e: Event) =>
-			pickTarget(rootsRef.current, nodeIdAt(e.target))
+			pickTarget(
+				rootsRef.current,
+				nodeIdAt(e.target),
+				Boolean(useProject.getState().editingComponentId)
+			)
 		const onMove = (e: MouseEvent) => hover(target(e))
 		const onLeave = () => hover(null)
 		const onClick = (e: MouseEvent) => {

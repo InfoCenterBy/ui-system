@@ -14,10 +14,11 @@ export function useInlineEditing(
 		if (!doc) return
 		const onDoubleClick = (e: MouseEvent) => {
 			const roots = rootsRef.current
-			const id = pickTarget(roots, nodeIdAt(e.target))
+			const editing = Boolean(useProject.getState().editingComponentId)
+			const id = pickTarget(roots, nodeIdAt(e.target), editing)
 			const node = id ? findElement(roots, id) : null
 			const el = id ? elementFor(doc, id) : null
-			const kind = node ? inlineKindOf(roots, node) : null
+			const kind = node ? inlineKindOf(roots, node, editing) : null
 			if (!id || !el || !kind) return
 			e.preventDefault()
 			useProject.getState().select(id)

@@ -1,9 +1,11 @@
 import {
 	ancestorsOf,
+	findElement,
 	locate,
 	sectionOf,
 	type ElementNode,
 } from '@ui-system/core'
+import { scopeOf } from '@/editor/canvas/nodes'
 import { moveNodeTo } from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
@@ -22,19 +24,37 @@ export const asNode = (data: Record<string | symbol, unknown>) =>
 		? { kind: 'node' as const, id: data.id }
 		: null
 
-export const currentSections = (): ElementNode[] =>
-	useDocument.getState().doc?.pages[useProject.getState().currentPageId ?? '']
-		?.sections ?? []
+// What the navigator shows: page sections, or the master while a component is edited
+export const currentSections = (): ElementNode[] => {
+	const editing = useProject.getState().editingComponentId
+	const doc = useDocument.getState().doc
+	if (editing) {
+		const root = doc?.components[editing]?.root
+		return root ? [root] : []
+	}
+	return doc?.pages[useProject.getState().currentPageId ?? '']?.sections ?? []
+}
 
-// Same section only, and never onto itself or its own descendants
+// Same section only (or inside the master), free scope on both ends, and never
+// onto itself or its own descendants
 export const canDropNode = (sourceId: string, targetId: string) => {
 	if (sourceId === targetId) return false
-	const sections = currentSections()
-	if (ancestorsOf(sections, targetId).some((a) => a.id === sourceId)) {
+	const roots = currentSections()
+	const editing = Boolean(useProject.getState().editingComponentId)
+	if (ancestorsOf(roots, targetId).some((a) => a.id === sourceId)) {
 		return false
 	}
-	const from = sectionOf(sections, sourceId)
-	const to = sectionOf(sections, targetId)
+	const source = findElement(roots, sourceId)
+	if (!source || !findElement(roots, targetId)) return false
+	if (
+		scopeOf(roots, sourceId, editing) !== 'free' ||
+		scopeOf(roots, targetId, editing) !== 'free'
+	) {
+		return false
+	}
+	if (editing) return roots[0]?.id !== sourceId
+	const from = sectionOf(roots, sourceId)
+	const to = sectionOf(roots, targetId)
 	return from !== null && from.id === to?.id && from.id !== sourceId
 }
 
@@ -44,14 +64,16 @@ export const dropNode = (sourceId: string, targetId: string, zone: Zone) => {
 	const source = locate(sections, sourceId)
 	const target = locate(sections, targetId)
 	if (!source?.parent || !target) return
+	const targetNode = target.list[target.index] as ElementNode
+	// Nothing goes inside an instance
+	if (zone === 'inside' && targetNode.instance) return
 	const place = resolveDrop(
 		zone,
 		{
 			id: targetId,
 			parentId: target.parent?.id ?? null,
 			index: target.index,
-			childCount: (target.list[target.index] as ElementNode).children
-				.length,
+			childCount: targetNode.children.length,
 		},
 		{ parentId: source.parent.id, index: source.index }
 	)

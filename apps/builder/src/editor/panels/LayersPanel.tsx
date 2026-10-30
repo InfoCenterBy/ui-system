@@ -3,6 +3,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	ChevronUp,
+	Component,
 	Lock,
 	LockOpen,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ import { ElementRow } from '@/editor/navigator/ElementRow'
 import { useNav } from '@/editor/navigator/navState'
 import { selectAndReveal } from '@/editor/navigator/reveal'
 import {
+	flattenComponent,
 	flattenVisible,
 	iconKeyOf,
 	elementChildren,
@@ -83,8 +85,14 @@ function SectionRow({
 	const toggle = useNav((s) => s.toggle)
 	const { choose, onEnter, onLeave } = useRowActions(node.id)
 	const id = node.id
-	const locked = node.section?.locked ?? false
-	const expandable = !locked && elementChildren(node).length > 0
+	const isInstance = Boolean(node.instance)
+	const locked = !isInstance && (node.section?.locked ?? false)
+	const expandable =
+		!locked && !isInstance && elementChildren(node).length > 0
+	// Renaming a component changes the row label
+	useDocument((s) =>
+		node.instance ? s.doc?.components[node.instance.component]?.name : null
+	)
 
 	useEffect(() => {
 		const el = ref.current
@@ -162,7 +170,11 @@ function SectionRow({
 			onMouseLeave={onLeave}
 			className={`relative flex h-8 items-center gap-1 rounded-md pr-1 pl-1 text-sm ${selected ? 'bg-accent' : 'hover:bg-accent/50'} ${dragging ? 'opacity-50' : ''} ${inside ? 'ring-1 ring-blue-500 ring-inset' : ''}`}
 		>
-			{locked ? (
+			{isInstance ? (
+				<span className='flex size-4 shrink-0 items-center justify-center text-purple-600 dark:text-purple-400 [&_svg]:size-3.5'>
+					<Component />
+				</span>
+			) : locked ? (
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<span className='text-muted-foreground flex size-4 shrink-0 items-center justify-center [&_svg]:size-3.5'>
@@ -238,6 +250,10 @@ function SectionRow({
 
 export function LayersPanel() {
 	const page = useCurrentPage()
+	const editing = useProject((s) => s.editingComponentId)
+	const master = useDocument((s) =>
+		editing ? (s.doc?.components[editing]?.root ?? null) : null
+	)
 	const header = useDocument((s) => s.doc?.partials.header ?? null)
 	const footer = useDocument((s) => s.doc?.partials.footer ?? null)
 	const open = useNav((s) => s.open)
@@ -246,18 +262,21 @@ export function LayersPanel() {
 
 	// Reveal the selected element when it was picked on the canvas
 	useEffect(() => {
-		if (!sections || !selectedId) return
-		const chain = ancestorsOf(sections, selectedId)
-		if (chain[0]?.section?.locked === false) {
+		const roots = master ? [master] : sections
+		if (!roots || !selectedId) return
+		const chain = ancestorsOf(roots, selectedId)
+		if (master || chain[0]?.section?.locked === false) {
 			useNav.getState().setOpen(chain.map((a) => a.id))
 		}
 		document
 			.querySelector(`[data-nav-row="${CSS.escape(selectedId)}"]`)
 			?.scrollIntoView({ block: 'nearest' })
-	}, [sections, selectedId])
+	}, [sections, master, selectedId])
 
-	if (!page || !sections) return null
-	const rows = flattenVisible(sections, open)
+	if (editing ? !master : !page || !sections) return null
+	const rows = master
+		? flattenComponent(master, open)
+		: flattenVisible(sections ?? [], open)
 
 	const onKeyDown = (e: React.KeyboardEvent) => {
 		const target = e.target as HTMLElement
@@ -313,19 +332,34 @@ export function LayersPanel() {
 		>
 			<div className='flex items-center justify-between pb-1'>
 				<span className='text-muted-foreground px-1 text-xs'>
-					Structure
+					{master ? 'Component structure' : 'Structure'}
 				</span>
 				<AddMenu />
 			</div>
-			{page.showHeader && header && <FixedRow node={header} />}
-			{sections.length === 0 && (
+			{master &&
+				rows.map((r) => (
+					<ElementRow
+						key={r.node.id}
+						node={r.node}
+						depth={r.depth}
+						icon={iconKeyOf(r.node)}
+					/>
+				))}
+			{!master && page?.showHeader && header && (
+				<FixedRow node={header} />
+			)}
+			{!master && sections?.length === 0 && (
 				<p className='text-muted-foreground p-2 text-sm'>
 					No sections yet
 				</p>
 			)}
-			{sections.map((node, i) => (
+			{(master ? [] : (sections ?? [])).map((node, i) => (
 				<div key={node.id} className='flex flex-col gap-0.5'>
-					<SectionRow node={node} index={i} count={sections.length} />
+					<SectionRow
+						node={node}
+						index={i}
+						count={sections?.length ?? 0}
+					/>
 					{flattenVisible([node], open)
 						.slice(1)
 						.map((r) => (
@@ -338,7 +372,9 @@ export function LayersPanel() {
 						))}
 				</div>
 			))}
-			{page.showFooter && footer && <FixedRow node={footer} />}
+			{!master && page?.showFooter && footer && (
+				<FixedRow node={footer} />
+			)}
 		</div>
 	)
 }

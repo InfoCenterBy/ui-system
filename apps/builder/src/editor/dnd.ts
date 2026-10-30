@@ -9,6 +9,16 @@ export interface LayerDrag {
 	id: string
 }
 
+export interface ComponentDrag {
+	kind: 'component'
+	componentId: string
+}
+
+export const componentDrag = (componentId: string): ComponentDrag => ({
+	kind: 'component',
+	componentId,
+})
+
 export const presetDrag = (presetId: string): PresetDrag => ({
 	kind: 'preset',
 	presetId,
@@ -21,6 +31,11 @@ type Data = Record<string | symbol, unknown>
 export const asPreset = (data: Data): PresetDrag | null =>
 	data.kind === 'preset' && typeof data.presetId === 'string'
 		? { kind: 'preset', presetId: data.presetId }
+		: null
+
+export const asComponent = (data: Data): ComponentDrag | null =>
+	data.kind === 'component' && typeof data.componentId === 'string'
+		? { kind: 'component', componentId: data.componentId }
 		: null
 
 export const asLayer = (data: Data): LayerDrag | null =>

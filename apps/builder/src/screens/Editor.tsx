@@ -4,6 +4,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { ComponentBanner } from '@/editor/components/ComponentBanner'
 import { Canvas } from '@/editor/Canvas'
 import { LeftPanel } from '@/editor/LeftPanel'
 import { Properties } from '@/editor/Properties'
@@ -17,6 +18,7 @@ export function Editor() {
 	return (
 		<div className='flex h-svh flex-col'>
 			<TopBar />
+			<ComponentBanner />
 			<ResizablePanelGroup
 				orientation='horizontal'
 				className='min-h-0 flex-1'

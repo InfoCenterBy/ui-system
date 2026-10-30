@@ -14,7 +14,12 @@ import {
 	type ElementNode,
 } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
-import { labelOf } from '@/editor/canvas/nodes'
+import { labelOf, scopeOf } from '@/editor/canvas/nodes'
+import {
+	CreateComponent,
+	InstanceProperties,
+	OverrideRow,
+} from '@/editor/components/InstanceProperties'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
 import { ClassField } from '@/editor/style/ClassField'
@@ -26,6 +31,7 @@ import {
 	deleteNode,
 	duplicateSection,
 	fillMenuWithPages,
+	isSharedPart,
 	moveSection,
 	setPartial,
 	setSectionLocked,
@@ -131,6 +137,8 @@ export function Properties() {
 	const roots = useRoots()
 	const partials = useDocument((s) => s.doc?.partials)
 	const node = selectedId ? findElement(roots, selectedId) : null
+	const editingId = useProject((s) => s.editingComponentId)
+	useDocument((s) => s.doc?.components)
 	const partialName =
 		node && node === partials?.header
 			? 'header'
@@ -161,34 +169,60 @@ export function Properties() {
 		)
 	}
 
-	const section = sectionOf(roots, node.id)
-	const unlocked = section?.section?.locked === false
-	const item = node.repeat
+	const editing = Boolean(editingId)
+	const section = editing ? null : sectionOf(roots, node.id)
+	// Classes and styles only where the structure is free, never on an instance
+	const free = scopeOf(roots, node.id, editing) === 'free' && !node.instance
+	const ancestors = ancestorsOf(roots, node.id)
+	const owner = node.instance ? node : ancestors.findLast((a) => a.instance)
+	const topLevelOf = (list: typeof roots, id: string) =>
+		list.some((r) => r.id === id)
+	const topLevel = topLevelOf(roots, node.id)
+	const canCreate =
+		!editing &&
+		!node.instance &&
+		!owner &&
+		!isSharedPart(partials, node.id) &&
+		(topLevel || scopeOf(roots, node.id) === 'free')
+	const repeatNode = node.repeat
 		? node
 		: ancestorsOf(roots, node.id).findLast((a) => a.repeat)
+	// The master root has no siblings, so it is not a repeat item there
+	const item =
+		repeatNode && !(editing && topLevelOf(roots, repeatNode.id))
+			? repeatNode
+			: undefined
 
 	return (
 		<aside className='flex h-full flex-col overflow-y-auto'>
 			<div className='flex flex-col gap-0.5 border-b px-3 py-2'>
-				{section && section.id !== node.id && (
+				{(owner ?? section) && (owner ?? section)?.id !== node.id && (
 					<button
 						type='button'
 						className='text-muted-foreground hover:text-foreground w-fit text-xs'
-						onClick={() => select(section.id)}
+						onClick={() => select((owner ?? section)!.id)}
 					>
-						{labelOf(section)}
+						{labelOf((owner ?? section)!)}
 					</button>
 				)}
 				<h2 className='text-sm font-medium'>{labelOf(node)}</h2>
 			</div>
 			<div className='flex flex-col gap-4 p-3'>
-				{node.section && <LockToggle section={node} />}
-				{partialName && <PartialActions name={partialName} />}
-				{node.section && !partialName && (
+				{node.instance && <InstanceProperties instance={node} />}
+				{node.section && !editing && !node.instance && (
+					<LockToggle section={node} />
+				)}
+				{partialName && !editing && (
+					<PartialActions name={partialName} />
+				)}
+				{node.section && !partialName && !editing && (
 					<>
-						<VariantSelect section={node} />
+						{!node.instance && <VariantSelect section={node} />}
 						<SectionActions id={node.id} />
 					</>
+				)}
+				{owner && node.slot && !node.instance && (
+					<OverrideRow node={node} instance={owner} />
 				)}
 				{node.slot === 'image' && <ImageProperties node={node} />}
 				{node.slot === 'link' && <LinkProperties node={node} />}
@@ -198,9 +232,10 @@ export function Properties() {
 					</p>
 				)}
 				{item && <RepeatProperties item={item} />}
-				{unlocked && <ClassField node={node} />}
+				{free && <ClassField node={node} />}
+				{canCreate && <CreateComponent key={node.id} node={node} />}
 			</div>
-			{unlocked && <StylePanel node={node} />}
+			{free && <StylePanel node={node} />}
 		</aside>
 	)
 }

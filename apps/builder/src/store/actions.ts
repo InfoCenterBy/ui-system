@@ -30,6 +30,7 @@ import {
 	type TreeNode,
 } from '@ui-system/core'
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
+import { scopeOf } from '@/editor/canvas/nodes'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
 import { useProject } from '@/store/project'
@@ -52,6 +53,15 @@ const pageRoots = (draft: Doc): ElementNode[] => {
 // True when the node is the root of a component master
 export const isComponentRoot = (doc: Doc, id: NodeId) =>
 	Object.values(doc.components).some((c) => c.root.id === id)
+
+// Header and footer, and everything inside them, are shared by every page
+export const isSharedPart = (
+	partials: Doc['partials'] | undefined,
+	id: NodeId
+) =>
+	[partials?.header, partials?.footer].some(
+		(root) => root != null && findElement([root], id) !== null
+	)
 
 // The list that holds a node in a page or partial, not in a component master
 const pageListOf = (draft: Doc, id: NodeId): TreeNode[] | null => {
@@ -95,21 +105,41 @@ const instanceAround = (roots: ElementNode[], id: NodeId) => {
 
 const assertNotEditingComponent = () => {
 	if (useProject.getState().editingComponentId) {
-		throw new Error('Instances cannot be placed inside a component')
+		throw new Error('Finish editing the component first')
 	}
+}
+
+type Guard = (list: TreeNode[], id: NodeId) => boolean
+
+// Free scope: classes, styles and inner structure may change
+const inFreeScope: Guard = (list, id) =>
+	scopeOf(
+		list as ElementNode[],
+		id,
+		Boolean(useProject.getState().editingComponentId)
+	) === 'free'
+
+// Moving, wrapping and removing: free scope, or a section root of the page.
+// The master root of a component stays
+const canRestructure: Guard = (list, id) => {
+	const at = locate(list, id)
+	if (!at) return false
+	if (!at.parent) return !useProject.getState().editingComponentId
+	return inFreeScope(list, id)
 }
 
 const editNode = (
 	label: string,
 	id: NodeId,
 	change: (list: TreeNode[]) => void,
-	mergeKey?: string
+	mergeKey?: string,
+	guard?: Guard
 ) =>
 	useDocument.getState().edit(
 		label,
 		(draft) => {
 			const list = listOf(draft, id)
-			if (list) change(list)
+			if (list && (!guard || guard(list, id))) change(list)
 		},
 		{ mergeKey }
 	)
@@ -141,14 +171,26 @@ export const moveSection = (id: NodeId, toIndex: number) =>
 
 export const duplicateSection = (id: NodeId) => {
 	let copyId: NodeId | null = null
-	editNode('Duplicate', id, (list) => {
-		copyId = duplicateNode(list, id, randomId).id
-	})
+	editNode(
+		'Duplicate',
+		id,
+		(list) => {
+			copyId = duplicateNode(list, id, randomId).id
+		},
+		undefined,
+		canRestructure
+	)
 	if (copyId) useProject.getState().select(copyId)
 }
 
 export const deleteNode = (id: NodeId) => {
-	editNode('Delete', id, (list) => void removeNode(list, id))
+	editNode(
+		'Delete',
+		id,
+		(list) => void removeNode(list, id),
+		undefined,
+		canRestructure
+	)
 	const { selectedId, select } = useProject.getState()
 	if (selectedId === id) select(null)
 }
@@ -176,7 +218,13 @@ export const setAttribute = (id: NodeId, name: string, value: string | null) =>
 	)
 
 export const patchElement = (id: NodeId, patch: ElementPatch, label = 'Edit') =>
-	editNode(label, id, (list) => updateElement(list, id, patch))
+	editNode(
+		label,
+		id,
+		(list) => updateElement(list, id, patch),
+		undefined,
+		inFreeScope
+	)
 
 export const addItem = (id: NodeId) => {
 	let copyId: NodeId | null = null
@@ -303,6 +351,7 @@ export const switchVariant = (sectionId: NodeId, presetId: string) => {
 
 // Header and footer presets replace the shared part, others go into the page
 export const placePreset = (presetId: string, index?: number) => {
+	assertNotEditingComponent()
 	const role = sharedRoleOf(presetId)
 	if (!role) return addSection(presetId, index)
 	setPartial(role, presetId)
@@ -368,49 +417,77 @@ export const setClasses = (id: NodeId, classes: string) =>
 		'Change classes',
 		id,
 		(list) => updateElement(list, id, { classes }),
-		`classes:${id}`
+		`classes:${id}`,
+		inFreeScope
 	)
 
 // Inserts parsed HTML into a parent element at an index and selects the first new element
 export const insertHtml = (parentId: NodeId, index: number, html: string) => {
 	const nodes = parseHtml(html, randomId)
-	editNode('Insert element', parentId, (list) => {
-		const parent = findElement(list, parentId)
-		if (!parent) return
-		parent.children.splice(
-			Math.max(0, Math.min(index, parent.children.length)),
-			0,
-			...nodes
-		)
-	})
+	let done = false
+	editNode(
+		'Insert element',
+		parentId,
+		(list) => {
+			const parent = findElement(list, parentId)
+			if (!parent || parent.instance) return
+			done = true
+			parent.children.splice(
+				Math.max(0, Math.min(index, parent.children.length)),
+				0,
+				...nodes
+			)
+		},
+		undefined,
+		inFreeScope
+	)
 	const first = nodes.find(isElement)
+	if (!done) return null
 	if (first) useProject.getState().select(first.id)
 	return first?.id ?? null
 }
 
 // Moves a node inside the same section, parentId is the new parent element
 export const moveNodeTo = (id: NodeId, parentId: NodeId, index: number) =>
-	editNode('Move element', id, (list) => {
-		if (!findElement(list, parentId)) return
-		moveNode(list, id, parentId, index)
-	})
+	editNode(
+		'Move element',
+		id,
+		(list) => {
+			const parent = findElement(list, parentId)
+			if (!parent || parent.instance || !inFreeScope(list, parentId)) {
+				return
+			}
+			moveNode(list, id, parentId, index)
+		},
+		undefined,
+		canRestructure
+	)
 
 export const wrapNode = (id: NodeId, tag = 'div') => {
 	const wrapperId = randomId()
-	editNode('Wrap element', id, (list) => {
-		const at = locate(list, id)
-		if (!at) return
-		const [node] = at.list.splice(at.index, 1)
-		at.list.splice(at.index, 0, {
-			id: wrapperId,
-			type: 'element',
-			tag,
-			classes: '',
-			attrs: {},
-			children: [node],
-		})
-	})
-	useProject.getState().select(wrapperId)
+	let done = false
+	editNode(
+		'Wrap element',
+		id,
+		(list) => {
+			const at = locate(list, id)
+			// Section roots cannot be wrapped
+			if (!at?.parent) return
+			done = true
+			const [node] = at.list.splice(at.index, 1)
+			at.list.splice(at.index, 0, {
+				id: wrapperId,
+				type: 'element',
+				tag,
+				classes: '',
+				attrs: {},
+				children: [node],
+			})
+		},
+		undefined,
+		canRestructure
+	)
+	if (done) useProject.getState().select(wrapperId)
 }
 
 const requireComponent = (draft: Doc, id: string) => {
@@ -430,6 +507,9 @@ export const createComponentFrom = (nodeId: NodeId, name: string) => {
 		const roots = pageRoots(draft)
 		const node = findElement(roots, nodeId)
 		if (!node) throw new Error('Node is not in a page or partial')
+		if (isSharedPart(draft.partials, nodeId)) {
+			throw new Error('Header and footer cannot be components')
+		}
 		const topLevel = roots.some((root) => root.id === nodeId)
 		if (!topLevel) {
 			const section = sectionOf(roots, nodeId)
@@ -533,6 +613,30 @@ export const resetContent = (nodeId: NodeId) =>
 		if (!isOverridden(node, master.root)) return
 		resetOverride(node, master.root, randomId)
 	})
+
+// Every overridden slot of an instance goes back to the master, one undo step
+export const resetAllContent = (instanceId: NodeId) => {
+	useDocument.getState().edit('Reset all content', (draft) => {
+		const instance = findElement(pageRoots(draft), instanceId)
+		if (!instance?.instance) return
+		const componentId = instance.instance.component
+		const ids: NodeId[] = []
+		walk([instance], (node) => {
+			const master = draft.components[componentId]?.root
+			if (isElement(node) && master && isOverridden(node, master)) {
+				ids.push(node.id)
+			}
+		})
+		// Resetting a parent can replace its children, so each one is looked up again
+		for (const id of ids) {
+			const roots = pageRoots(draft)
+			const node = findElement(roots, id)
+			const master = draft.components[componentId]?.root
+			if (!node || !master || !isOverridden(node, master)) continue
+			resetOverride(node, master, randomId)
+		}
+	})
+}
 
 export const renameComponent = (id: string, name: string) => {
 	const title = name.trim()

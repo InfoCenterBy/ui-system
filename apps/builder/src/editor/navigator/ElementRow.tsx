@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
 	Box,
+	Component,
 	ChevronDown,
 	ChevronRight,
 	Heading,
@@ -16,6 +17,7 @@ import {
 	dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { labelOf } from '@/editor/canvas/nodes'
+import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
 import { asNode, canDropNode, dropNode, nodeDrag } from './dragHelpers'
 import { zoneAt, type Zone } from './dropPosition'
@@ -53,9 +55,16 @@ export function ElementRow({ node, depth, icon }: Props) {
 	const open = useNav((s) => Boolean(s.open[node.id]))
 	const toggle = useNav((s) => s.toggle)
 	const hover = useProject((s) => s.hover)
+	// Renaming a component changes the row label
+	useDocument((s) =>
+		node.instance ? s.doc?.components[node.instance.component]?.name : null
+	)
 	const id = node.id
-	const expandable = elementChildren(node).length > 0
-	const hint = hintOf(node)
+	const isInstance = Boolean(node.instance)
+	const expandable = !isInstance && elementChildren(node).length > 0
+	const hint = isInstance ? '' : hintOf(node)
+	// The root of a component master is not a child of anything
+	const hasMenu = depth > 0
 
 	useEffect(() => {
 		const el = ref.current
@@ -106,7 +115,7 @@ export function ElementRow({ node, depth, icon }: Props) {
 			onContextMenu={(e) => {
 				e.preventDefault()
 				selectAndReveal(id)
-				setMenuOpen(true)
+				if (hasMenu) setMenuOpen(true)
 			}}
 			style={{ paddingLeft: depth * 12 + 4 }}
 			className={`group/row relative flex h-7 items-center gap-1 rounded-md pr-1 text-sm ${selected ? 'bg-accent' : 'hover:bg-accent/50'} ${zone === 'inside' ? 'ring-1 ring-blue-500 ring-inset' : ''} ${dragging ? 'opacity-50' : ''}`}
@@ -126,7 +135,11 @@ export function ElementRow({ node, depth, icon }: Props) {
 				className='flex min-w-0 flex-1 cursor-grab items-center gap-1.5 text-left outline-none [&_svg]:size-3.5 [&_svg]:shrink-0'
 				onClick={() => selectAndReveal(id)}
 			>
-				{ICONS[icon]}
+				{isInstance ? (
+					<Component className='text-purple-600 dark:text-purple-400' />
+				) : (
+					ICONS[icon]
+				)}
 				<span className='shrink-0'>{labelOf(node)}</span>
 				{hint && (
 					<span className='text-muted-foreground truncate text-xs'>
@@ -134,7 +147,9 @@ export function ElementRow({ node, depth, icon }: Props) {
 					</span>
 				)}
 			</button>
-			<RowMenu id={id} open={menuOpen} onOpenChange={setMenuOpen} />
+			{hasMenu && (
+				<RowMenu id={id} open={menuOpen} onOpenChange={setMenuOpen} />
+			)}
 			{(zone === 'before' || zone === 'after') && (
 				<div
 					className={`pointer-events-none absolute right-0 left-0 h-0.5 bg-blue-500 ${zone === 'before' ? '-top-px' : '-bottom-px'}`}

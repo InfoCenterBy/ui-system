@@ -43,6 +43,7 @@ export const isVoid = (node: ElementNode) =>
 
 // Whether other elements can be dropped or inserted inside
 export const canContain = (node: ElementNode) => {
+	if (node.instance) return false
 	const tag = node.tag.toLowerCase()
 	if (VOID_TAGS.has(tag) || TEXT_TAGS.has(tag)) return false
 	return !node.children.some(
@@ -104,15 +105,24 @@ export const flattenVisible = (
 		depth: number
 	) => {
 		rows.push({ node, parentId, depth })
-		if (!open[node.id]) return
+		// An instance is one row, its inside belongs to the component
+		if (!open[node.id] || node.instance) return
 		for (const child of elementChildren(node))
 			visit(child, node.id, depth + 1)
 	}
 	for (const section of sections) {
 		rows.push({ node: section, parentId: null, depth: 0 })
-		if (section.section?.locked || !open[section.id]) continue
+		if (section.section?.locked || section.instance || !open[section.id]) {
+			continue
+		}
 		for (const child of elementChildren(section))
 			visit(child, section.id, 1)
 	}
 	return rows
 }
+
+// Rows of a component master being edited, the root is open like a free section
+export const flattenComponent = (
+	root: ElementNode,
+	open: Record<string, boolean>
+): VisibleRow[] => flattenVisible([{ ...root, section: undefined }], open)

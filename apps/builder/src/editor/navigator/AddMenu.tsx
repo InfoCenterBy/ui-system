@@ -16,7 +16,8 @@ import { useNav } from './navState'
 export function AddMenu() {
 	const roots = useRoots()
 	const selectedId = useProject((s) => s.selectedId)
-	const place = insertPlace(roots, selectedId)
+	const editing = useProject((s) => s.editingComponentId !== null)
+	const place = insertPlace(roots, selectedId, editing)
 
 	const add = (html: string) => {
 		if (!place) return
@@ -34,7 +35,7 @@ export function AddMenu() {
 					title={
 						place
 							? 'Add an element'
-							: 'Select an element in an unlocked section'
+							: 'Select an element outside of components and locked sections'
 					}
 				>
 					<Plus />
