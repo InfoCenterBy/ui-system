@@ -1,5 +1,5 @@
-import { useId, useState, type ReactNode } from 'react'
-import { RotateCcwIcon } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { PipetteIcon, RotateCcwIcon } from 'lucide-react'
 import { cn } from 'cn'
 import {
 	BREAKPOINTS,
@@ -10,12 +10,22 @@ import {
 	type UtilityGroup,
 } from '@ui-system/core'
 import { setClasses } from '@/store/actions'
-import { useDocument } from '@/store/document'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
 import {
 	COLOR_TOKENS,
 	OPACITY_STEPS,
 	colorUtility,
+	customColorUtility,
+	hexForPicker,
 	isColorToken,
+	normalizeHex,
+	parseCustomColor,
 	joinPrefix,
 	parseColorUtility,
 	parseValueInput,
@@ -192,7 +202,7 @@ export function Choose({
 	)
 }
 
-// Text field with suggested steps, any other length becomes an arbitrary value
+// Text field with a dropdown of steps, any other length becomes an arbitrary value
 export function ValueInput({
 	state,
 	prefix,
@@ -204,7 +214,6 @@ export function ValueInput({
 	options: readonly string[]
 	negative?: boolean
 }) {
-	const listId = useId()
 	const raw = state.value ? stripPrefix(state.value, prefix) : null
 	// Arbitrary values read as typed, 18px instead of [18px]
 	const current = raw?.replace(/^(-?)\[(.*)\]$/, '$1$2') ?? null
@@ -212,8 +221,23 @@ export function ValueInput({
 	const [draft, setDraft] = useState<{ from: string; text: string } | null>(
 		null
 	)
+	const [open, setOpen] = useState(false)
+	const [active, setActive] = useState(-1)
+	const anchorRef = useRef<HTMLDivElement>(null)
+	const listRef = useRef<HTMLUListElement>(null)
 	const shown =
 		draft && draft.from === (current ?? '') ? draft.text : (current ?? '')
+
+	// Filters only while new text is typed, the current value shows everything
+	const typing = shown !== '' && shown !== (current ?? '')
+	const visible = typing
+		? options.filter((o) => o.toLowerCase().includes(shown.toLowerCase()))
+		: options
+
+	useEffect(() => {
+		if (!open || active < 0) return
+		listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' })
+	}, [open, active])
 
 	const commit = (typed: string) => {
 		setDraft(null)
@@ -224,44 +248,112 @@ export function ValueInput({
 		if (value !== null) state.set(joinPrefix(prefix, value))
 	}
 
-	return (
-		<>
-			<input
-				value={shown}
-				list={listId}
-				placeholder='-'
-				autoComplete='off'
-				spellCheck={false}
-				aria-label={prefix}
-				className={cn(
-					'border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-7 w-full min-w-0 rounded-lg border px-1.5 text-xs outline-none focus-visible:ring-3',
-					state.inherited && 'text-muted-foreground italic'
-				)}
-				onChange={(e) =>
-					setDraft({ from: current ?? '', text: e.target.value })
-				}
-				onBlur={(e) => commit(e.currentTarget.value)}
-				onKeyDown={(e) => {
-					if (e.key === 'Enter') e.currentTarget.blur()
-					if (e.key === 'Escape') {
-						setDraft(null)
-						e.currentTarget.blur()
-					}
-				}}
-			/>
-			<datalist id={listId}>
-				{options.map((o) => (
-					<option key={o} value={o} />
-				))}
-			</datalist>
-		</>
-	)
-}
+	const choose = (option: string) => {
+		setDraft(null)
+		setOpen(false)
+		setActive(-1)
+		if (option !== current) state.set(joinPrefix(prefix, option))
+	}
 
-// Theme color for a token, the canvas shows the same one
-function useTokenColor(token: string) {
-	const vars = useDocument((s) => s.doc?.site.theme.vars)
-	return vars?.[`--color-${token}`] ?? `var(--color-${token})`
+	return (
+		<Popover open={open && visible.length > 0} onOpenChange={setOpen}>
+			<PopoverAnchor asChild>
+				<div ref={anchorRef}>
+					<input
+						value={shown}
+						role='combobox'
+						aria-expanded={open}
+						aria-label={prefix}
+						placeholder='-'
+						autoComplete='off'
+						spellCheck={false}
+						className={cn(
+							'border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-7 w-full min-w-0 rounded-lg border px-1.5 text-xs outline-none focus-visible:ring-3',
+							state.inherited && 'text-muted-foreground italic'
+						)}
+						onFocus={() => setOpen(true)}
+						onClick={() => setOpen(true)}
+						onChange={(e) => {
+							setDraft({
+								from: current ?? '',
+								text: e.target.value,
+							})
+							setActive(-1)
+							setOpen(true)
+						}}
+						onBlur={(e) => {
+							setOpen(false)
+							setActive(-1)
+							commit(e.currentTarget.value)
+						}}
+						onKeyDown={(e) => {
+							if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+								e.preventDefault()
+								if (!open) return setOpen(true)
+								const step = e.key === 'ArrowDown' ? 1 : -1
+								const n = visible.length
+								setActive((a) =>
+									a < 0
+										? step > 0
+											? 0
+											: n - 1
+										: (a + step + n) % n
+								)
+							} else if (e.key === 'Enter') {
+								const chosen = open
+									? visible[active]
+									: undefined
+								if (chosen !== undefined) choose(chosen)
+								else e.currentTarget.blur()
+							} else if (e.key === 'Escape') {
+								if (open) {
+									e.stopPropagation()
+									setOpen(false)
+								} else {
+									setDraft(null)
+									e.currentTarget.blur()
+								}
+							}
+						}}
+					/>
+				</div>
+			</PopoverAnchor>
+			<PopoverContent
+				className='w-(--radix-popover-trigger-width) min-w-20 p-1'
+				onOpenAutoFocus={(e) => e.preventDefault()}
+				onCloseAutoFocus={(e) => e.preventDefault()}
+				onInteractOutside={(e) => {
+					if (anchorRef.current?.contains(e.target as Node))
+						e.preventDefault()
+				}}
+			>
+				<ul
+					ref={listRef}
+					role='listbox'
+					className='max-h-52 overflow-y-auto'
+				>
+					{visible.map((o, i) => (
+						<li
+							key={o}
+							role='option'
+							aria-selected={o === current}
+							className={cn(
+								'cursor-pointer rounded-md px-2 py-1 text-xs',
+								i === active && 'bg-accent',
+								o === current && 'font-semibold'
+							)}
+							// Keeps the input focused while clicking
+							onMouseDown={(e) => e.preventDefault()}
+							onMouseEnter={() => setActive(i)}
+							onClick={() => choose(o)}
+						>
+							{o}
+						</li>
+					))}
+				</ul>
+			</PopoverContent>
+		</Popover>
+	)
 }
 
 function Swatch({
@@ -275,21 +367,95 @@ function Swatch({
 	dim: boolean
 	onClick: () => void
 }) {
-	const color = useTokenColor(token)
+	const vars = useSiteThemeVars()
+	const color = vars[`--color-${token}`]
 	return (
-		<button
-			type='button'
-			title={token}
-			aria-label={token}
-			aria-pressed={selected}
-			className={cn(
-				'border-border size-5 rounded-md border',
-				selected && 'ring-ring ring-2 ring-offset-1',
-				selected && dim && 'opacity-60'
-			)}
-			style={{ background: color }}
-			onClick={onClick}
-		/>
+		<Tooltip delayDuration={150}>
+			<TooltipTrigger asChild>
+				<button
+					type='button'
+					aria-label={token}
+					aria-pressed={selected}
+					className={cn(
+						'border-border size-5 rounded-md border',
+						selected && 'ring-ring ring-2 ring-offset-1',
+						selected && dim && 'opacity-60'
+					)}
+					style={{ background: color }}
+					onClick={onClick}
+				/>
+			</TooltipTrigger>
+			<TooltipContent className='font-mono'>
+				{color ? `${token} \u00b7 ${color}` : token}
+			</TooltipContent>
+		</Tooltip>
+	)
+}
+
+// Any color as an arbitrary class like bg-[#1e90ff]
+function CustomColor({
+	state,
+	prefix,
+	hex,
+}: {
+	state: RowState
+	prefix: string
+	hex: string | null
+}) {
+	const [draft, setDraft] = useState<{ from: string; text: string } | null>(
+		null
+	)
+	const shown = draft && draft.from === (hex ?? '') ? draft.text : (hex ?? '')
+	const apply = (value: string) =>
+		state.set(customColorUtility(prefix, value))
+	const commit = (text: string) => {
+		setDraft(null)
+		const value = normalizeHex(text)
+		if (value && value !== hex) apply(value)
+	}
+	return (
+		<div className='flex items-center gap-1.5'>
+			<Tooltip delayDuration={150}>
+				<TooltipTrigger asChild>
+					<label
+						className={cn(
+							'border-border relative flex size-5 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border',
+							hex && 'ring-ring ring-2 ring-offset-1',
+							hex && state.inherited && 'opacity-60'
+						)}
+						style={{ background: hex ?? undefined }}
+					>
+						{!hex && (
+							<PipetteIcon className='text-muted-foreground size-3' />
+						)}
+						<input
+							type='color'
+							aria-label={`${prefix} custom color`}
+							value={hex ? hexForPicker(hex) : '#000000'}
+							className='absolute inset-0 size-full cursor-pointer opacity-0'
+							onChange={(e) => apply(e.target.value)}
+						/>
+					</label>
+				</TooltipTrigger>
+				<TooltipContent>Custom color</TooltipContent>
+			</Tooltip>
+			<input
+				value={shown}
+				placeholder='#hex'
+				aria-label={`${prefix} hex`}
+				autoComplete='off'
+				spellCheck={false}
+				className='border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-6 w-20 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none focus-visible:ring-3'
+				onChange={(e) =>
+					setDraft({ from: hex ?? '', text: e.target.value })
+				}
+				onBlur={(e) => commit(e.currentTarget.value)}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') commit(e.currentTarget.value)
+					if (e.key === 'Escape') setDraft(null)
+				}}
+			/>
+		</div>
 	)
 }
 
@@ -302,24 +468,25 @@ export function ColorSwatches({
 	prefix: string
 }) {
 	const current = state.value ? parseColorUtility(state.value, prefix) : null
-	const custom = current && !isColorToken(current.token)
+	const customHex = state.value ? parseCustomColor(state.value, prefix) : null
+	const token = current && isColorToken(current.token) ? current : null
 	return (
 		<div className='flex flex-col gap-1.5'>
 			<div className='flex flex-wrap gap-1.5'>
-				{COLOR_TOKENS.map((token) => (
+				{COLOR_TOKENS.map((name) => (
 					<Swatch
-						key={token}
-						token={token}
-						selected={current?.token === token}
+						key={name}
+						token={name}
+						selected={token?.token === name}
 						dim={state.inherited}
 						onClick={() =>
 							state.set(
-								current?.token === token && !state.inherited
+								token?.token === name && !state.inherited
 									? null
 									: colorUtility(
 											prefix,
-											token,
-											current?.opacity ?? null
+											name,
+											token?.opacity ?? null
 										)
 							)
 						}
@@ -329,15 +496,15 @@ export function ColorSwatches({
 			<div className='flex items-center gap-2'>
 				<select
 					aria-label={`${prefix} opacity`}
-					disabled={!current || custom === true}
-					value={current?.opacity ?? ''}
+					disabled={!token}
+					value={token?.opacity ?? ''}
 					className='border-input bg-background h-6 rounded-md border px-1 text-xs disabled:opacity-50'
 					onChange={(e) =>
-						current &&
+						token &&
 						state.set(
 							colorUtility(
 								prefix,
-								current.token,
+								token.token,
 								e.target.value ? Number(e.target.value) : null
 							)
 						)
@@ -350,12 +517,13 @@ export function ColorSwatches({
 						</option>
 					))}
 				</select>
-				{custom && (
-					<span className='text-muted-foreground truncate font-mono text-[10px]'>
-						{state.value}
-					</span>
-				)}
+				<CustomColor state={state} prefix={prefix} hex={customHex} />
 			</div>
+			{current && !token && !customHex && (
+				<span className='text-muted-foreground truncate font-mono text-[10px]'>
+					{state.value}
+				</span>
+			)}
 		</div>
 	)
 }

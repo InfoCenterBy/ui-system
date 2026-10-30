@@ -3,6 +3,10 @@ import {
 	SPACING_STEPS,
 	arbitraryValue,
 	colorUtility,
+	customColorUtility,
+	hexForPicker,
+	normalizeHex,
+	parseCustomColor,
 	isColorToken,
 	joinPrefix,
 	parseColorUtility,
@@ -66,5 +70,45 @@ describe('color values', () => {
 	it('knows daisyUI color tokens', () => {
 		expect(isColorToken('primary')).toBe(true)
 		expect(isColorToken('red-500')).toBe(false)
+	})
+})
+
+describe('px and rem values', () => {
+	const steps = ['0', '1', '2']
+	it('accepts px and rem as arbitrary values', () => {
+		expect(parseValueInput('10px', steps)).toBe('[10px]')
+		expect(parseValueInput('1.5rem', steps)).toBe('[1.5rem]')
+		expect(joinPrefix('p', parseValueInput('10px', steps)!)).toBe(
+			'p-[10px]'
+		)
+	})
+	it('allows negative lengths only when asked', () => {
+		expect(parseValueInput('-8px', steps)).toBeNull()
+		const v = parseValueInput('-8px', steps, true)
+		expect(v).toBe('-[8px]')
+		expect(joinPrefix('m', v!)).toBe('-m-[8px]')
+		expect(stripPrefix('-m-[8px]', 'm')).toBe('-[8px]')
+		expect(parseValueInput('-2', steps, true)).toBe('-2')
+	})
+})
+
+describe('custom colors', () => {
+	it('normalizes hex', () => {
+		expect(normalizeHex('#1E90FF')).toBe('#1e90ff')
+		expect(normalizeHex('1e90ff')).toBe('#1e90ff')
+		expect(normalizeHex('#abc')).toBe('#abc')
+		expect(normalizeHex('#12')).toBeNull()
+		expect(normalizeHex('red')).toBeNull()
+	})
+	it('builds and parses arbitrary color classes', () => {
+		expect(customColorUtility('bg', '#1e90ff')).toBe('bg-[#1e90ff]')
+		expect(parseCustomColor('text-[#1e90ff]', 'text')).toBe('#1e90ff')
+		expect(parseCustomColor('bg-[#1e90ff]', 'text')).toBeNull()
+		expect(parseCustomColor('bg-primary', 'bg')).toBeNull()
+		expect(parseCustomColor('bg-[10px]', 'bg')).toBeNull()
+	})
+	it('expands short hex for the picker', () => {
+		expect(hexForPicker('#abc')).toBe('#aabbcc')
+		expect(hexForPicker('#11223344')).toBe('#112233')
 	})
 })

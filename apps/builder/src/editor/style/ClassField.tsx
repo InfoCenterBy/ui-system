@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { XIcon } from 'lucide-react'
 import { cn } from 'cn'
 import {
@@ -9,7 +9,13 @@ import {
 } from '@ui-system/core'
 import { resolveVars } from '@ui-system/theme'
 import { setClasses } from '@/store/actions'
-import { useDocument } from '@/store/document'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
+import type { ClassIndex } from '@ui-system/theme/classes'
+import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
 import { suggest } from '@/editor/style/suggest'
 import { useClassIndex } from '@/editor/style/useClassIndex'
 
@@ -28,6 +34,7 @@ function ChipText({ raw }: { raw: string }) {
 	)
 }
 
+// Ends on Enter, Escape or a pointer-down outside, clicks inside move the caret
 function ChipEditor({
 	initial,
 	onDone,
@@ -36,26 +43,54 @@ function ChipEditor({
 	onDone: (value: string | null) => void
 }) {
 	const [text, setText] = useState(initial)
+	const ref = useRef<HTMLInputElement>(null)
+	const done = useRef(false)
+	const finish = (value: string | null) => {
+		if (done.current) return
+		done.current = true
+		onDone(value)
+	}
+	useEffect(() => {
+		const onDown = (e: PointerEvent) => {
+			if (!ref.current?.contains(e.target as Node))
+				finish(ref.current?.value ?? initial)
+		}
+		document.addEventListener('pointerdown', onDown, true)
+		return () => document.removeEventListener('pointerdown', onDown, true)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 	return (
 		<input
+			ref={ref}
 			autoFocus
 			aria-label='Edit class'
 			value={text}
 			size={Math.max(6, text.length + 1)}
 			className='bg-background border-ring h-6 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none'
+			// The field below must not take focus from the editor
+			onClick={(e) => e.stopPropagation()}
 			onChange={(e) => setText(e.target.value)}
-			onBlur={() => onDone(text)}
 			onKeyDown={(e) => {
-				if (e.key === 'Enter') onDone(text)
-				if (e.key === 'Escape') onDone(null)
+				if (e.key === 'Enter') finish(text)
+				if (e.key === 'Escape') finish(null)
 			}}
 		/>
 	)
 }
 
+// CSS of a class, computed only while the tooltip is open
+function ChipCss({ raw, index }: { raw: string; index: ClassIndex | null }) {
+	const css = index?.cssOf(raw)
+	return (
+		<pre className='max-h-48 overflow-auto font-mono text-[10px] leading-4 whitespace-pre-wrap'>
+			{css ?? 'No CSS for this class'}
+		</pre>
+	)
+}
+
 export function ClassField({ node }: { node: ElementNode }) {
 	const state = useClassIndex()
-	const themeVars = useDocument((s) => s.doc?.site.theme.vars)
+	const themeVars = useSiteThemeVars()
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [typed, setTyped] = useState('')
 	const [focused, setFocused] = useState(false)
@@ -123,7 +158,7 @@ export function ClassField({ node }: { node: ElementNode }) {
 	const swatch = (name: string, kind: string) => {
 		if (!index || kind === 'variant') return null
 		const color = index.colorOf(name)
-		return color ? resolveVars(color, themeVars ?? {}) : null
+		return color ? resolveVars(color, themeVars) : null
 	}
 
 	return (
@@ -144,27 +179,36 @@ export function ClassField({ node }: { node: ElementNode }) {
 							onDone={(value) => finishEdit(i, value)}
 						/>
 					) : (
-						<span
-							key={`${raw}:${i}`}
-							title='Double-click to edit'
-							className='bg-muted flex min-h-6 items-center gap-0.5 rounded-md py-0.5 pr-0.5 pl-1.5 font-mono text-xs break-all'
-							onDoubleClick={() => setEditing(i)}
-						>
-							<span>
-								<ChipText raw={raw} />
-							</span>
-							<button
-								type='button'
-								aria-label={`Remove ${raw}`}
-								className='text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded'
-								onClick={(e) => {
-									e.stopPropagation()
-									commit(tokens.filter((_, at) => at !== i))
-								}}
-							>
-								<XIcon className='size-3' />
-							</button>
-						</span>
+						<Tooltip key={`${raw}:${i}`} delayDuration={500}>
+							<TooltipTrigger asChild>
+								<span
+									className='bg-muted flex min-h-6 items-center gap-0.5 rounded-md py-0.5 pr-0.5 pl-1.5 font-mono text-xs break-all'
+									onDoubleClick={() => setEditing(i)}
+								>
+									<span>
+										<ChipText raw={raw} />
+									</span>
+									<button
+										type='button'
+										aria-label={`Remove ${raw}`}
+										className='text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded'
+										onClick={(e) => {
+											e.stopPropagation()
+											commit(
+												tokens.filter(
+													(_, at) => at !== i
+												)
+											)
+										}}
+									>
+										<XIcon className='size-3' />
+									</button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent className='block max-w-sm'>
+								<ChipCss raw={raw} index={index} />
+							</TooltipContent>
+						</Tooltip>
 					)
 				)}
 				<input

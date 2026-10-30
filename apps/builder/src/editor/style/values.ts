@@ -81,6 +81,7 @@ export const parseValueInput = (
 ) => {
 	const text = input.trim()
 	if (allowed.includes(text)) return text
+	if (text.startsWith('-') && !negative) return null
 	if (negative && text.startsWith('-')) {
 		const rest = text.slice(1)
 		if (allowed.includes(rest) && /^\d/.test(rest)) return text
@@ -112,3 +113,31 @@ export const parseColorUtility = (
 
 export const isColorToken = (token: string) =>
 	(COLOR_TOKENS as readonly string[]).includes(token)
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+
+// "#1E90FF" or "1e90ff" gives "#1e90ff", other text gives null
+export const normalizeHex = (input: string) => {
+	const text = input.trim()
+	const hex = text.startsWith('#') ? text : `#${text}`
+	return HEX.test(hex) ? hex.toLowerCase() : null
+}
+
+// "bg" and "#1e90ff" give "bg-[#1e90ff]"
+export const customColorUtility = (prefix: string, hex: string) =>
+	`${prefix}-[${hex}]`
+
+// "bg-[#1e90ff]" with prefix "bg" gives "#1e90ff"
+export const parseCustomColor = (utility: string, prefix: string) => {
+	const rest = stripPrefix(utility, prefix)
+	const match = rest && /^\[(.+)\]$/.exec(rest)
+	return match ? normalizeHex(match[1]) : null
+}
+
+// Color input needs #rrggbb, shorter forms are expanded and alpha is dropped
+export const hexForPicker = (hex: string) => {
+	if (hex.length === 4) {
+		return `#${[...hex.slice(1)].map((c) => c + c).join('')}`
+	}
+	return hex.slice(0, 7)
+}
