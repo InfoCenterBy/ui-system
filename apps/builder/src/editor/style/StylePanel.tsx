@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
 	AlignCenterIcon,
 	AlignJustifyIcon,
@@ -15,6 +15,8 @@ import {
 	type UtilityGroup,
 } from '@ui-system/core'
 import { useProject } from '@/store/project'
+import { useCanvas } from '@/editor/canvas/canvasStore'
+import { alignCompanion, applyAlign, readLayout } from '@/editor/style/align'
 import {
 	Choose,
 	ColorSwatches,
@@ -238,6 +240,51 @@ function GapRow({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
+function JustifyRow({ ctx }: { ctx: StyleContext }) {
+	return (
+		<StyleRow ctx={ctx} group='justify-content' label='Justify'>
+			{(state) => (
+				<Choose
+					state={state}
+					options={choices('justify', [
+						'start',
+						'center',
+						'end',
+						'between',
+						'around',
+						'evenly',
+					])}
+				/>
+			)}
+		</StyleRow>
+	)
+}
+
+function AlignRow({
+	ctx,
+	label = 'Align',
+}: {
+	ctx: StyleContext
+	label?: string
+}) {
+	return (
+		<StyleRow ctx={ctx} group='align-items' label={label}>
+			{(state) => (
+				<Choose
+					state={state}
+					options={choices('items', [
+						'start',
+						'center',
+						'end',
+						'stretch',
+						'baseline',
+					])}
+				/>
+			)}
+		</StyleRow>
+	)
+}
+
 function Layout({ ctx }: { ctx: StyleContext }) {
 	const display = resolveUtility(ctx.classes, 'display', ctx.bp)?.utility
 	const isFlex = display === 'flex' || display === 'inline-flex'
@@ -275,35 +322,8 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 							/>
 						)}
 					</StyleRow>
-					<StyleRow ctx={ctx} group='justify-content' label='Justify'>
-						{(state) => (
-							<Choose
-								state={state}
-								options={choices('justify', [
-									'start',
-									'center',
-									'end',
-									'between',
-									'around',
-									'evenly',
-								])}
-							/>
-						)}
-					</StyleRow>
-					<StyleRow ctx={ctx} group='align-items' label='Align'>
-						{(state) => (
-							<Choose
-								state={state}
-								options={choices('items', [
-									'start',
-									'center',
-									'end',
-									'stretch',
-									'baseline',
-								])}
-							/>
-						)}
-					</StyleRow>
+					<JustifyRow ctx={ctx} />
+					<AlignRow ctx={ctx} />
 					<GapRow ctx={ctx} />
 				</>
 			)}
@@ -321,6 +341,35 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 									'5',
 									'6',
 									'12',
+								])}
+							/>
+						)}
+					</StyleRow>
+					<JustifyRow ctx={ctx} />
+					<StyleRow ctx={ctx} group='justify-items' label='Items X'>
+						{(state) => (
+							<Choose
+								state={state}
+								options={choices('justify-items', [
+									'start',
+									'center',
+									'end',
+									'stretch',
+								])}
+							/>
+						)}
+					</StyleRow>
+					<AlignRow ctx={ctx} label='Items Y' />
+					<StyleRow ctx={ctx} group='place-items' label='Place items'>
+						{(state) => (
+							<Choose
+								state={state}
+								options={choices('place-items', [
+									'start',
+									'center',
+									'end',
+									'stretch',
+									'baseline',
 								])}
 							/>
 						)}
@@ -364,6 +413,42 @@ function Size({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
+// Align also writes a companion utility so the text visibly moves
+function TextAlignRow({ ctx }: { ctx: StyleContext }) {
+	const doc = useCanvas((s) => s.doc)
+	const [hint, setHint] = useState<string | null>(null)
+	const current =
+		resolveUtility(ctx.classes, 'text-align', ctx.bp)?.utility ??
+		'text-left'
+	useEffect(() => {
+		// Wait for the canvas to render the new classes
+		const frame = requestAnimationFrame(() => {
+			const layout = readLayout(doc, ctx.id)
+			const c = layout && alignCompanion(layout, current)
+			setHint(c && 'hint' in c ? c.hint : null)
+		})
+		return () => cancelAnimationFrame(frame)
+	}, [doc, ctx.id, ctx.classes, ctx.bp, current])
+	return (
+		<StyleRow
+			ctx={ctx}
+			group='text-align'
+			label='Align'
+			note={hint}
+			apply={(utility) =>
+				applyAlign(
+					ctx.classes,
+					ctx.bp,
+					utility,
+					readLayout(useCanvas.getState().doc, ctx.id)
+				)
+			}
+		>
+			{(state) => <Segmented state={state} options={ALIGNS} />}
+		</StyleRow>
+	)
+}
+
 function Typography({ ctx }: { ctx: StyleContext }) {
 	return (
 		<Section title='Typography'>
@@ -380,9 +465,7 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 					<Choose state={state} options={choices('font', WEIGHTS)} />
 				)}
 			</StyleRow>
-			<StyleRow ctx={ctx} group='text-align' label='Align'>
-				{(state) => <Segmented state={state} options={ALIGNS} />}
-			</StyleRow>
+			<TextAlignRow ctx={ctx} />
 			<StyleRow ctx={ctx} group='line-height' label='Line height'>
 				{(state) => (
 					<Choose

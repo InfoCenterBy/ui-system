@@ -3,7 +3,11 @@ import {
 	SPACING_STEPS,
 	arbitraryValue,
 	colorUtility,
+	colorForPicker,
 	customColorUtility,
+	normalizeColor,
+	parsePaletteColor,
+	paletteUtility,
 	hexForPicker,
 	normalizeHex,
 	parseCustomColor,
@@ -106,6 +110,39 @@ describe('custom colors', () => {
 		expect(parseCustomColor('bg-[#1e90ff]', 'text')).toBeNull()
 		expect(parseCustomColor('bg-primary', 'bg')).toBeNull()
 		expect(parseCustomColor('bg-[10px]', 'bg')).toBeNull()
+		expect(parseCustomColor('text-[14px]', 'text')).toBeNull()
+	})
+
+	it('parses and builds functional custom colors', () => {
+		expect(parseCustomColor('bg-[rgb(30,144,255)]', 'bg')).toBe(
+			'rgb(30,144,255)'
+		)
+		expect(parseCustomColor('bg-[oklch(60%_0.2_250)]', 'bg')).toBe(
+			'oklch(60% 0.2 250)'
+		)
+		expect(parseCustomColor('text-[hsl(210_100%_50%)]', 'text')).toBe(
+			'hsl(210 100% 50%)'
+		)
+		expect(parseCustomColor('bg-[color:var(--x)]', 'bg')).toBe(
+			'color:var(--x)'
+		)
+		expect(customColorUtility('bg', 'oklch(60% 0.2 250)')).toBe(
+			'bg-[oklch(60%_0.2_250)]'
+		)
+		expect(normalizeColor('rgb(1 2 3)')).toBe('rgb(1 2 3)')
+		expect(normalizeColor('#ABC')).toBe('#abc')
+		expect(normalizeColor('red')).toBeNull()
+		expect(normalizeColor('14px')).toBeNull()
+		expect(colorForPicker('#abc')).toBe('#aabbcc')
+		expect(colorForPicker('oklch(100% 0 0)')).toBe('#ffffff')
+	})
+
+	it('handles tailwind palette classes', () => {
+		expect(parsePaletteColor('bg-red-500', 'bg')).toBe('red-500')
+		expect(parsePaletteColor('text-sky-300/50', 'text')).toBe('sky-300/50')
+		expect(parsePaletteColor('bg-primary', 'bg')).toBeNull()
+		expect(paletteUtility('bg', 'red-500')).toBe('bg-red-500')
+		expect(paletteUtility('bg', 'nope')).toBeNull()
 	})
 	it('expands short hex for the picker', () => {
 		expect(hexForPicker('#abc')).toBe('#aabbcc')

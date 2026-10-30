@@ -76,6 +76,10 @@ export const UTILITY_GROUPS = {
 	'justify-content':
 		/^justify-(start|end|center|between|around|evenly|stretch|normal)$/,
 	'align-items': /^items-(start|end|center|baseline|stretch)$/,
+	'justify-items': /^justify-items-(start|end|center|stretch|normal)$/,
+	'place-items': /^place-items-(start|end|center|baseline|stretch)$/,
+	'align-self': /^self-(auto|start|end|center|stretch|baseline)$/,
+	'justify-self': /^justify-self-(auto|start|end|center|stretch)$/,
 	gap: /^gap-(?!x-|y-)/,
 	'grid-cols': /^grid-cols-/,
 	'col-span': /^col-(span|start|end)-/,

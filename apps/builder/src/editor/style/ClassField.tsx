@@ -34,7 +34,7 @@ function ChipText({ raw }: { raw: string }) {
 	)
 }
 
-// Ends on Enter, Escape or a pointer-down outside, clicks inside move the caret
+// Ends on Enter, Escape, blur (Tab) or a pointer-down outside, clicks inside move the caret
 function ChipEditor({
 	initial,
 	onDone,
@@ -74,6 +74,8 @@ function ChipEditor({
 				if (e.key === 'Enter') finish(text)
 				if (e.key === 'Escape') finish(null)
 			}}
+			// Tab and other focus loss commit, finish ignores repeats
+			onBlur={(e) => finish(e.currentTarget.value)}
 		/>
 	)
 }

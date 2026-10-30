@@ -1,5 +1,7 @@
 // Pure helpers that map control values to Tailwind utilities and back
 
+import { oklchToHex } from '@ui-system/theme'
+
 export const SPACING_STEPS = [
 	'0',
 	'0.5',
@@ -123,15 +125,66 @@ export const normalizeHex = (input: string) => {
 	return HEX.test(hex) ? hex.toLowerCase() : null
 }
 
-// "bg" and "#1e90ff" give "bg-[#1e90ff]"
-export const customColorUtility = (prefix: string, hex: string) =>
-	`${prefix}-[${hex}]`
+const COLOR_FN =
+	/^(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color|color-mix)\(.+\)$/i
 
-// "bg-[#1e90ff]" with prefix "bg" gives "#1e90ff"
+// Text for the class field: "rgb(30 144 255)" and "color:var(--x)" are kept
+// as typed, hex is lowercased, anything that is not a color gives null
+export const normalizeColor = (input: string) => {
+	const text = input.trim()
+	const hex = normalizeHex(text)
+	if (hex) return text.startsWith('#') ? hex : null
+	const hint = /^color:/i.test(text)
+	const body = hint ? text.slice(6).trim() : text
+	if (hint ? body : COLOR_FN.test(body)) return hint ? `color:${body}` : body
+	return null
+}
+
+// "bg" and "#1e90ff" give "bg-[#1e90ff]", spaces become underscores
+export const customColorUtility = (prefix: string, color: string) =>
+	`${prefix}-[${color.trim().replace(/\s+/g, '_')}]`
+
+// "bg-[oklch(60%_0.2_250)]" with prefix "bg" gives "oklch(60% 0.2 250)"
 export const parseCustomColor = (utility: string, prefix: string) => {
 	const rest = stripPrefix(utility, prefix)
 	const match = rest && /^\[(.+)\]$/.exec(rest)
-	return match ? normalizeHex(match[1]) : null
+	if (!match) return null
+	return normalizeColor(match[1].replace(/_/g, ' '))
+}
+
+// CSS for a custom color text, without the "color:" type hint
+export const customColorCss = (color: string) => color.replace(/^color:/i, '')
+
+// "bg-red-500/50" with prefix "bg" gives "red-500/50", daisy tokens give null
+export const parsePaletteColor = (utility: string, prefix: string) => {
+	const rest = stripPrefix(utility, prefix)
+	return rest && /^[a-z]+-\d{2,3}(\/\d+)?$/.test(rest) ? rest : null
+}
+
+// "red-500" and "bg" give "bg-red-500", other text gives null
+export const paletteUtility = (prefix: string, name: string) =>
+	/^[a-z]+-\d{2,3}(\/\d+)?$/.test(name.trim())
+		? `${prefix}-${name.trim()}`
+		: null
+
+// Color input needs #rrggbb, so any CSS color is converted when possible
+export const colorForPicker = (css: string) => {
+	const hex = normalizeHex(css)
+	if (hex) return hexForPicker(hex)
+	if (/^oklch\(/i.test(css)) return oklchToHex(css)
+	if (typeof document === 'undefined') return null
+	// The canvas parses rgb, hsl and the like and returns #rrggbb or rgba()
+	const ctx = document.createElement('canvas').getContext('2d')
+	if (!ctx) return null
+	ctx.fillStyle = '#000001'
+	ctx.fillStyle = css
+	const out = ctx.fillStyle
+	if (out === '#000001') return null
+	if (out.startsWith('#')) return out
+	const rgb = /\d+(\.\d+)?/g
+	const nums = out.match(rgb)?.slice(0, 3).map(Number)
+	if (!nums || nums.length < 3) return null
+	return `#${nums.map((n) => Math.round(n).toString(16).padStart(2, '0')).join('')}`
 }
 
 // Color input needs #rrggbb, shorter forms are expanded and alpha is dropped

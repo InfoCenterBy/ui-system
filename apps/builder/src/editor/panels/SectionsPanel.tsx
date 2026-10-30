@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SectionPreset } from '@ui-system/core'
 import { sectionCategories, sectionPresets } from '@ui-system/blocks/sections'
 import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { presetDrag } from '@/editor/dnd'
 import { usePresetCss } from '@/editor/panels/presetCss'
 import { SectionPreview } from '@/editor/panels/SectionPreview'
+import { groupSections, parseOpenIds } from '@/editor/panels/sectionGroups'
 import { placePreset } from '@/store/actions'
 
 function PresetCard({
@@ -59,49 +62,116 @@ function PresetCard({
 	)
 }
 
+const STORAGE_KEY = 'builder.sections.open'
+
+const loadOpen = () => {
+	try {
+		return new Set(parseOpenIds(localStorage.getItem(STORAGE_KEY)))
+	} catch {
+		return new Set<string>()
+	}
+}
+
+const saveOpen = (open: Set<string>) => {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify([...open]))
+	} catch {
+		// storage can be unavailable
+	}
+}
+
 export function SectionsPanel() {
 	const [query, setQuery] = useState('')
+	const [open, setOpen] = useState(loadOpen)
 	const css = usePresetCss()
+	const searching = query.trim() !== ''
 
-	const groups = useMemo(() => {
-		const q = query.trim().toLowerCase()
-		return sectionCategories
-			.map((category) => ({
-				category,
-				presets: sectionPresets.filter(
-					(p) =>
-						p.category === category.id &&
-						(!q ||
-							p.name.toLowerCase().includes(q) ||
-							category.name.toLowerCase().includes(q))
-				),
-			}))
-			.filter((g) => g.presets.length > 0)
-	}, [query])
+	const groups = useMemo(
+		() => groupSections(sectionCategories, sectionPresets, query),
+		[query]
+	)
+
+	const update = (next: Set<string>) => {
+		setOpen(next)
+		saveOpen(next)
+	}
+	const toggle = (id: string) => {
+		const next = new Set(open)
+		if (!next.delete(id)) next.add(id)
+		update(next)
+	}
 
 	return (
-		<div className='flex flex-col gap-3 p-3'>
-			<Input
-				type='search'
-				placeholder='Search sections'
-				value={query}
-				onChange={(e) => setQuery(e.target.value)}
-			/>
+		<div className='flex flex-col gap-2 p-3'>
+			<div className='flex items-center gap-1'>
+				<Input
+					type='search'
+					placeholder='Search sections'
+					value={query}
+					onChange={(e) => setQuery(e.target.value)}
+				/>
+				<Button
+					variant='ghost'
+					size='icon-sm'
+					title='Expand all'
+					aria-label='Expand all'
+					onClick={() =>
+						update(new Set(sectionCategories.map((c) => c.id)))
+					}
+				>
+					<ChevronsUpDown />
+				</Button>
+				<Button
+					variant='ghost'
+					size='icon-sm'
+					title='Collapse all'
+					aria-label='Collapse all'
+					onClick={() => update(new Set())}
+				>
+					<ChevronsDownUp />
+				</Button>
+			</div>
 			{groups.length === 0 && (
 				<p className='text-muted-foreground text-sm'>
 					No sections found
 				</p>
 			)}
-			{groups.map(({ category, presets }) => (
-				<section key={category.id} className='flex flex-col gap-1'>
-					<h3 className='text-muted-foreground text-xs font-medium'>
-						{category.name}
-					</h3>
-					{presets.map((preset) => (
-						<PresetCard key={preset.id} preset={preset} css={css} />
-					))}
-				</section>
-			))}
+			{groups.map(({ category, presets }) => {
+				const expanded = searching || open.has(category.id)
+				const bodyId = `sections-${category.id}`
+				return (
+					<section key={category.id} className='flex flex-col gap-1'>
+						<button
+							type='button'
+							aria-expanded={expanded}
+							aria-controls={bodyId}
+							onClick={() => toggle(category.id)}
+							className='focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-md px-1 py-1 text-left text-sm outline-none hover:bg-accent focus-visible:ring-[3px]'
+						>
+							<ChevronRight
+								className={`text-muted-foreground size-3.5 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}
+							/>
+							<span className='flex-1 truncate font-medium'>
+								{category.name}
+							</span>
+							<span className='text-muted-foreground text-xs'>
+								{presets.length}
+							</span>
+						</button>
+						{expanded && (
+							<div id={bodyId} className='flex flex-col gap-1'>
+								{presets.map((preset) => (
+									<PresetCard
+										key={preset.id}
+										preset={preset}
+										css={css}
+									/>
+								))}
+							</div>
+						)}
+					</section>
+				)
+			})}
 		</div>
 	)
 }

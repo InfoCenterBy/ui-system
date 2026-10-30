@@ -16,13 +16,20 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { resolveVars } from '@ui-system/theme'
+import type { ClassIndex } from '@ui-system/theme/classes'
 import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
+import { useClassIndex } from '@/editor/style/useClassIndex'
 import {
 	COLOR_TOKENS,
 	OPACITY_STEPS,
 	colorUtility,
 	customColorUtility,
-	hexForPicker,
+	colorForPicker,
+	customColorCss,
+	normalizeColor,
+	paletteUtility,
+	parsePaletteColor,
 	isColorToken,
 	normalizeHex,
 	parseCustomColor,
@@ -54,6 +61,8 @@ export function StyleRow({
 	group,
 	label,
 	stacked = false,
+	apply,
+	note,
 	children,
 }: {
 	ctx: StyleContext
@@ -61,13 +70,22 @@ export function StyleRow({
 	label: string
 	// Control below the label instead of beside it
 	stacked?: boolean
+	// Replaces the plain class write, e.g. to add a companion utility
+	apply?: (utility: string | null) => string
+	// Muted line under the row
+	note?: ReactNode
 	children: (state: RowState) => ReactNode
 }) {
 	const own = getUtility(ctx.classes, group, ctx.bp)
 	const resolved = resolveUtility(ctx.classes, group, ctx.bp)
 	const inherited = own === null && resolved !== null
 	const set = (utility: string | null) =>
-		setClasses(ctx.id, setUtility(ctx.classes, group, ctx.bp, utility))
+		setClasses(
+			ctx.id,
+			apply
+				? apply(utility)
+				: setUtility(ctx.classes, group, ctx.bp, utility)
+		)
 	return (
 		<div
 			className={cn(
@@ -117,6 +135,11 @@ export function StyleRow({
 						set,
 					})}
 				</div>
+			)}
+			{note && (
+				<p className='text-muted-foreground/80 col-span-full text-[10px] leading-tight'>
+					{note}
+				</p>
 			)}
 		</div>
 	)
@@ -369,8 +392,9 @@ function Swatch({
 }) {
 	const vars = useSiteThemeVars()
 	const color = vars[`--color-${token}`]
+	// The hint must not cover neighbour swatches: it ignores the pointer and closes once it leaves the swatch
 	return (
-		<Tooltip delayDuration={150}>
+		<Tooltip delayDuration={150} disableHoverableContent>
 			<TooltipTrigger asChild>
 				<button
 					type='button'
@@ -385,53 +409,68 @@ function Swatch({
 					onClick={onClick}
 				/>
 			</TooltipTrigger>
-			<TooltipContent className='font-mono'>
+			<TooltipContent
+				sideOffset={6}
+				className='pointer-events-none font-mono'
+			>
 				{color ? `${token} \u00b7 ${color}` : token}
 			</TooltipContent>
 		</Tooltip>
 	)
 }
 
-// Any color as an arbitrary class like bg-[#1e90ff]
+// Any color as an arbitrary class like bg-[#1e90ff] or a palette class
 function CustomColor({
 	state,
 	prefix,
-	hex,
+	text,
+	css,
+	index,
 }: {
 	state: RowState
 	prefix: string
-	hex: string | null
+	text: string | null
+	css: string | null
+	index: ClassIndex | null
 }) {
 	const [draft, setDraft] = useState<{ from: string; text: string } | null>(
 		null
 	)
-	const shown = draft && draft.from === (hex ?? '') ? draft.text : (hex ?? '')
+	const set = text !== null
+	const shown =
+		draft && draft.from === (text ?? '') ? draft.text : (text ?? '')
 	const apply = (value: string) =>
 		state.set(customColorUtility(prefix, value))
-	const commit = (text: string) => {
+	const commit = (input: string) => {
 		setDraft(null)
-		const value = normalizeHex(text)
-		if (value && value !== hex) apply(value)
+		const palette = paletteUtility(prefix, input)
+		if (palette) {
+			if (index?.colorOf(palette) && palette !== state.value)
+				state.set(palette)
+			return
+		}
+		const value = normalizeColor(input) ?? normalizeHex(input)
+		if (value && value !== text) apply(value)
 	}
 	return (
-		<div className='flex items-center gap-1.5'>
+		<div className='flex min-w-0 items-center gap-1.5'>
 			<Tooltip delayDuration={150}>
 				<TooltipTrigger asChild>
 					<label
 						className={cn(
 							'border-border relative flex size-5 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border',
-							hex && 'ring-ring ring-2 ring-offset-1',
-							hex && state.inherited && 'opacity-60'
+							set && 'ring-ring ring-2 ring-offset-1',
+							set && state.inherited && 'opacity-60'
 						)}
-						style={{ background: hex ?? undefined }}
+						style={{ background: css ?? undefined }}
 					>
-						{!hex && (
+						{!css && (
 							<PipetteIcon className='text-muted-foreground size-3' />
 						)}
 						<input
 							type='color'
 							aria-label={`${prefix} custom color`}
-							value={hex ? hexForPicker(hex) : '#000000'}
+							value={(css && colorForPicker(css)) || '#000000'}
 							className='absolute inset-0 size-full cursor-pointer opacity-0'
 							onChange={(e) => apply(e.target.value)}
 						/>
@@ -441,13 +480,13 @@ function CustomColor({
 			</Tooltip>
 			<input
 				value={shown}
-				placeholder='#hex'
+				placeholder='#hex, rgb(), oklch()'
 				aria-label={`${prefix} hex`}
 				autoComplete='off'
 				spellCheck={false}
-				className='border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-6 w-20 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none focus-visible:ring-3'
+				className='border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-6 w-32 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none focus-visible:ring-3'
 				onChange={(e) =>
-					setDraft({ from: hex ?? '', text: e.target.value })
+					setDraft({ from: text ?? '', text: e.target.value })
 				}
 				onBlur={(e) => commit(e.currentTarget.value)}
 				onKeyDown={(e) => {
@@ -468,7 +507,18 @@ export function ColorSwatches({
 	prefix: string
 }) {
 	const current = state.value ? parseColorUtility(state.value, prefix) : null
-	const customHex = state.value ? parseCustomColor(state.value, prefix) : null
+	const classIndex = useClassIndex()
+	const themeVars = useSiteThemeVars()
+	const index = classIndex.status === 'ready' ? classIndex.index : null
+	const custom = state.value ? parseCustomColor(state.value, prefix) : null
+	const palette = state.value ? parsePaletteColor(state.value, prefix) : null
+	const customText = custom ?? palette
+	const rawCss = custom
+		? customColorCss(custom)
+		: palette && state.value
+			? index?.colorOf(state.value)
+			: null
+	const customCss = rawCss ? resolveVars(rawCss, themeVars) : null
 	const token = current && isColorToken(current.token) ? current : null
 	return (
 		<div className='flex flex-col gap-1.5'>
@@ -517,9 +567,15 @@ export function ColorSwatches({
 						</option>
 					))}
 				</select>
-				<CustomColor state={state} prefix={prefix} hex={customHex} />
+				<CustomColor
+					state={state}
+					prefix={prefix}
+					text={customText}
+					css={customCss}
+					index={index}
+				/>
 			</div>
-			{current && !token && !customHex && (
+			{current && !token && !customText && (
 				<span className='text-muted-foreground truncate font-mono text-[10px]'>
 					{state.value}
 				</span>
