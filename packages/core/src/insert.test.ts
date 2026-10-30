@@ -68,6 +68,22 @@ describe('prepareInsert', () => {
 		expect(out).not.toContain('daisyui')
 	})
 
+	it('renames commandfor and inline anchor names consistently', () => {
+		const out = prepare(
+			'<div><button commandfor="m" command="show-modal" style="anchor-name: --a">x</button>' +
+				'<dialog id="m" style="position-anchor: --a; top: anchor(--a bottom); left: anchor-size(--a width)"></dialog>' +
+				'<p style="anchor-name: --keep, --a">y</p><i style="position-anchor: --other"></i></div>'
+		)
+		expect(out).toContain('commandfor="m-t"')
+		expect(out).toContain('id="m-t"')
+		expect(out).toContain('anchor-name: --a-t"')
+		expect(out).toContain(
+			'position-anchor: --a-t; top: anchor(--a-t bottom); left: anchor-size(--a-t width)'
+		)
+		expect(out).toContain('anchor-name: --keep-t, --a-t')
+		expect(out).toContain('position-anchor: --other')
+	})
+
 	it('swaps demo background images in inline styles', () => {
 		const html =
 			'<div style="background-image: url(https://img.daisyui.com/x.webp); color: red"></div>'

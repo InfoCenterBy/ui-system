@@ -1,3 +1,4 @@
+import callyUrl from 'cally?url'
 import {
 	NODE_ID_ATTR,
 	isElement,
@@ -11,6 +12,9 @@ export const PAGE_ROOT = 'page'
 
 // Editor-only mark on empty containers, never part of the saved or exported HTML
 export const EMPTY_SLOT_ATTR = 'data-editor-empty'
+
+// Editor-only mark on a modal, popover or dropdown shown while it is selected
+export const OPEN_ATTR = 'data-editor-open'
 
 // Empty document the canvas fills in, assets resolve against the builder origin
 export const frameSrcdoc = () => `<!doctype html>
@@ -27,10 +31,14 @@ export const frameSrcdoc = () => `<!doctype html>
 	a, button, label { cursor: default; }
 	[${EMPTY_SLOT_ATTR}] { position: relative; min-height: 6rem; outline: 1px dashed #94a3b8; outline-offset: -1px; }
 	[${EMPTY_SLOT_ATTR}]::after { content: 'Add elements from the Elements tab'; position: absolute; inset: 0; display: grid; place-items: center; padding: 0.5rem; text-align: center; color: #94a3b8; font: 14px system-ui; pointer-events: none; }
+	dialog[${OPEN_ATTR}] { pointer-events: none !important; }
+	dialog[${OPEN_ATTR}] .modal-box { pointer-events: auto !important; }
+	dialog[${OPEN_ATTR}] .modal-backdrop { pointer-events: none !important; }
 </style>
 </head>
 <body>
 <div id="${PAGE_ROOT}"></div>
+<script type="module" src="${callyUrl}"></script>
 </body>
 </html>`
 

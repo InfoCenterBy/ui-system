@@ -1,4 +1,12 @@
-import { copyFile, mkdir, rm, stat, writeFile } from 'node:fs/promises'
+import {
+	copyFile,
+	mkdir,
+	readFile,
+	rm,
+	stat,
+	writeFile,
+} from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import {
 	collectClasses,
@@ -14,6 +22,7 @@ import { buildExportCss } from './css'
 import { resolveInside } from './fs-utils'
 import type { OptimizedImage } from './images'
 import type { Project } from './project'
+import { detectFeatures, featureScripts } from './siteScripts'
 
 export type Optimize = (
 	input: string,
@@ -27,6 +36,7 @@ export interface ExportResult {
 	files: number
 	cssBytes: number
 	script: boolean
+	cally: boolean
 	warnings: string[]
 }
 
@@ -107,13 +117,37 @@ export const takeScripts = (roots: TreeNode[]) => {
 export const siteScript = (scripts: string[]) =>
 	[...new Set(scripts)].map((code) => `;(() => {\n${code}\n})()\n`).join('\n')
 
+// Copies Cally with its MIT notice on top, as a classic script so file:// pages work too
+const writeCally = async (to: string) => {
+	const entry = fileURLToPath(import.meta.resolve('cally'))
+	const license = await readFile(
+		path.join(path.dirname(entry), '..', 'LICENSE'),
+		'utf8'
+	)
+	// The module ends with an export list, a classic script has none
+	const code = (await readFile(entry, 'utf8')).replace(
+		/\nexport \{[^}]*\};?\s*$/,
+		''
+	)
+	const notice = license.trim().replace(/\*\//g, '* /')
+	await mkdir(path.dirname(to), { recursive: true })
+	await writeFile(
+		to,
+		`/*! Cally, MIT license\n${notice}\n*/\n;(() => {\n${code}\n})()\n`
+	)
+}
+
 interface PageDocument {
 	site: Site
 	page: Page
 	body: string
 	prefix: string
 	script: boolean
+	cally?: boolean
 }
+
+// Local copy of the Cally web component, loaded only by pages with a calendar
+export const CALLY_FILE = 'assets/js/cally.js'
 
 export const pageDocument = ({
 	site,
@@ -121,6 +155,7 @@ export const pageDocument = ({
 	body,
 	prefix,
 	script,
+	cally,
 }: PageDocument) => {
 	const { title, description, ogImage } = page.meta
 	const head = [
@@ -136,6 +171,7 @@ export const pageDocument = ({
 			`<meta property="og:image" content="${escapeAttr(ASSET.test(ogImage) ? prefix + ogImage : ogImage)}">`,
 		`<link rel="stylesheet" href="${prefix}assets/site.css">`,
 		script && `<script src="${prefix}assets/site.js" defer></script>`,
+		cally && `<script src="${prefix}${CALLY_FILE}" defer></script>`,
 	].filter(Boolean)
 	const indent = (text: string) =>
 		text
@@ -252,6 +288,7 @@ export async function exportSite(
 	const classes = new Set<string>()
 	const scripts: string[] = []
 	const exported: string[] = []
+	let cally = false
 
 	for (const id of site.pages) {
 		const page = project.pages.find((p) => p.id === id)
@@ -261,6 +298,9 @@ export async function exportSite(
 		}
 		const roots = pageRoots(project, page)
 		const pageScripts = takeScripts(roots)
+		const features = detectFeatures(roots)
+		pageScripts.push(...featureScripts(features))
+		cally ||= features.calendar
 		scripts.push(...pageScripts)
 		collectClasses(roots, classes)
 
@@ -302,6 +342,7 @@ export async function exportSite(
 			body: serializeHtml(roots),
 			prefix,
 			script: pageScripts.length > 0,
+			cally: features.calendar,
 		})
 		const name = `${page.slug}.html`
 		await writeFile(path.join(dist, name), html)
@@ -329,12 +370,18 @@ export async function exportSite(
 		files++
 	}
 
+	if (cally) {
+		await writeCally(path.join(dist, CALLY_FILE))
+		files++
+	}
+
 	return {
 		dir: dist,
 		pages: exported,
 		files,
 		cssBytes: Buffer.byteLength(css),
 		script,
+		cally,
 		warnings,
 	}
 }

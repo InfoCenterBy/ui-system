@@ -14,6 +14,7 @@ import { Overlay } from '@/editor/canvas/Overlay'
 import { useCanvasCss } from '@/editor/canvas/useCanvasCss'
 import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
 import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
+import { useRevealOpen } from '@/editor/canvas/useRevealOpen'
 import { useRoots } from '@/editor/canvas/useRoots'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
@@ -66,6 +67,7 @@ export function Canvas() {
 		if (doc) syncRoots(doc, cache, roots, editingRoot)
 	}, [doc, cache, roots, editingRoot])
 
+	useRevealOpen(doc, roots)
 	useCanvasCss(doc, roots, theme)
 	useInlineEditing(doc, rootsRef)
 

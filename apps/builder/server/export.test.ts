@@ -225,6 +225,66 @@ describe('export helpers', () => {
 		expect(normalizePrefix('/x/')).toBe('/x/')
 	})
 
+	it('adds feature scripts and Cally only to pages that use them', async () => {
+		const dir = await setUp()
+		const project = await (await send('GET', '/api/project')).json()
+		const rich = section(
+			'rich',
+			`<section class="p-4">
+	<button class="btn" command="show-modal" commandfor="m">Open</button>
+	<dialog id="m" class="modal"><div class="modal-box">Hi</div></dialog>
+	<div data-countdown-to="2030-01-01T00:00"><span data-countdown="days" style="--value: 1">1</span></div>
+	<calendar-date class="cally"><calendar-month></calendar-month></calendar-date>
+</section>`
+		)
+		await send('PUT', '/api/project/pages/about', {
+			...project.pages[1],
+			sections: [rich],
+		})
+		await send('PUT', '/api/project/pages/home', {
+			...project.pages[0],
+			sections: [
+				section('plain', '<section class="p-4">Plain</section>'),
+			],
+		})
+		const result = await (await send('POST', '/api/project/export')).json()
+		expect(result.cally).toBe(true)
+		const dist = path.join(dir, 'dist')
+		const about = await readFile(path.join(dist, 'about.html'), 'utf8')
+		expect(about).toContain('<script src="assets/site.js" defer>')
+		expect(about).toContain('<script src="assets/js/cally.js" defer>')
+		expect(about).toContain('commandfor="m"')
+		const index = await readFile(path.join(dist, 'index.html'), 'utf8')
+		expect(index).not.toMatch(/site\.js|cally/)
+		const js = await readFile(path.join(dist, 'assets', 'site.js'), 'utf8')
+		expect(js).toContain("'show-modal': 'showModal'")
+		expect(js).toContain('data-countdown-to')
+		const cally = await readFile(
+			path.join(dist, 'assets', 'js', 'cally.js'),
+			'utf8'
+		)
+		expect(cally).toMatch(/^\/\*! Cally, MIT license/)
+		expect(cally).toContain('customElements')
+		expect(cally).not.toMatch(/^export /m)
+	})
+
+	it('writes no site.js or Cally for plain pages', async () => {
+		const dir = await setUp()
+		const project = await (await send('GET', '/api/project')).json()
+		await send('PUT', '/api/project/pages/about', {
+			...project.pages[1],
+			sections: [
+				section('plain', '<section class="p-4">Plain</section>'),
+			],
+		})
+		const result = await (await send('POST', '/api/project/export')).json()
+		expect(result.script).toBe(false)
+		expect(result.cally).toBe(false)
+		const files = await readdir(path.join(dir, 'dist', 'assets'))
+		expect(files).not.toContain('js')
+		expect(files).not.toContain('site.js')
+	})
+
 	it('moves inline scripts out and keeps external ones', () => {
 		const roots = [
 			section(

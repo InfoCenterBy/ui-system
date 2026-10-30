@@ -20,6 +20,10 @@ import {
 	InstanceProperties,
 	OverrideRow,
 } from '@/editor/components/InstanceProperties'
+import {
+	COUNTDOWN_ATTR,
+	CountdownProperties,
+} from '@/editor/properties/CountdownProperties'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
 import { ClassField } from '@/editor/style/ClassField'
@@ -187,6 +191,10 @@ export function Properties() {
 	const repeatNode = node.repeat
 		? node
 		: ancestorsOf(roots, node.id).findLast((a) => a.repeat)
+	const countdown =
+		node.attrs[COUNTDOWN_ATTR] !== undefined
+			? node
+			: ancestors.findLast((a) => a.attrs[COUNTDOWN_ATTR] !== undefined)
 	// The master root has no siblings, so it is not a repeat item there
 	const item =
 		repeatNode && !(editing && topLevelOf(roots, repeatNode.id))
@@ -230,6 +238,12 @@ export function Properties() {
 					<p className='text-muted-foreground text-sm'>
 						Double-click the text on the canvas to edit it
 					</p>
+				)}
+				{countdown && (
+					<CountdownProperties
+						key={`countdown-${countdown.id}`}
+						node={countdown}
+					/>
 				)}
 				{item && <RepeatProperties item={item} />}
 				{free && <ClassField node={node} />}

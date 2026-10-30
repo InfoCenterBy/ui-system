@@ -29,6 +29,10 @@ interface Override {
 	strip?: string[]
 	// Classes added to every root
 	add?: string[]
+	// Text edits of the library markup before parsing
+	replace?: [RegExp, string][]
+	// Attributes set on the root when there is a single one
+	attrs?: Record<string, string>
 }
 
 const DEFAULT_WRAP = 'flex flex-wrap items-center gap-2'
@@ -36,14 +40,39 @@ const COLUMN = 'flex flex-col items-start gap-3'
 const STACK = 'flex flex-col gap-2'
 const ROW = 'flex flex-wrap items-start gap-4'
 
+// Button opens the dialog through the command API, no inline handler
+const MODAL_REPLACE: [RegExp, string][] = [
+	[
+		/onclick="\s*document\.getElementById\('([^']+)'\)\.showModal\(\)\s*"/g,
+		'command="show-modal" commandfor="$1"',
+	],
+]
+
+const COUNTDOWN_TO = '2026-12-31T00:00'
+const COUNTDOWN_UNITS: Record<string, string> = {
+	days: 'days',
+	hours: 'hours',
+	min: 'minutes',
+	sec: 'seconds',
+}
+
+// Demo ids become unit markers, the demo script goes to the exported site.js
+const countdownReplace = (
+	units: Record<string, string>
+): [RegExp, string][] => [
+	[/\s*<script>[\s\S]*<\/script>/, ''],
+	[/\s*aria-live="polite"/g, ''],
+	...Object.entries(units).map(
+		([id, unit]) =>
+			[new RegExp(`id="${id}"`), `data-countdown="${unit}"`] as [
+				RegExp,
+				string,
+			]
+	),
+]
+
 // Keyed by `slug` or `slug/variant`, a variant entry wins over its category
 const overrides: Record<string, Override> = {
-	// Scripts or id coupling, a later stage
-	calendar: { hidden: true },
-	countdown: { hidden: true },
-	dropdown: { hidden: true },
-	megamenu: { hidden: true },
-	modal: { hidden: true },
 	// Pinned to the viewport or the page, not a part of a section
 	dock: { hidden: true },
 	drawer: { hidden: true },
@@ -51,6 +80,41 @@ const overrides: Record<string, Override> = {
 	toast: { hidden: true },
 	// Switches the theme of the whole page, needs the theme list and a script
 	'theme-controller': { hidden: true },
+
+	modal: { replace: MODAL_REPLACE },
+	countdown: { attrs: { 'data-countdown-to': COUNTDOWN_TO } },
+	'countdown/boxes': {
+		replace: countdownReplace(
+			Object.fromEntries(
+				Object.entries(COUNTDOWN_UNITS).map(([k, v]) => [
+					`countdown-${k}`,
+					v,
+				])
+			)
+		),
+	},
+	'countdown/default': {
+		replace: countdownReplace({ 'countdown-default': 'seconds' }),
+	},
+	'countdown/clock': {
+		replace: countdownReplace({
+			'countdown-clock-h': 'hours',
+			'countdown-clock-m': 'minutes',
+			'countdown-clock-s': 'seconds',
+		}),
+	},
+	'countdown/large': {
+		replace: countdownReplace({ 'countdown-large': 'days' }),
+	},
+	'calendar/in-dropdown': {
+		// The demo handler addresses the button by id
+		replace: [
+			[/\s*onchange="[^"]*"/, ''],
+			[/\s*id="calendar-button"/, ''],
+		],
+	},
+	dropdown: { wrap: ROW },
+	megamenu: { wrap: STACK },
 
 	accordion: { wrap: STACK },
 	alert: { wrap: STACK },
@@ -100,7 +164,10 @@ const prepareRoot = (root: ElementNode, override: Override) => {
 
 const build = (name: string, html: string, override: Override): string => {
 	if (override.html !== undefined) return override.html
-	const roots = parseHtml(html).filter(
+	let source = html
+	for (const [pattern, text] of override.replace ?? [])
+		source = source.replace(pattern, text)
+	const roots = parseHtml(source).filter(
 		(node) => isElement(node) || node.text.trim()
 	)
 	for (const root of roots) if (isElement(root)) prepareRoot(root, override)
@@ -108,6 +175,7 @@ const build = (name: string, html: string, override: Override): string => {
 	const single = roots.length === 1 ? roots[0] : undefined
 	if (single && isElement(single)) {
 		single.label = name
+		Object.assign(single.attrs, override.attrs)
 	} else {
 		const [wrapper] = parseHtml(
 			`<div class="${override.wrap ?? DEFAULT_WRAP}"></div>`

@@ -40,8 +40,26 @@ const renameRef = (value: string, ids: Map<string, string>) =>
 		})
 		.join('')
 
-// Deep copy of nodes for inserting into a page: ids and radio or checkbox names
-// become unique, references follow, demo images are swapped. Node ids stay
+const ANCHOR_DECL = /(anchor-name|anchor-scope)\s*:\s*([^;]+)/g
+const ANCHOR_USE =
+	/(anchor-name|anchor-scope|position-anchor)(\s*:\s*)([^;]+)|(anchor(?:-size)?\(\s*)(--[\w-]+)/g
+
+// Dashed anchor names declared in an inline style
+const anchorNames = (style: string) =>
+	[...style.matchAll(ANCHOR_DECL)].flatMap(
+		(m) => m[2].match(/--[\w-]+/g) ?? []
+	)
+
+const renameAnchors = (style: string, names: Map<string, string>) =>
+	style.replace(ANCHOR_USE, (all, prop, sep, list, fn, name) =>
+		fn
+			? `${fn}${names.get(name) ?? name}`
+			: `${prop}${sep}${list.replace(/--[\w-]+/g, (n: string) => names.get(n) ?? n)}`
+	)
+
+// Deep copy of nodes for inserting into a page: ids, radio or checkbox names
+// and inline CSS anchor names become unique, references follow, demo images
+// are swapped. Node ids stay
 export const prepareInsert = (
 	nodes: TreeNode[],
 	opts: PrepareOptions
@@ -49,12 +67,15 @@ export const prepareInsert = (
 	const token = opts.newId()
 	const ids = new Map<string, string>()
 	const names = new Map<string, string>()
+	const anchors = new Map<string, string>()
 	walk(nodes, (node) => {
 		if (!isElement(node)) return
 		const id = node.attrs.id
 		if (id) ids.set(id, `${id}-${token}`)
 		const name = node.attrs.name
 		if (name && isCheckable(node)) names.set(name, `${name}-${token}`)
+		for (const anchor of anchorNames(node.attrs.style ?? ''))
+			anchors.set(anchor, `${anchor}-${token}`)
 	})
 
 	const copy = (node: TreeNode): TreeNode => {
@@ -69,6 +90,8 @@ export const prepareInsert = (
 				(key === 'href' && value.startsWith('#'))
 			)
 				attrs[key] = renameRef(value, ids)
+			else if (key === 'style' && anchors.size > 0)
+				attrs[key] = renameAnchors(value, anchors)
 			else attrs[key] = value
 		}
 		const tag = node.tag.toLowerCase()

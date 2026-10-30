@@ -67,6 +67,7 @@ export interface ExportResult {
 	files: number
 	cssBytes: number
 	script: boolean
+	cally: boolean
 	warnings: string[]
 }
 

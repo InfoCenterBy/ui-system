@@ -30,3 +30,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Cally
+
+- Source: https://github.com/WickyNilliams/cally
+- Used in: the builder canvas and `assets/js/cally.js` of exported sites with a calendar (copied with its MIT notice on top)
+
+```
+MIT License
+
+Copyright 2024-present Nick Williams
+```
