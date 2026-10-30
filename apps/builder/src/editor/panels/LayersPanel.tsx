@@ -21,8 +21,9 @@ import { labelOf } from '@/editor/canvas/nodes'
 import { asLayer, layerDrag } from '@/editor/dnd'
 import { AddMenu } from '@/editor/navigator/AddMenu'
 import { asNode, canDropNode, dropNode } from '@/editor/navigator/dragHelpers'
-import { ElementRow, selectAndReveal } from '@/editor/navigator/ElementRow'
+import { ElementRow } from '@/editor/navigator/ElementRow'
 import { useNav } from '@/editor/navigator/navState'
+import { selectAndReveal } from '@/editor/navigator/reveal'
 import {
 	flattenVisible,
 	iconKeyOf,

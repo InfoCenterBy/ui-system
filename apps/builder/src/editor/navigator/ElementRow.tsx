@@ -15,13 +15,12 @@ import {
 	draggable,
 	dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { useCanvas } from '@/editor/canvas/canvasStore'
-import { elementFor } from '@/editor/canvas/frame'
 import { labelOf } from '@/editor/canvas/nodes'
 import { useProject } from '@/store/project'
 import { asNode, canDropNode, dropNode, nodeDrag } from './dragHelpers'
 import { zoneAt, type Zone } from './dropPosition'
 import { useNav } from './navState'
+import { selectAndReveal } from './reveal'
 import { RowMenu } from './RowMenu'
 import { canContain, elementChildren, hintOf, type IconKey } from './structure'
 
@@ -33,12 +32,6 @@ const ICONS: Record<IconKey, ReactNode> = {
 	button: <MousePointerClick />,
 	list: <List />,
 	container: <Box />,
-}
-
-export const selectAndReveal = (id: string) => {
-	useProject.getState().select(id)
-	const doc = useCanvas.getState().doc
-	if (doc) elementFor(doc, id)?.scrollIntoView({ block: 'nearest' })
 }
 
 interface Props {

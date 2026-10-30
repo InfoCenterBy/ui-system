@@ -8,10 +8,14 @@ const TABS = ['Sections', 'Pages', 'Layers'] as const
 
 export function LeftPanel() {
 	return (
-		<Tabs defaultValue='Sections' className='h-full gap-0'>
-			<TabsList className='m-2'>
+		<Tabs defaultValue='Sections' className='@container h-full gap-0'>
+			<TabsList className='m-2 w-[calc(100%-1rem)]'>
 				{TABS.map((t) => (
-					<TabsTrigger key={t} value={t}>
+					<TabsTrigger
+						key={t}
+						value={t}
+						className='min-w-0 truncate @max-[14rem]:px-1 @max-[14rem]:text-xs'
+					>
 						{t}
 					</TabsTrigger>
 				))}

@@ -147,7 +147,7 @@ export function ClassField({ node }: { node: ElementNode }) {
 						<span
 							key={`${raw}:${i}`}
 							title='Double-click to edit'
-							className='bg-muted flex h-6 items-center gap-0.5 rounded-md pr-0.5 pl-1.5 font-mono text-xs'
+							className='bg-muted flex min-h-6 items-center gap-0.5 rounded-md py-0.5 pr-0.5 pl-1.5 font-mono text-xs break-all'
 							onDoubleClick={() => setEditing(i)}
 						>
 							<span>
