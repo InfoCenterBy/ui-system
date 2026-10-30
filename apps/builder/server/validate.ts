@@ -1,4 +1,10 @@
-import type { Component, ElementNode, Page, Site } from '@ui-system/core'
+import {
+	HEADER_POSITIONS,
+	type Component,
+	type ElementNode,
+	type Page,
+	type Site,
+} from '@ui-system/core'
 import { HttpError } from './errors'
 import { isSafeId } from './fs-utils'
 
@@ -22,6 +28,20 @@ export function assertSite(v: unknown): asserts v is Site {
 	if (!isObj(v.fonts)) fail('site.fonts')
 	if (!Array.isArray(v.pages) || !v.pages.every(isSafeId)) {
 		fail('site.pages')
+	}
+	if (v.layout !== undefined) {
+		const { layout } = v
+		if (!isObj(layout)) fail('site.layout')
+		const { header, stickyFooter } = layout
+		if (
+			header !== undefined &&
+			!HEADER_POSITIONS.includes(header as never)
+		) {
+			fail('site.layout.header')
+		}
+		if (stickyFooter !== undefined && typeof stickyFooter !== 'boolean') {
+			fail('site.layout.stickyFooter')
+		}
 	}
 }
 

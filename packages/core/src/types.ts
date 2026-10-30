@@ -82,6 +82,13 @@ export interface FontFile {
 	unicodeRange?: string
 }
 
+export type HeaderPosition = 'static' | 'sticky' | 'fixed' | 'autohide'
+
+export interface SiteLayout {
+	header?: HeaderPosition
+	stickyFooter?: boolean
+}
+
 export interface Site {
 	version: 1
 	name: string
@@ -93,6 +100,8 @@ export interface Site {
 	fonts: { heading: FontChoice | null; body: FontChoice | null }
 	// Page ids in navigation order
 	pages: string[]
+	// Page shell, missing means a static header and a sticky footer
+	layout?: SiteLayout
 }
 
 export interface Partials {

@@ -10,6 +10,9 @@ import { EMPTY_HINT_LABELS } from '@/editor/layoutPresets'
 
 export const PAGE_ROOT = 'page'
 
+// Editor-only marks on the page shell, set from the site layout
+export const SHELL_ATTR = 'data-shell'
+
 // Editor-only mark on empty containers, never part of the saved or exported HTML
 export const EMPTY_SLOT_ATTR = 'data-editor-empty'
 
@@ -26,6 +29,10 @@ export const frameSrcdoc = () => `<!doctype html>
 <style id="site-css"></style>
 <style>
 	html { scroll-behavior: auto; }
+	#page[data-sticky-footer] { display: flex; flex-direction: column; min-height: 100vh; }
+	#page[data-sticky-footer] > [${SHELL_ATTR}="footer"] { margin-top: auto; }
+	#page[data-header="sticky"] > [${SHELL_ATTR}="header"], #page[data-header="autohide"] > [${SHELL_ATTR}="header"] { position: sticky; top: 0; z-index: 40; }
+	#page[data-header="fixed"] > [${SHELL_ATTR}="header"] { position: fixed; inset-inline: 0; top: 0; z-index: 40; }
 	[data-empty] { display: grid; place-items: center; min-height: 60vh; color: #888; font: 14px system-ui; }
 	[contenteditable] { outline: none; cursor: text; }
 	a, button, label { cursor: default; }
@@ -120,3 +127,22 @@ export const nodeIdAt = (target: EventTarget | null) => {
 
 export const elementFor = (doc: Document, id: string) =>
 	doc.querySelector<HTMLElement>(`[${NODE_ID_ATTR}="${CSS.escape(id)}"]`)
+
+// Marks the header and footer roots and sets the layout on the page root
+export const syncShell = (
+	doc: Document,
+	shell: { header: string | null; footer: string | null },
+	layout: { header: string; stickyFooter: boolean }
+) => {
+	const page = doc.getElementById(PAGE_ROOT)
+	if (!page) return
+	page.toggleAttribute('data-sticky-footer', layout.stickyFooter)
+	page.setAttribute('data-header', layout.header)
+	for (const el of page.querySelectorAll(`:scope > [${SHELL_ATTR}]`)) {
+		el.removeAttribute(SHELL_ATTR)
+	}
+	for (const part of ['header', 'footer'] as const) {
+		const id = shell[part]
+		if (id) elementFor(doc, id)?.setAttribute(SHELL_ATTR, part)
+	}
+}

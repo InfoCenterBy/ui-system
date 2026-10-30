@@ -9,8 +9,12 @@ import {
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import {
+	BODY_CLASSES,
+	HEADER_CLASSES,
+	MAIN_CLASSES,
 	collectClasses,
 	isElement,
+	resolveLayout,
 	serializeHtml,
 	walk,
 	type ElementNode,
@@ -141,6 +145,7 @@ interface PageDocument {
 	site: Site
 	page: Page
 	body: string
+	bodyClass?: string
 	prefix: string
 	script: boolean
 	cally?: boolean
@@ -153,6 +158,7 @@ export const pageDocument = ({
 	site,
 	page,
 	body,
+	bodyClass,
 	prefix,
 	script,
 	cally,
@@ -184,7 +190,7 @@ export const pageDocument = ({
 		'<head>',
 		indent(head.join('\n')),
 		'</head>',
-		'<body>',
+		bodyClass ? `<body class="${escapeAttr(bodyClass)}">` : '<body>',
 		indent(body),
 		'</body>',
 		'</html>',
@@ -192,13 +198,49 @@ export const pageDocument = ({
 	].join('\n')
 }
 
-const pageRoots = (project: Project, page: Page): ElementNode[] => {
+interface PageParts {
+	header: ElementNode | null
+	sections: ElementNode[]
+	footer: ElementNode | null
+}
+
+// Header position classes go on a copy, the stored partial stays as it is
+const pageParts = (project: Project, page: Page): PageParts => {
 	const { header, footer } = project.partials
-	return structuredClone([
-		...(page.showHeader && header ? [header] : []),
-		...page.sections,
-		...(page.showFooter && footer ? [footer] : []),
-	])
+	const position = resolveLayout(project.site.layout).header
+	const parts = structuredClone({
+		header: page.showHeader ? header : null,
+		sections: page.sections,
+		footer: page.showFooter ? footer : null,
+	})
+	if (parts.header && position !== 'static') {
+		parts.header.classes = [parts.header.classes, HEADER_CLASSES[position]]
+			.filter(Boolean)
+			.join(' ')
+		if (position === 'autohide')
+			parts.header.attrs['data-header'] = position
+	}
+	return parts
+}
+
+const indentLines = (text: string) =>
+	text
+		.split('\n')
+		.map((line) => (line ? `\t${line}` : line))
+		.join('\n')
+
+// Header, main and footer in body order, main grows when the footer sticks
+const pageBody = (parts: PageParts, stickyFooter: boolean) => {
+	const html = (list: ElementNode[]) => serializeHtml(list).trimEnd()
+	return [
+		parts.header && html([parts.header]),
+		`<main${stickyFooter ? ` class="${MAIN_CLASSES}"` : ''}>`,
+		indentLines(html(parts.sections)),
+		'</main>',
+		parts.footer && html([parts.footer]),
+	]
+		.filter((part) => part !== null && part !== '')
+		.join('\n')
 }
 
 // Writes dist/: one HTML file per page, assets/site.css, site.js when needed and used assets
@@ -285,6 +327,7 @@ export async function exportSite(
 		node.attrs.decoding ??= 'async'
 	}
 
+	const { stickyFooter } = resolveLayout(site.layout)
 	const classes = new Set<string>()
 	const scripts: string[] = []
 	const exported: string[] = []
@@ -296,16 +339,26 @@ export async function exportSite(
 			warnings.push(`Page ${id} is listed in site.json but missing`)
 			continue
 		}
-		const roots = pageRoots(project, page)
+		const parts = pageParts(project, page)
+		const roots = [
+			...(parts.header ? [parts.header] : []),
+			...parts.sections,
+			...(parts.footer ? [parts.footer] : []),
+		]
 		const pageScripts = takeScripts(roots)
 		const features = detectFeatures(roots)
 		pageScripts.push(...featureScripts(features))
 		cally ||= features.calendar
 		scripts.push(...pageScripts)
 		collectClasses(roots, classes)
+		if (stickyFooter) {
+			for (const name of `${BODY_CLASSES} ${MAIN_CLASSES}`.split(' ')) {
+				classes.add(name)
+			}
+		}
 
 		// The first section is above the fold, its images load right away
-		const firstSection = page.sections[0]?.id
+		const firstSection = parts.sections[0]?.id
 		const jobs: Promise<unknown>[] = []
 		walk(roots, (node) => {
 			if (!isElement(node)) return
@@ -339,7 +392,8 @@ export async function exportSite(
 		const html = pageDocument({
 			site,
 			page,
-			body: serializeHtml(roots),
+			body: pageBody(parts, stickyFooter),
+			bodyClass: stickyFooter ? BODY_CLASSES : '',
 			prefix,
 			script: pageScripts.length > 0,
 			cally: features.calendar,

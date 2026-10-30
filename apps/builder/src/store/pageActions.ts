@@ -226,7 +226,7 @@ export function setHomePage(id: string) {
 }
 
 export function updateSite(
-	partial: Partial<Pick<Site, 'name' | 'lang' | 'pathPrefix'>>
+	partial: Partial<Pick<Site, 'name' | 'lang' | 'pathPrefix' | 'layout'>>
 ) {
 	const keys = Object.keys(partial).sort().join(',')
 	useDocument.getState().edit(

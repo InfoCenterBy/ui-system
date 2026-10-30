@@ -309,3 +309,114 @@ describe('export helpers', () => {
 		)
 	})
 })
+
+describe('page shell', () => {
+	const putLayout = async (layout: Site['layout']) => {
+		const project = await (await send('GET', '/api/project')).json()
+		const res = await send('PUT', '/api/project/site', {
+			...project.site,
+			layout,
+		})
+		expect(res.status).toBe(200)
+	}
+	const exportIndex = async (dir: string) => {
+		await send('POST', '/api/project/export')
+		const dist = path.join(dir, 'dist')
+		const read = (file: string) =>
+			readFile(path.join(dist, file), 'utf8').catch(() => '')
+		return {
+			html: await read('index.html'),
+			css: await read('assets/site.css'),
+			js: await read('assets/site.js'),
+		}
+	}
+	const withHeader = async () => {
+		const dir = await setUp()
+		await send(
+			'PUT',
+			'/api/project/partials/header',
+			section('header', '<header class="bg-base-100 p-4">Nav</header>')
+		)
+		return dir
+	}
+
+	it('sticks the footer by default', async () => {
+		const dir = await setUp()
+		const { html, css } = await exportIndex(dir)
+		expect(html).toContain('<body class="flex min-h-dvh flex-col">')
+		expect(html).toMatch(/<main class="grow">[\s\S]*<\/main>\n\t<footer/)
+		expect(css).toContain('.min-h-dvh')
+		expect(css).toContain('.grow')
+		expect(css).toContain('.flex-col')
+	})
+
+	it('leaves the body plain when the footer does not stick', async () => {
+		const dir = await setUp()
+		await putLayout({ stickyFooter: false })
+		const { html, css } = await exportIndex(dir)
+		expect(html).toContain('<body>')
+		expect(html).toContain('<main>')
+		expect(html).not.toContain('min-h-dvh')
+		expect(css).not.toContain('.min-h-dvh')
+	})
+
+	it('adds header position classes to the exported header only', async () => {
+		const dir = await withHeader()
+		const expected = {
+			static: '<header class="bg-base-100 p-4">',
+			sticky: '<header class="bg-base-100 p-4 sticky top-0 z-40">',
+			fixed: '<header class="bg-base-100 p-4 fixed inset-x-0 top-0 z-40">',
+		} as const
+		for (const header of ['static', 'sticky', 'fixed'] as const) {
+			await putLayout({ header })
+			const { html, css } = await exportIndex(dir)
+			expect(html).toContain(expected[header])
+			expect(html).not.toContain('data-header')
+			if (header === 'sticky') expect(css).toContain('.sticky')
+			if (header === 'fixed') expect(css).toContain('.fixed')
+		}
+		const stored = await (await send('GET', '/api/project')).json()
+		expect(stored.partials.header.classes).toBe('bg-base-100 p-4')
+	})
+
+	it('writes the autohide script only for autohide pages with a header', async () => {
+		const dir = await withHeader()
+		await putLayout({ header: 'sticky' })
+		const sticky = await exportIndex(dir)
+		expect(sticky.js).not.toContain('autohide')
+		expect(sticky.html).not.toContain('site.js')
+		await putLayout({ header: 'autohide' })
+		const shown = await exportIndex(dir)
+		expect(shown.html).toContain('data-header="autohide"')
+		expect(shown.html).toContain('<script src="assets/site.js" defer>')
+		expect(shown.js).toContain('[data-header="autohide"]')
+		expect(shown.css).toContain('.transition-transform')
+		// A page without the header gets no hook and no script tag
+		const project = await (await send('GET', '/api/project')).json()
+		await send('PUT', '/api/project/pages/home', {
+			...project.pages[0],
+			showHeader: false,
+		})
+		const hidden = await exportIndex(dir)
+		expect(hidden.html).not.toContain('data-header')
+		expect(hidden.html).not.toContain('site.js')
+	})
+
+	it('rejects unknown layout values', async () => {
+		await setUp()
+		const project = await (await send('GET', '/api/project')).json()
+		for (const layout of [
+			{ header: 'floating' },
+			{ stickyFooter: 'yes' },
+			'sticky',
+		]) {
+			const res = await send('PUT', '/api/project/site', {
+				...project.site,
+				layout,
+			})
+			expect(res.status).toBe(400)
+		}
+		const ok = await send('PUT', '/api/project/site', project.site)
+		expect(ok.status).toBe(200)
+	})
+})

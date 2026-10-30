@@ -42,20 +42,47 @@ const COUNTDOWN = `document.querySelectorAll('[data-countdown-to]').forEach((roo
 	setInterval(tick, 1000)
 })`
 
+// Slides the header out on scrolling down and back on scrolling up, the CSS transition comes from its classes
+const AUTOHIDE = `const header = document.querySelector('[data-header="autohide"]')
+if (header) {
+	let last = window.scrollY
+	window.addEventListener(
+		'scroll',
+		() => {
+			const y = Math.max(0, window.scrollY)
+			if (Math.abs(y - last) < 8) return
+			const hide =
+				y > last &&
+				y > header.offsetHeight &&
+				!header.contains(document.activeElement)
+			header.style.transform = hide ? 'translateY(-100%)' : ''
+			last = y
+		},
+		{ passive: true }
+	)
+}`
+
 export interface PageFeatures {
 	commands: boolean
 	countdown: boolean
 	calendar: boolean
+	autohide: boolean
 }
 
 // What a page needs beyond HTML and CSS
 export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
-	const features = { commands: false, countdown: false, calendar: false }
+	const features = {
+		commands: false,
+		countdown: false,
+		calendar: false,
+		autohide: false,
+	}
 	walk(roots, (node) => {
 		if (!isElement(node)) return
 		if (node.attrs.commandfor !== undefined) features.commands = true
 		if (node.attrs['data-countdown-to'] !== undefined)
 			features.countdown = true
+		if (node.attrs['data-header'] === 'autohide') features.autohide = true
 		if (node.tag.toLowerCase().startsWith('calendar-'))
 			features.calendar = true
 	})
@@ -66,4 +93,5 @@ export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
 export const featureScripts = (features: PageFeatures) => [
 	...(features.commands ? [COMMANDS] : []),
 	...(features.countdown ? [COUNTDOWN] : []),
+	...(features.autohide ? [AUTOHIDE] : []),
 ]

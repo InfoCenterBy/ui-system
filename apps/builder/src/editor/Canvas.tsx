@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { locate } from '@ui-system/core'
+import { locate, resolveLayout } from '@ui-system/core'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import {
 	createFrameCache,
 	frameSrcdoc,
 	nodeIdAt,
 	syncRoots,
+	syncShell,
 } from '@/editor/canvas/frame'
 import { pickTarget } from '@/editor/canvas/nodes'
 import { DropIndicator } from '@/editor/canvas/DropIndicator'
@@ -17,7 +18,7 @@ import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
 import { useRevealOpen } from '@/editor/canvas/useRevealOpen'
 import { useRoots } from '@/editor/canvas/useRoots'
 import { useDocument } from '@/store/document'
-import { useProject } from '@/store/project'
+import { useCurrentPage, useProject } from '@/store/project'
 
 const PADDING = 24
 
@@ -41,6 +42,11 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 export function Canvas() {
 	const width = useProject((s) => s.canvasWidth)
 	const theme = useDocument((s) => s.doc?.site.theme)
+	const siteLayout = useDocument((s) => s.doc?.site.layout)
+	const header = useDocument((s) => s.doc?.partials.header ?? null)
+	const footer = useDocument((s) => s.doc?.partials.footer ?? null)
+	const page = useCurrentPage()
+	const editingComponent = useProject((s) => s.editingComponentId)
 	const roots = useRoots()
 	const doc = useCanvas((s) => s.doc)
 	const setDoc = useCanvas((s) => s.setDoc)
@@ -66,6 +72,20 @@ export function Canvas() {
 	useEffect(() => {
 		if (doc) syncRoots(doc, cache, roots, editingRoot)
 	}, [doc, cache, roots, editingRoot])
+
+	// Same page shell as the export, after the roots are drawn
+	useEffect(() => {
+		if (!doc) return
+		const shown = page && !editingComponent
+		syncShell(
+			doc,
+			{
+				header: shown && page.showHeader ? (header?.id ?? null) : null,
+				footer: shown && page.showFooter ? (footer?.id ?? null) : null,
+			},
+			resolveLayout(siteLayout)
+		)
+	}, [doc, roots, siteLayout, page, header, footer, editingComponent])
 
 	useRevealOpen(doc, roots)
 	useCanvasCss(doc, roots, theme)
