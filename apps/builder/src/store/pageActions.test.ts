@@ -39,6 +39,7 @@ beforeEach(() => {
 		site,
 		pages: [page('home', 'index'), page('about', 'about')],
 		partials: { header: null, footer: null },
+		components: [],
 	})
 })
 

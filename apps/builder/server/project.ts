@@ -1,15 +1,32 @@
 import { mkdir, readFile, readdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
-import type { ElementNode, Page, Partials, Site } from '@ui-system/core'
+import {
+	detachInstance,
+	isElement,
+	materialize,
+	randomId,
+	type Component,
+	type ElementNode,
+	type Page,
+	type Partials,
+	type Site,
+	type TreeNode,
+} from '@ui-system/core'
 import { HttpError } from './errors'
 import { resolveInside, writeJson } from './fs-utils'
-import { assertPage, assertPartial, assertSite } from './validate'
+import {
+	assertComponent,
+	assertPage,
+	assertPartial,
+	assertSite,
+} from './validate'
 
 export interface Project {
 	path: string
 	site: Site
 	pages: Page[]
 	partials: Partials
+	components: Component[]
 }
 
 export type PartialName = keyof Partials
@@ -30,6 +47,26 @@ async function readJson(file: string): Promise<unknown> {
 	} catch {
 		throw new HttpError(400, `${name} is not valid JSON`)
 	}
+}
+
+// Rebuilds every instance from its master, an instance without master is detached
+function syncAll(lists: TreeNode[][], components: Map<string, Component>) {
+	const visit = (list: TreeNode[]) => {
+		for (let i = 0; i < list.length; i++) {
+			const node = list[i]
+			if (!isElement(node)) continue
+			const id = node.instance?.component
+			if (id === undefined) {
+				visit(node.children)
+				continue
+			}
+			const master = components.get(id)
+			list[i] = master
+				? materialize(master.root, id, randomId, node)
+				: detachInstance(node)
+		}
+	}
+	for (const list of lists) visit(list)
 }
 
 async function isEmptyOrMissing(dir: string): Promise<boolean> {
@@ -90,6 +127,7 @@ export class ProjectStore {
 			site: defaultSite(name, homeId),
 			pages: [defaultPage(homeId, name)],
 			partials: { header: null, footer: null },
+			components: [],
 		}
 		await mkdir(path.join(root, 'assets'), { recursive: true })
 		await writeJson(path.join(root, 'site.json'), project.site)
@@ -127,8 +165,44 @@ export class ProjectStore {
 			assertPartial(value)
 			partials[key] = value
 		}
-		this.current = { path: root, site, pages, partials }
+		const components = await this.readComponents(root)
+		const byId = new Map(components.map((c) => [c.id, c]))
+		syncAll(
+			pages.map((page) => page.sections),
+			byId
+		)
+		for (const key of ['header', 'footer'] as const) {
+			const list: TreeNode[] = partials[key] ? [partials[key]] : []
+			syncAll([list], byId)
+			partials[key] = (list[0] as ElementNode | undefined) ?? null
+		}
+		this.current = { path: root, site, pages, partials, components }
 		return this.current
+	}
+
+	private async readComponents(root: string): Promise<Component[]> {
+		const dir = path.join(root, 'components')
+		let names: string[]
+		try {
+			names = (await readdir(dir))
+				.filter((n) => n.endsWith('.json'))
+				.sort()
+		} catch {
+			return []
+		}
+		const components: Component[] = []
+		for (const name of names) {
+			const value = await readJson(path.join(dir, name))
+			assertComponent(value)
+			if (`${value.id}.json` !== name) {
+				throw new HttpError(
+					400,
+					`${name} does not match its component id`
+				)
+			}
+			components.push(value)
+		}
+		return components
 	}
 
 	close(): void {
@@ -176,5 +250,25 @@ export class ProjectStore {
 			value
 		)
 		p.partials[name] = value
+	}
+
+	async saveComponent(component: Component): Promise<void> {
+		const p = this.require()
+		const file = resolveInside(p.path, 'components', `${component.id}.json`)
+		await writeJson(file, component)
+		const i = p.components.findIndex((x) => x.id === component.id)
+		if (i >= 0) p.components[i] = component
+		else p.components.push(component)
+	}
+
+	async deleteComponent(id: string): Promise<void> {
+		const p = this.require()
+		if (!p.components.some((x) => x.id === id)) {
+			throw new HttpError(404, 'Component not found')
+		}
+		await rm(resolveInside(p.path, 'components', `${id}.json`), {
+			force: true,
+		})
+		p.components = p.components.filter((x) => x.id !== id)
 	}
 }

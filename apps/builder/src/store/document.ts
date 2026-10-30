@@ -1,5 +1,11 @@
-import { applyPatches, enablePatches, produceWithPatches } from 'immer'
+import {
+	applyPatches,
+	enablePatches,
+	produceWithPatches,
+	type Patch,
+} from 'immer'
 import { create } from 'zustand'
+import { randomId, syncInstances, type ElementNode } from '@ui-system/core'
 import type { Project } from '@/api'
 import {
 	dirtyKeys,
@@ -32,6 +38,32 @@ interface DocumentState {
 	finishSave: (keys: Set<string>, ok: boolean) => void
 }
 
+// Rebuilds the instances of every component whose master changed. Runs on the
+// state after the recipe, with the previous master to tell overrides apart
+const syncPass = (before: Doc, after: Doc) => {
+	const changed = Object.values(after.components).filter(
+		(c) =>
+			before.components[c.id] && before.components[c.id].root !== c.root
+	)
+	if (changed.length === 0) return null
+	return produceWithPatches(after, (draft) => {
+		const lists: ElementNode[][] = [
+			...Object.values(draft.pages).map((page) => page.sections),
+			...(['header', 'footer'] as const).map((name) =>
+				draft.partials[name] ? [draft.partials[name]] : []
+			),
+		]
+		for (const component of changed) {
+			syncInstances(
+				lists,
+				draft.components[component.id],
+				before.components[component.id].root,
+				randomId
+			)
+		}
+	})
+}
+
 const union = (a: Set<string>, b: Set<string>) => new Set([...a, ...b])
 
 export const useDocument = create<DocumentState>((set, get) => ({
@@ -47,6 +79,9 @@ export const useDocument = create<DocumentState>((set, get) => ({
 				site: project.site,
 				pages: Object.fromEntries(project.pages.map((p) => [p.id, p])),
 				partials: project.partials,
+				components: Object.fromEntries(
+					project.components.map((c) => [c.id, c])
+				),
 			},
 			past: [],
 			future: [],
@@ -66,8 +101,21 @@ export const useDocument = create<DocumentState>((set, get) => ({
 	edit: (label, recipe, options = {}) => {
 		const { doc, past, dirty } = get()
 		if (!doc) return
-		const [next, patches, inverse] = produceWithPatches(doc, recipe)
-		if (patches.length === 0) return
+		const [first, firstPatches, firstInverse] = produceWithPatches(
+			doc,
+			recipe
+		)
+		if (firstPatches.length === 0) return
+		let next = first
+		let patches: Patch[] = firstPatches
+		let inverse: Patch[] = firstInverse
+		// Master changes reach the instances inside the same undo step
+		const sync = syncPass(doc, first)
+		if (sync) {
+			next = sync[0]
+			patches = [...firstPatches, ...sync[1]]
+			inverse = [...sync[2], ...firstInverse]
+		}
 		set({
 			doc: next,
 			past: pushEntry(past, {

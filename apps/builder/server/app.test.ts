@@ -9,6 +9,13 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+	detachInstance,
+	isElement,
+	materialize,
+	parseSection,
+	type ElementNode,
+} from '@ui-system/core'
 import { createApp } from './app'
 import { GOOGLE_SAMPLE, METADATA_SAMPLE } from './fonts.fixture'
 
@@ -220,6 +227,115 @@ describe('site, pages and partials', () => {
 	it('answers 404 for writes when no project is open', async () => {
 		const res = await send('PUT', '/api/project/partials/header', null)
 		expect(res.status).toBe(404)
+	})
+})
+
+const masterOf = (text: string): ElementNode =>
+	parseSection({
+		id: 'card',
+		name: 'Card',
+		category: 'test',
+		html: `<section class="p-4"><p data-edit="text">${text}</p></section>`,
+	})
+
+const textOf = (node: ElementNode) => {
+	const p = node.children.find(isElement)!
+	const child = p.children[0]
+	return child.type === 'text' ? child.text : ''
+}
+
+describe('components', () => {
+	it('opens a project without components folder as empty list', async () => {
+		const { res } = await createProject()
+		expect((await res.json()).components).toEqual([])
+	})
+
+	it('saves, lists after reopen and deletes a component', async () => {
+		const { dir } = await createProject()
+		const component = { id: 'c1', name: 'Card', root: masterOf('Hi') }
+		expect(
+			(await send('PUT', '/api/project/components/c1', component)).status
+		).toBe(200)
+		const text = await readFile(
+			path.join(dir, 'components/c1.json'),
+			'utf8'
+		)
+		expect(JSON.parse(text).name).toBe('Card')
+
+		const reopened = await (
+			await send('POST', '/api/projects/open', { path: dir })
+		).json()
+		expect(reopened.components.map((c: { id: string }) => c.id)).toEqual([
+			'c1',
+		])
+
+		expect(
+			(await send('DELETE', '/api/project/components/c1')).status
+		).toBe(200)
+		expect(await readdir(path.join(dir, 'components'))).toEqual([])
+		expect(
+			(await send('DELETE', '/api/project/components/c1')).status
+		).toBe(404)
+	})
+
+	it('rejects bad ids, names and shapes', async () => {
+		await createProject()
+		const root = masterOf('Hi')
+		const put = (id: string, body: unknown) =>
+			send('PUT', `/api/project/components/${id}`, body)
+		expect(
+			(await put('..%2Fx', { id: '../x', name: 'A', root })).status
+		).toBe(400)
+		expect((await put('Up', { id: 'Up', name: 'A', root })).status).toBe(
+			400
+		)
+		expect((await put('c1', { id: 'c2', name: 'A', root })).status).toBe(
+			400
+		)
+		expect((await put('c1', { id: 'c1', name: ' ', root })).status).toBe(
+			400
+		)
+		expect(
+			(await put('c1', { id: 'c1', name: 'A', root: {} })).status
+		).toBe(400)
+		expect(
+			(await send('DELETE', '/api/project/components/..%2Fx')).status
+		).toBe(400)
+	})
+
+	it('rebuilds stale instances on open and detaches orphans', async () => {
+		const { dir, res } = await createProject()
+		const project = await res.json()
+		const master = masterOf('Old')
+		const stale = materialize(master, 'c1', () =>
+			Math.random().toString(36)
+		)
+		const orphan = materialize(masterOf('Gone'), 'missing', () =>
+			Math.random().toString(36).slice(2)
+		)
+		await send('PUT', '/api/project/components/c1', {
+			id: 'c1',
+			name: 'Card',
+			root: masterOf('New'),
+		})
+		await send('PUT', '/api/project/pages/home', {
+			...project.pages[0],
+			sections: [stale, orphan],
+		})
+		await send('PUT', '/api/project/partials/footer', stale)
+
+		const opened = await (
+			await send('POST', '/api/projects/open', { path: dir })
+		).json()
+		const [fresh, plain] = opened.pages[0].sections
+		expect(textOf(fresh)).toBe('New')
+		expect(fresh.id).toBe(stale.id)
+		expect(fresh.instance).toEqual({ component: 'c1' })
+		expect(textOf(opened.partials.footer)).toBe('New')
+		expect(plain.instance).toBeUndefined()
+		expect(plain.ref).toBeUndefined()
+		expect(textOf(plain)).toBe('Gone')
+		expect(plain).toEqual(detachInstance(orphan))
 	})
 })
 

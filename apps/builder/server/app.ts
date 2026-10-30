@@ -12,7 +12,13 @@ import { HttpError } from './errors'
 import { resolveInside } from './fs-utils'
 import { ProjectStore, type PartialName } from './project'
 import { addRecent, defaultRecentFile, readRecent } from './recent'
-import { assertPage, assertPartial, assertSite, assertString } from './validate'
+import {
+	assertComponent,
+	assertPage,
+	assertPartial,
+	assertSite,
+	assertString,
+} from './validate'
 
 export interface AppOptions {
 	// Where recent projects are stored, defaults to ~/.ui-builder/recent.json
@@ -129,6 +135,24 @@ export function createApp(options: AppOptions = {}) {
 		const value = await body(c)
 		assertPartial(value)
 		await store.savePartial(name as PartialName, value)
+		return c.json({ ok: true })
+	})
+
+	app.put('/api/project/components/:id', async (c) => {
+		const component = await body(c)
+		assertComponent(component)
+		if (component.id !== c.req.param('id')) {
+			throw new HttpError(400, 'Component id does not match the URL')
+		}
+		await store.saveComponent(component)
+		return c.json({ ok: true })
+	})
+
+	app.delete('/api/project/components/:id', async (c) => {
+		const id = c.req.param('id')
+		if (!/^[a-z0-9-]+$/.test(id))
+			throw new HttpError(400, 'Invalid component id')
+		await store.deleteComponent(id)
 		return c.json({ ok: true })
 	})
 

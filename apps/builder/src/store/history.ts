@@ -1,11 +1,12 @@
 import type { Patch } from 'immer'
-import type { Page, Partials, Site } from '@ui-system/core'
+import type { Component, Page, Partials, Site } from '@ui-system/core'
 
 // Everything that is saved to the project folder
 export interface Doc {
 	site: Site
 	pages: Record<string, Page>
 	partials: Partials
+	components: Record<string, Component>
 }
 
 export interface HistoryEntry {
@@ -20,7 +21,8 @@ export interface HistoryEntry {
 export const HISTORY_LIMIT = 200
 export const MERGE_WINDOW = 1500
 
-// Files a set of patches touches: site, page:<id>, deleted:<id> or partial:<name>
+// Files a set of patches touches: site, page:<id>, deleted:<id>, partial:<name>,
+// component:<id> or deletedComponent:<id>
 export const dirtyKeys = (patches: Patch[]) => {
 	const keys = new Set<string>()
 	for (const { op, path } of patches) {
@@ -35,6 +37,14 @@ export const dirtyKeys = (patches: Patch[]) => {
 					? `deleted:${id}`
 					: `page:${id}`
 			)
+		} else if (root === 'components' && typeof id === 'string') {
+			keys.add(
+				path.length === 2 && op === 'remove'
+					? `deletedComponent:${id}`
+					: `component:${id}`
+			)
+		} else if (root === 'components') {
+			keys.add('components')
 		} else if (root === 'pages') {
 			// The whole map was replaced
 			keys.add('pages')

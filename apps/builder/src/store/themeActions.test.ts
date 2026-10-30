@@ -24,9 +24,13 @@ const site: Site = {
 const theme = () => useDocument.getState().doc?.site.theme
 
 beforeEach(() => {
-	useDocument
-		.getState()
-		.load({ path: '/p', site, pages: [], partials: {} } as never)
+	useDocument.getState().load({
+		path: '/p',
+		site,
+		pages: [],
+		partials: {},
+		components: [],
+	} as never)
 })
 
 describe('theme data', () => {

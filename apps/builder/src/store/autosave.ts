@@ -4,7 +4,12 @@ import type { Doc } from '@/store/history'
 
 type Client = Pick<
 	typeof api,
-	'saveSite' | 'savePage' | 'deletePage' | 'savePartial'
+	| 'saveSite'
+	| 'savePage'
+	| 'deletePage'
+	| 'savePartial'
+	| 'saveComponent'
+	| 'deleteComponent'
 >
 
 // Page files go first and deletions last, so site.json never lists a missing page
@@ -15,12 +20,22 @@ export const saveKeys = async (
 ) => {
 	const pageIds = new Set<string>()
 	const deleted: string[] = []
+	const componentIds = new Set<string>()
+	const deletedComponents: string[] = []
 	for (const key of keys) {
 		const [kind, id] = key.split(':')
 		if (kind === 'page') pageIds.add(id)
 		if (kind === 'deleted') deleted.push(id)
+		if (kind === 'component') componentIds.add(id)
+		if (kind === 'deletedComponent') deletedComponents.push(id)
+		if (kind === 'components')
+			Object.keys(doc.components).forEach((cid) => componentIds.add(cid))
 		if (kind === 'pages')
 			Object.keys(doc.pages).forEach((pid) => pageIds.add(pid))
+	}
+	for (const id of componentIds) {
+		const component = doc.components[id]
+		if (component) await client.saveComponent(component)
 	}
 	for (const id of pageIds) {
 		const page = doc.pages[id]
@@ -29,6 +44,9 @@ export const saveKeys = async (
 	for (const name of ['header', 'footer'] as const) {
 		if (keys.has(`partial:${name}`))
 			await client.savePartial(name, doc.partials[name])
+	}
+	for (const id of deletedComponents) {
+		if (!doc.components[id]) await client.deleteComponent(id)
 	}
 	if (keys.has('site') || deleted.length) await client.saveSite(doc.site)
 	for (const id of deleted) {

@@ -34,6 +34,7 @@ beforeEach(() => {
 			page('blog', 'blog', 'Блог'),
 		],
 		partials: { header: null, footer: null },
+		components: [],
 	})
 })
 

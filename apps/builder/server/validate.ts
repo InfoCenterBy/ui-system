@@ -1,4 +1,4 @@
-import type { ElementNode, Page, Site } from '@ui-system/core'
+import type { Component, ElementNode, Page, Site } from '@ui-system/core'
 import { HttpError } from './errors'
 import { isSafeId } from './fs-utils'
 
@@ -43,6 +43,14 @@ export function assertPage(v: unknown): asserts v is Page {
 	if (typeof v.showFooter !== 'boolean') fail('page.showFooter')
 	if (!Array.isArray(v.sections)) fail('page.sections')
 	v.sections.forEach(assertElement)
+}
+
+export function assertComponent(v: unknown): asserts v is Component {
+	if (!isObj(v) || !isSafeId(v.id)) fail('component')
+	if (typeof v.name !== 'string' || v.name.trim() === '') {
+		fail('component.name')
+	}
+	assertElement(v.root)
 }
 
 export function assertPartial(v: unknown): asserts v is ElementNode | null {

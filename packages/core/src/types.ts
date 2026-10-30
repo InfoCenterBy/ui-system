@@ -16,12 +16,28 @@ export interface ElementNode {
 	// Items sharing a repeat group can be added, removed and reordered
 	repeat?: string
 	section?: SectionInfo
+	// Set on the root of a component instance
+	instance?: InstanceInfo
+	// Inside an instance: id of the matching node in the component master
+	ref?: NodeId
 }
 
 export interface TextNode {
 	id: NodeId
 	type: 'text'
 	text: string
+	ref?: NodeId
+}
+
+export interface InstanceInfo {
+	component: string
+}
+
+export interface Component {
+	id: string
+	name: string
+	// Master tree, plain nodes without instance or ref markers
+	root: ElementNode
 }
 
 export type TreeNode = ElementNode | TextNode

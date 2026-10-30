@@ -2,7 +2,12 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parseSection, type Page, type Site } from '@ui-system/core'
+import {
+	materialize,
+	parseSection,
+	type Page,
+	type Site,
+} from '@ui-system/core'
 import { createApp } from './app'
 import { normalizePrefix, siteScript, sizesFor, takeScripts } from './export'
 import type { Optimize } from './export'
@@ -165,6 +170,33 @@ describe('export', () => {
 		expect(css).toContain('.btn-primary')
 		expect(css).toContain('.countdown')
 		expect(css).not.toContain('.card-body')
+	})
+
+	it('exports instances as plain markup', async () => {
+		const dir = await setUp()
+		const master = section(
+			'card',
+			'<section class="p-4"><h2 data-edit="text">Title</h2></section>'
+		)
+		const instance = materialize(master, 'c1', () => 'i' + Math.random())
+		const project = await (await send('GET', '/api/project')).json()
+		await send('PUT', '/api/project/components/c1', {
+			id: 'c1',
+			name: 'Card',
+			root: master,
+		})
+		await send('PUT', '/api/project/pages/about', {
+			...project.pages[1],
+			sections: [instance],
+		})
+		await send('POST', '/api/project/export')
+		const about = await readFile(
+			path.join(dir, 'dist', 'about.html'),
+			'utf8'
+		)
+		expect(about).toContain('<section class="p-4">')
+		expect(about).toContain('<h2>Title</h2>')
+		expect(about).not.toMatch(/instance|component|data-ref|data-node-id/)
 	})
 
 	it('puts the path prefix in front of asset urls only', async () => {

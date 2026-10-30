@@ -16,12 +16,16 @@ interface ProjectState {
 	canvasWidth: number
 	selectedId: string | null
 	hoveredId: string | null
+	// Set while a component master is edited instead of a page
+	editingComponentId: string | null
 	openProject: (project: Project) => void
 	closeProject: () => void
 	setCurrentPage: (id: string) => void
 	setCanvasWidth: (width: number) => void
 	select: (id: string | null) => void
 	hover: (id: string | null) => void
+	editComponent: (id: string) => void
+	exitComponent: () => void
 }
 
 export const useProject = create<ProjectState>((set) => ({
@@ -30,6 +34,7 @@ export const useProject = create<ProjectState>((set) => ({
 	canvasWidth: 1280,
 	selectedId: null,
 	hoveredId: null,
+	editingComponentId: null,
 	openProject: (project) => {
 		useDocument.getState().load(project)
 		set({
@@ -37,6 +42,7 @@ export const useProject = create<ProjectState>((set) => ({
 			currentPageId: project.site.pages[0] ?? null,
 			selectedId: null,
 			hoveredId: null,
+			editingComponentId: null,
 		})
 	},
 	closeProject: () => {
@@ -46,13 +52,23 @@ export const useProject = create<ProjectState>((set) => ({
 			currentPageId: null,
 			selectedId: null,
 			hoveredId: null,
+			editingComponentId: null,
 		})
 	},
 	setCurrentPage: (id) =>
-		set({ currentPageId: id, selectedId: null, hoveredId: null }),
+		set({
+			currentPageId: id,
+			selectedId: null,
+			hoveredId: null,
+			editingComponentId: null,
+		}),
 	setCanvasWidth: (width) => set({ canvasWidth: width }),
 	select: (id) => set({ selectedId: id }),
 	hover: (id) => set({ hoveredId: id }),
+	editComponent: (id) =>
+		set({ editingComponentId: id, selectedId: null, hoveredId: null }),
+	exitComponent: () =>
+		set({ editingComponentId: null, selectedId: null, hoveredId: null }),
 }))
 
 // The page shown on the canvas

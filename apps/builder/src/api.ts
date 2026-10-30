@@ -1,4 +1,5 @@
 import type {
+	Component,
 	ElementNode,
 	FontChoice,
 	FontFile,
@@ -12,6 +13,7 @@ export interface Project {
 	site: Site
 	pages: Page[]
 	partials: Partials
+	components: Component[]
 }
 
 export interface Asset {
@@ -84,6 +86,14 @@ export const api = {
 		request<{ ok: true }>('DELETE', `/api/project/pages/${id}`),
 	savePartial: (name: keyof Partials, value: ElementNode | null) =>
 		request<{ ok: true }>('PUT', `/api/project/partials/${name}`, value),
+	saveComponent: (component: Component) =>
+		request<{ ok: true }>(
+			'PUT',
+			`/api/project/components/${component.id}`,
+			component
+		),
+	deleteComponent: (id: string) =>
+		request<{ ok: true }>('DELETE', `/api/project/components/${id}`),
 	css: (classes: string[], theme: Site['theme'], fonts?: Site['fonts']) =>
 		request<{ css: string }>('POST', '/api/css', { classes, theme, fonts }),
 	fontFaces: (choices: FontChoice[]) =>

@@ -25,9 +25,13 @@ const inter: FontChoice = {
 const fonts = () => useDocument.getState().doc?.site.fonts
 
 beforeEach(() => {
-	useDocument
-		.getState()
-		.load({ path: '/p', site, pages: [], partials: {} } as never)
+	useDocument.getState().load({
+		path: '/p',
+		site,
+		pages: [],
+		partials: {},
+		components: [],
+	} as never)
 })
 
 describe('setFont', () => {

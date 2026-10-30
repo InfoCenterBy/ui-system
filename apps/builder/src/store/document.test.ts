@@ -30,6 +30,7 @@ beforeEach(() => {
 		site,
 		pages: [page('home')],
 		partials: { header: null, footer: null },
+		components: [],
 	})
 })
 
