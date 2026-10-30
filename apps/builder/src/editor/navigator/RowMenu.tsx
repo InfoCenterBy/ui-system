@@ -52,7 +52,10 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 		!hasInstance(node) &&
 		!isSharedPart(partials, id)
 	const create = () => {
-		const name = window.prompt('Component name', node ? labelOf(node) : '')
+		const name = window.prompt(
+			'Save as component: name (editing it updates every copy)',
+			node ? labelOf(node) : ''
+		)
 		if (!name?.trim()) return
 		try {
 			createComponentFrom(id, name)
@@ -110,7 +113,7 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 				</DropdownMenuItem>
 				{canCreate && (
 					<DropdownMenuItem onSelect={create}>
-						Create component…
+						Save as component…
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuItem onSelect={selectParent}>
@@ -119,7 +122,9 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					variant='destructive'
-					disabled={!free}
+					disabled={
+						!free || (editing && roots.some((r) => r.id === id))
+					}
 					onSelect={() => deleteNode(id)}
 				>
 					Delete

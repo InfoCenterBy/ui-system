@@ -26,20 +26,20 @@ export function DropIndicator({
 	drop: ReturnType<typeof useCanvasDrop>
 	scale: number
 }) {
-	const { ref, active, view } = drop
+	const { ref, active, visible, view } = drop
 	return (
 		<div
 			ref={ref}
 			className='absolute inset-0 overflow-hidden'
 			style={{ pointerEvents: active ? 'auto' : 'none' }}
 		>
-			{active && view?.kind === 'section' && (
+			{visible && view?.kind === 'section' && (
 				<div
 					className='pointer-events-none absolute right-0 left-0 bg-blue-500'
 					style={{ top: view.y - 1.5 / scale, height: 3 / scale }}
 				/>
 			)}
-			{active && view?.kind === 'inside' && (
+			{visible && view?.kind === 'inside' && (
 				<>
 					{view.outline && (
 						<div
@@ -57,7 +57,7 @@ export function DropIndicator({
 					{view.line && <Line rect={view.line} scale={scale} />}
 				</>
 			)}
-			{active && view?.kind === 'blocked' && (
+			{visible && view?.kind === 'blocked' && (
 				<span
 					className='pointer-events-none absolute rounded-full bg-neutral-900 px-2.5 py-1 font-sans font-medium whitespace-nowrap text-white shadow'
 					style={{

@@ -502,6 +502,42 @@ export const insertElement = async (
 	return first?.id ?? null
 }
 
+// A new Custom block, optionally with a library element in its Content container.
+// One undo step. Selects the container, or the new element when there is one
+export const addCustomBlock = async (index?: number, html?: string) => {
+	assertNotEditingComponent()
+	const preset = getSectionPreset('custom-block')
+	if (!preset) throw new Error('Unknown section custom-block')
+	const section = parseSection(preset)
+	const found: ElementNode[] = []
+	walk([section], (n) => {
+		if (isElement(n) && n.label === 'Content') found.push(n)
+	})
+	const container = found[0] ?? null
+	let first: ElementNode | undefined
+	if (html && container) {
+		const imageSrc = await placeholderPath()
+		const nodes = prepareInsert(parseHtml(html, randomId), {
+			newId: () => randomId().slice(0, 6),
+			imageSrc,
+		})
+		container.children.push(...nodes)
+		first = nodes.find(isElement)
+	}
+	useDocument.getState().edit('Add Custom block', (draft) => {
+		const sections = draft.pages[pageId()].sections
+		sections.splice(
+			Math.max(0, Math.min(index ?? sections.length, sections.length)),
+			0,
+			section
+		)
+	})
+	const target = first ?? container ?? section
+	useProject.getState().select(target.id)
+	useNav.getState().setOpen([container?.id ?? section.id])
+	return target.id
+}
+
 // Moves a node inside the same section, parentId is the new parent element
 export const moveNodeTo = (id: NodeId, parentId: NodeId, index: number) =>
 	editNode(

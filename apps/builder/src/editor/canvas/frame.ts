@@ -32,6 +32,8 @@ export const frameSrcdoc = () => `<!doctype html>
 	#page[data-sticky-footer] { display: flex; flex-direction: column; min-height: 100vh; }
 	#page[data-sticky-footer] > [${SHELL_ATTR}="footer"] { margin-top: auto; }
 	#page[data-header="sticky"] > [${SHELL_ATTR}="header"], #page[data-header="autohide"] > [${SHELL_ATTR}="header"] { position: sticky; top: 0; z-index: 40; }
+	#page[data-header="autohide"] > [${SHELL_ATTR}="header"] { transition: transform 300ms; }
+	@media (prefers-reduced-motion: reduce) { #page[data-header="autohide"] > [${SHELL_ATTR}="header"] { transition: none; } }
 	#page[data-header="fixed"] > [${SHELL_ATTR}="header"] { position: fixed; inset-inline: 0; top: 0; z-index: 40; }
 	[data-empty] { display: grid; place-items: center; min-height: 60vh; color: #888; font: 14px system-ui; }
 	[contenteditable] { outline: none; cursor: text; }

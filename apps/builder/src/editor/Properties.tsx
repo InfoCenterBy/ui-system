@@ -24,6 +24,10 @@ import {
 	COUNTDOWN_ATTR,
 	CountdownProperties,
 } from '@/editor/properties/CountdownProperties'
+import {
+	FooterPositionField,
+	HeaderPositionField,
+} from '@/editor/properties/PartialLayout'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
 import { ClassField } from '@/editor/style/ClassField'
@@ -121,6 +125,11 @@ function PartialActions({ name }: { name: 'header' | 'footer' }) {
 					<ListIcon /> Fill menu with pages
 				</Button>
 			)}
+			{name === 'header' ? (
+				<HeaderPositionField />
+			) : (
+				<FooterPositionField />
+			)}
 			<Button
 				size='sm'
 				variant='outline'
@@ -178,6 +187,12 @@ export function Properties() {
 	// Classes and styles only where the structure is free, never on an instance
 	const free = scopeOf(roots, node.id, editing) === 'free' && !node.instance
 	const ancestors = ancestorsOf(roots, node.id)
+	// Sections and partial roots have their own actions, the master root stays
+	const canDelete =
+		scopeOf(roots, node.id, editing) === 'free' &&
+		!node.section &&
+		!partialName &&
+		!roots.some((r) => r.id === node.id)
 	const owner = node.instance ? node : ancestors.findLast((a) => a.instance)
 	const topLevelOf = (list: typeof roots, id: string) =>
 		list.some((r) => r.id === id)
@@ -246,6 +261,16 @@ export function Properties() {
 					/>
 				)}
 				{item && <RepeatProperties item={item} />}
+				{canDelete && (
+					<Button
+						size='sm'
+						variant='outline'
+						className='w-fit'
+						onClick={() => deleteNode(node.id)}
+					>
+						<Trash2Icon /> Delete
+					</Button>
+				)}
 				{free && <ClassField node={node} />}
 				{canCreate && <CreateComponent key={node.id} node={node} />}
 			</div>

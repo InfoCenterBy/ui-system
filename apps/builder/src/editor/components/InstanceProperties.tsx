@@ -101,6 +101,9 @@ export function OverrideRow({
 	)
 }
 
+const COMPONENT_HINT =
+	'Reuse this block on other pages. Editing the component updates every copy; copies change only texts, images and links.'
+
 // Turns the selected section or element into a component
 export function CreateComponent({ node }: { node: ElementNode }) {
 	const [open, setOpen] = useState(false)
@@ -116,17 +119,23 @@ export function CreateComponent({ node }: { node: ElementNode }) {
 	}
 	if (!open) {
 		return (
-			<Button
-				size='sm'
-				variant='outline'
-				className='w-fit'
-				onClick={() => {
-					setName(labelOf(node))
-					setOpen(true)
-				}}
-			>
-				<ComponentIcon /> Create component
-			</Button>
+			<div className='flex flex-col gap-1.5'>
+				<Button
+					size='sm'
+					variant='outline'
+					className='w-fit'
+					title={COMPONENT_HINT}
+					onClick={() => {
+						setName(labelOf(node))
+						setOpen(true)
+					}}
+				>
+					<ComponentIcon /> Save as component
+				</Button>
+				<p className='text-muted-foreground text-xs'>
+					{COMPONENT_HINT}
+				</p>
+			</div>
 		)
 	}
 	return (
@@ -137,6 +146,10 @@ export function CreateComponent({ node }: { node: ElementNode }) {
 				submit()
 			}}
 		>
+			<p className='text-muted-foreground text-xs'>
+				Name the component. Editing it updates every copy; copies change
+				only texts, images and links.
+			</p>
 			<Input
 				autoFocus
 				value={name}
@@ -152,7 +165,7 @@ export function CreateComponent({ node }: { node: ElementNode }) {
 			/>
 			<div className='flex gap-1'>
 				<Button size='xs' type='submit' disabled={!name.trim()}>
-					Create
+					Save
 				</Button>
 				<Button
 					size='xs'

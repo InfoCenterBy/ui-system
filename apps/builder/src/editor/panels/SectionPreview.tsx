@@ -6,6 +6,8 @@ import {
 } from '@ui-system/core'
 
 const VIRTUAL_WIDTH = 1280
+// Fixed 16:9 box, so cards never change height while the preview loads
+const VIRTUAL_HEIGHT = 720
 
 const srcdocFor = (preset: SectionPreset, css: string) => {
 	const html = serializeHtml([parseSection(preset)], { pretty: false })
@@ -21,10 +23,9 @@ export function SectionPreview({
 	css: string | null
 }) {
 	const hostRef = useRef<HTMLDivElement>(null)
-	const frameRef = useRef<HTMLIFrameElement>(null)
 	const [visible, setVisible] = useState(false)
 	const [width, setWidth] = useState(0)
-	const [height, setHeight] = useState(720)
+	const [loaded, setLoaded] = useState(false)
 
 	useEffect(() => {
 		const el = hostRef.current
@@ -52,27 +53,21 @@ export function SectionPreview({
 	return (
 		<div
 			ref={hostRef}
-			className='bg-muted relative w-full overflow-hidden rounded-sm border'
-			style={{ height: height * scale || 80 }}
+			className={`bg-muted relative aspect-video w-full overflow-hidden rounded-sm border ${loaded ? '' : 'animate-pulse'}`}
 		>
-			{srcDoc !== null && (
+			{srcDoc !== null && scale > 0 && (
 				<iframe
-					ref={frameRef}
 					title={preset.name}
 					srcDoc={srcDoc}
 					tabIndex={-1}
-					className='pointer-events-none absolute top-0 left-0 border-0 bg-white'
+					className={`pointer-events-none absolute top-0 left-0 border-0 bg-white transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
 					style={{
 						width: VIRTUAL_WIDTH,
-						height,
+						height: VIRTUAL_HEIGHT,
 						transform: `scale(${scale})`,
 						transformOrigin: 'top left',
 					}}
-					onLoad={() => {
-						const h =
-							frameRef.current?.contentDocument?.body.scrollHeight
-						if (h) setHeight(h)
-					}}
+					onLoad={() => setLoaded(true)}
 				/>
 			)}
 		</div>

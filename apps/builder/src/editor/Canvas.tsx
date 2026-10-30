@@ -12,6 +12,7 @@ import { pickTarget } from '@/editor/canvas/nodes'
 import { DropIndicator } from '@/editor/canvas/DropIndicator'
 import { InlineToolbar } from '@/editor/canvas/InlineToolbar'
 import { Overlay } from '@/editor/canvas/Overlay'
+import { useCanvasAutohide } from '@/editor/canvas/autohide'
 import { useCanvasCss } from '@/editor/canvas/useCanvasCss'
 import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
 import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
@@ -87,6 +88,7 @@ export function Canvas() {
 		)
 	}, [doc, roots, siteLayout, page, header, footer, editingComponent])
 
+	useCanvasAutohide()
 	useRevealOpen(doc, roots)
 	useCanvasCss(doc, roots, theme)
 	useInlineEditing(doc, rootsRef)

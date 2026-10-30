@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
+import {
+	ChevronRight,
+	ChevronsDownUp,
+	ChevronsUpDown,
+	Plus,
+} from 'lucide-react'
 import { toast } from 'sonner'
+import { sectionOf } from '@ui-system/core'
 import { groups, elementCategories } from '@ui-system/blocks'
 import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Button } from '@/components/ui/button'
@@ -12,8 +18,8 @@ import { useElementCss } from '@/editor/panels/elementCss'
 import { groupElements, type ElementEntry } from '@/editor/panels/elementGroups'
 import { ElementPreview } from '@/editor/panels/ElementPreview'
 import { parseOpenIds } from '@/editor/panels/sectionGroups'
-import { insertElement } from '@/store/actions'
-import { useProject } from '@/store/project'
+import { addCustomBlock, insertElement } from '@/store/actions'
+import { useCurrentPage, useProject } from '@/store/project'
 
 const STORAGE_KEY = 'builder.elements.open'
 
@@ -145,6 +151,7 @@ export function ElementsPanel() {
 	const roots = useRoots()
 	const selectedId = useProject((s) => s.selectedId)
 	const editing = useProject((s) => s.editingComponentId !== null)
+	const page = useCurrentPage()
 	const blocker = insertBlocker(roots, selectedId, editing)
 	const searching = query.trim() !== ''
 
@@ -177,8 +184,32 @@ export function ElementsPanel() {
 		)
 	}
 
+	// After the selected section, or at the end of the page
+	const addBlock = () => {
+		const sections = page?.sections ?? []
+		const section = selectedId ? sectionOf(roots, selectedId) : null
+		const at = sections.findIndex((s) => s.id === section?.id)
+		addCustomBlock(at < 0 ? sections.length : at + 1).catch((e: Error) =>
+			toast.error(e.message)
+		)
+	}
+
 	return (
 		<div className='flex flex-col gap-2 p-3'>
+			<Button
+				variant='outline'
+				size='sm'
+				disabled={editing}
+				title={
+					editing
+						? 'Not available while editing a component'
+						: 'Add a Custom block after the selected section'
+				}
+				onClick={addBlock}
+			>
+				<Plus />
+				Add empty block
+			</Button>
 			<div className='flex items-center gap-1'>
 				<Input
 					type='search'

@@ -10,10 +10,13 @@ import {
 import {
 	BREAKPOINTS,
 	breakpointFor,
+	type Breakpoint,
 	resolveUtility,
 	type ElementNode,
 	type UtilityGroup,
 } from '@ui-system/core'
+import { cn } from 'cn'
+import { useStyleTarget, targetHint, targetLabel } from '@/editor/style/target'
 import { useProject } from '@/store/project'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { alignCompanion, applyAlign, readLayout } from '@/editor/style/align'
@@ -435,10 +438,10 @@ function TextAlignRow({ ctx }: { ctx: StyleContext }) {
 			group='text-align'
 			label='Align'
 			note={hint}
-			apply={(utility) =>
+			apply={(utility, at) =>
 				applyAlign(
 					ctx.classes,
-					ctx.bp,
+					at,
 					utility,
 					readLayout(useCanvas.getState().doc, ctx.id)
 				)
@@ -519,23 +522,52 @@ function Effects({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
-// Style controls write classes at the breakpoint of the canvas width
+// Style controls write classes at the chosen target, All screens by default
 export function StylePanel({ node }: { node: ElementNode }) {
 	const width = useProject((s) => s.canvasWidth)
-	const bp = breakpointFor(width)
-	const label = BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp
-	const ctx: StyleContext = { id: node.id, classes: node.classes, bp }
+	const { target, setTarget } = useStyleTarget()
+	const canvasBp = breakpointFor(width)
+	const hint = targetHint(target, width)
+	const ctx: StyleContext = {
+		id: node.id,
+		classes: node.classes,
+		bp: target,
+		canvasBp,
+	}
 	return (
 		<div className='flex flex-col'>
-			<div className='flex flex-col gap-0.5 px-3 py-2'>
-				<div className='flex items-center justify-between'>
+			<div className='flex flex-col gap-1.5 px-3 py-2'>
+				<div className='flex items-center justify-between gap-2'>
 					<span className='text-xs font-medium'>Style</span>
-					<span className='text-primary-foreground rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-medium'>
-						{label}
-					</span>
+					<label className='flex items-center gap-1.5 text-xs'>
+						<span className='text-muted-foreground'>
+							Applies to
+						</span>
+						<select
+							aria-label='Applies to'
+							value={target}
+							className='border-input bg-background h-7 rounded-lg border px-1.5 text-xs'
+							onChange={(e) =>
+								setTarget(e.target.value as Breakpoint)
+							}
+						>
+							{BREAKPOINTS.map((b) => (
+								<option key={b.prefix} value={b.prefix}>
+									{targetLabel(b.prefix)}
+								</option>
+							))}
+						</select>
+					</label>
 				</div>
-				<p className='text-muted-foreground text-xs'>
-					Changes apply from {label} and wider
+				<p
+					className={cn(
+						'text-xs',
+						hint.warn
+							? 'text-amber-600 dark:text-amber-400'
+							: 'text-muted-foreground'
+					)}
+				>
+					{hint.text}
 				</p>
 			</div>
 			<Layout ctx={ctx} />

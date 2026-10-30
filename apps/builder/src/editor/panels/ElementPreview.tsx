@@ -25,6 +25,7 @@ export function ElementPreview({
 }) {
 	const hostRef = useRef<HTMLDivElement>(null)
 	const [width, setWidth] = useState(0)
+	const [loaded, setLoaded] = useState(false)
 	useEffect(() => {
 		const el = hostRef.current
 		if (!el) return
@@ -42,7 +43,7 @@ export function ElementPreview({
 	return (
 		<div
 			ref={hostRef}
-			className='bg-muted pointer-events-none relative w-full overflow-hidden rounded-sm border'
+			className={`bg-muted pointer-events-none relative w-full overflow-hidden rounded-sm border ${loaded ? '' : 'animate-pulse'}`}
 			style={{ height: HEIGHT }}
 		>
 			{srcDoc !== null && scale > 0 && (
@@ -50,7 +51,8 @@ export function ElementPreview({
 					title={title}
 					srcDoc={srcDoc}
 					tabIndex={-1}
-					className='absolute top-0 left-0 border-0'
+					className={`absolute top-0 left-0 border-0 transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
+					onLoad={() => setLoaded(true)}
 					style={{
 						width: VIRTUAL_WIDTH,
 						height: HEIGHT / scale,

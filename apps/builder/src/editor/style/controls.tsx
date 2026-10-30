@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip'
 import { resolveVars } from '@ui-system/theme'
 import type { ClassIndex } from '@ui-system/theme/classes'
+import { overriddenAt } from '@/editor/style/target'
 import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
 import { useClassIndex } from '@/editor/style/useClassIndex'
 import {
@@ -42,11 +43,16 @@ import {
 export interface StyleContext {
 	id: string
 	classes: string
+	// Breakpoint written to, chosen in the panel header
 	bp: Breakpoint
+	// Breakpoint of the canvas width, only used to spot overrides
+	canvasBp: Breakpoint
 }
 
 const labelOfBreakpoint = (bp: Breakpoint) =>
-	BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp
+	bp === ''
+		? 'All screens'
+		: (BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp)
 
 export interface RowState {
 	// Utility in effect at the active breakpoint, set there or inherited
@@ -70,8 +76,8 @@ export function StyleRow({
 	label: string
 	// Control below the label instead of beside it
 	stacked?: boolean
-	// Replaces the plain class write, e.g. to add a companion utility
-	apply?: (utility: string | null) => string
+	// Replaces the plain class write, e.g. to add a companion utility; at is the breakpoint
+	apply?: (utility: string | null, at: Breakpoint) => string
 	// Muted line under the row
 	note?: ReactNode
 	children: (state: RowState) => ReactNode
@@ -79,11 +85,12 @@ export function StyleRow({
 	const own = getUtility(ctx.classes, group, ctx.bp)
 	const resolved = resolveUtility(ctx.classes, group, ctx.bp)
 	const inherited = own === null && resolved !== null
+	const overrideFrom = overriddenAt(ctx.classes, group, ctx.bp, ctx.canvasBp)
 	const set = (utility: string | null) =>
 		setClasses(
 			ctx.id,
 			apply
-				? apply(utility)
+				? apply(utility, ctx.bp)
 				: setUtility(ctx.classes, group, ctx.bp, utility)
 		)
 	return (
@@ -135,6 +142,30 @@ export function StyleRow({
 						set,
 					})}
 				</div>
+			)}
+			{overrideFrom !== null && (
+				<p className='text-muted-foreground/80 col-span-full flex items-center gap-1 text-[10px] leading-tight'>
+					<span>Overridden at {labelOfBreakpoint(overrideFrom)}</span>
+					<button
+						type='button'
+						className='text-primary underline'
+						onClick={() =>
+							setClasses(
+								ctx.id,
+								apply
+									? apply(null, overrideFrom)
+									: setUtility(
+											ctx.classes,
+											group,
+											overrideFrom,
+											null
+										)
+							)
+						}
+					>
+						Reset override
+					</button>
+				</p>
 			)}
 			{note && (
 				<p className='text-muted-foreground/80 col-span-full text-[10px] leading-tight'>
