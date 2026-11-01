@@ -5,20 +5,30 @@ import {
 	type ElementNode,
 } from '@ui-system/core'
 import { getSectionPreset } from '@ui-system/blocks/sections'
+import { t, type Key } from '@/i18n'
+import { sectionName } from '@/i18n/names'
 import { useDocument } from '@/store/document'
 
-const SLOT_LABEL = { text: 'Text', rich: 'Text', image: 'Image', link: 'Link' }
+const SLOT_LABEL: Record<NonNullable<ElementNode['slot']>, Key> = {
+	text: 'node.text',
+	rich: 'node.text',
+	image: 'node.image',
+	link: 'node.link',
+}
 
 export const labelOf = (node: ElementNode) => {
 	if (node.instance) {
 		const components = useDocument.getState().doc?.components
-		return components?.[node.instance.component]?.name ?? 'Component'
+		return (
+			components?.[node.instance.component]?.name ?? t('node.component')
+		)
 	}
 	if (node.section) {
-		return getSectionPreset(node.section.preset)?.name ?? 'Section'
+		const preset = getSectionPreset(node.section.preset)
+		return preset ? sectionName(preset.name) : t('node.section')
 	}
-	if (node.slot) return SLOT_LABEL[node.slot]
-	if (node.repeat) return 'Item'
+	if (node.slot) return t(SLOT_LABEL[node.slot])
+	if (node.repeat) return t('node.item')
 	return node.label ?? node.tag
 }
 

@@ -7,6 +7,7 @@ import type {
 	Partials,
 	Site,
 } from '@ui-system/core'
+import { t } from '@/i18n'
 
 export interface Project {
 	path: string
@@ -51,7 +52,7 @@ async function request<T>(
 	})
 	const data = await res.json().catch(() => null)
 	if (!res.ok) {
-		throw new Error(data?.error ?? `Request failed (${res.status})`)
+		throw new Error(data?.error ?? t('err.request', { status: res.status }))
 	}
 	return data as T
 }

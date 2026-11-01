@@ -30,6 +30,7 @@ import {
 	type StyleContext,
 } from '@/editor/style/controls'
 import { FRACTIONS, SPACING_STEPS } from '@/editor/style/values'
+import { t } from '@/i18n'
 
 const choices = (prefix: string, names: string[]): Choice[] =>
 	names.map((name) => ({ value: `${prefix}-${name}`, label: name }))
@@ -85,33 +86,34 @@ const WIDTHS = ['auto', 'full', 'fit', 'screen', ...FRACTIONS, ...SPACING]
 const HEIGHTS = ['auto', 'full', 'fit', 'screen', ...SPACING]
 const MIN_HEIGHTS = ['screen', 'full', 'fit', ...SPACING]
 
-const DISPLAY: Choice[] = [
+// Built on render: the texts follow the current language
+const displayChoices = (): Choice[] => [
 	{ value: 'block', label: 'Block' },
 	{ value: 'flex', label: 'Flex' },
 	{ value: 'grid', label: 'Grid' },
-	{ value: 'hidden', label: 'Hidden' },
+	{ value: 'hidden', label: t('style.hidden') },
 ]
 
-const ALIGNS: Choice[] = [
+const alignChoices = (): Choice[] => [
 	{
 		value: 'text-left',
 		label: <AlignLeftIcon className='size-3.5' />,
-		title: 'Left',
+		title: t('style.alignLeft'),
 	},
 	{
 		value: 'text-center',
 		label: <AlignCenterIcon className='size-3.5' />,
-		title: 'Center',
+		title: t('style.alignCenter'),
 	},
 	{
 		value: 'text-right',
 		label: <AlignRightIcon className='size-3.5' />,
-		title: 'Right',
+		title: t('style.alignRight'),
 	},
 	{
 		value: 'text-justify',
 		label: <AlignJustifyIcon className='size-3.5' />,
-		title: 'Justify',
+		title: t('style.alignJustify'),
 	},
 ]
 
@@ -156,16 +158,16 @@ function BoxEditor({
 }) {
 	const p = kind === 'padding' ? 'p' : 'm'
 	const groups = {
-		all: [[kind, 'All', p]],
+		all: [[kind, t('style.all'), p]],
 		xy: [
 			[`${kind}-x`, 'X', `${p}x`],
 			[`${kind}-y`, 'Y', `${p}y`],
 		],
 		sides: [
-			[`${kind}-top`, 'Top', `${p}t`],
-			[`${kind}-right`, 'Right', `${p}r`],
-			[`${kind}-bottom`, 'Bottom', `${p}b`],
-			[`${kind}-left`, 'Left', `${p}l`],
+			[`${kind}-top`, t('style.top'), `${p}t`],
+			[`${kind}-right`, t('style.right'), `${p}r`],
+			[`${kind}-bottom`, t('style.bottom'), `${p}b`],
+			[`${kind}-left`, t('style.left'), `${p}l`],
 		],
 	} as const
 	const used = (names: readonly (readonly [string, string, string])[]) =>
@@ -185,15 +187,17 @@ function BoxEditor({
 	return (
 		<div className='flex flex-col gap-1.5'>
 			<div className='flex items-center gap-2'>
-				<span className='text-muted-foreground w-[4.25rem] text-xs capitalize'>
-					{kind}
+				<span className='text-muted-foreground w-[6.25rem] truncate text-xs'>
+					{kind === 'padding'
+						? t('style.padding')
+						: t('style.margin')}
 				</span>
 				<div className='border-input flex flex-1 overflow-hidden rounded-lg border'>
 					{(
 						[
-							['all', 'All'],
+							['all', t('style.all')],
 							['xy', 'X / Y'],
-							['sides', 'Sides'],
+							['sides', t('style.sides')],
 						] as const
 					).map(([key, label]) => (
 						<button
@@ -235,7 +239,7 @@ function BoxEditor({
 
 function GapRow({ ctx }: { ctx: StyleContext }) {
 	return (
-		<StyleRow ctx={ctx} group='gap' label='Gap'>
+		<StyleRow ctx={ctx} group='gap' label={t('style.gap')}>
 			{(state) => (
 				<ValueInput state={state} prefix='gap' options={SPACING} />
 			)}
@@ -245,7 +249,7 @@ function GapRow({ ctx }: { ctx: StyleContext }) {
 
 function JustifyRow({ ctx }: { ctx: StyleContext }) {
 	return (
-		<StyleRow ctx={ctx} group='justify-content' label='Justify'>
+		<StyleRow ctx={ctx} group='justify-content' label={t('style.justify')}>
 			{(state) => (
 				<Choose
 					state={state}
@@ -265,7 +269,7 @@ function JustifyRow({ ctx }: { ctx: StyleContext }) {
 
 function AlignRow({
 	ctx,
-	label = 'Align',
+	label = t('style.align'),
 }: {
 	ctx: StyleContext
 	label?: string
@@ -293,34 +297,57 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 	const isFlex = display === 'flex' || display === 'inline-flex'
 	const isGrid = display === 'grid' || display === 'inline-grid'
 	return (
-		<Section title='Layout'>
-			<StyleRow ctx={ctx} group='display' label='Display' stacked>
-				{(state) => <Segmented state={state} options={DISPLAY} />}
+		<Section title={t('style.layout')}>
+			<StyleRow
+				ctx={ctx}
+				group='display'
+				label={t('style.display')}
+				stacked
+			>
+				{(state) => (
+					<Segmented state={state} options={displayChoices()} />
+				)}
 			</StyleRow>
 			{isFlex && (
 				<>
 					<StyleRow
 						ctx={ctx}
 						group='flex-direction'
-						label='Direction'
+						label={t('style.direction')}
 					>
 						{(state) => (
 							<Segmented
 								state={state}
 								options={[
-									{ value: 'flex-row', label: 'Row' },
-									{ value: 'flex-col', label: 'Column' },
+									{
+										value: 'flex-row',
+										label: t('style.row'),
+									},
+									{
+										value: 'flex-col',
+										label: t('style.column'),
+									},
 								]}
 							/>
 						)}
 					</StyleRow>
-					<StyleRow ctx={ctx} group='flex-wrap' label='Wrap'>
+					<StyleRow
+						ctx={ctx}
+						group='flex-wrap'
+						label={t('style.wrap')}
+					>
 						{(state) => (
 							<Segmented
 								state={state}
 								options={[
-									{ value: 'flex-nowrap', label: 'No wrap' },
-									{ value: 'flex-wrap', label: 'Wrap' },
+									{
+										value: 'flex-nowrap',
+										label: t('style.noWrap'),
+									},
+									{
+										value: 'flex-wrap',
+										label: t('style.wrapOn'),
+									},
 								]}
 							/>
 						)}
@@ -332,7 +359,11 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 			)}
 			{isGrid && (
 				<>
-					<StyleRow ctx={ctx} group='grid-cols' label='Columns'>
+					<StyleRow
+						ctx={ctx}
+						group='grid-cols'
+						label={t('style.columns')}
+					>
 						{(state) => (
 							<Choose
 								state={state}
@@ -349,7 +380,11 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 						)}
 					</StyleRow>
 					<JustifyRow ctx={ctx} />
-					<StyleRow ctx={ctx} group='justify-items' label='Items X'>
+					<StyleRow
+						ctx={ctx}
+						group='justify-items'
+						label={t('style.itemsX')}
+					>
 						{(state) => (
 							<Choose
 								state={state}
@@ -362,8 +397,12 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 							/>
 						)}
 					</StyleRow>
-					<AlignRow ctx={ctx} label='Items Y' />
-					<StyleRow ctx={ctx} group='place-items' label='Place items'>
+					<AlignRow ctx={ctx} label={t('style.itemsY')} />
+					<StyleRow
+						ctx={ctx}
+						group='place-items'
+						label={t('style.placeItems')}
+					>
 						{(state) => (
 							<Choose
 								state={state}
@@ -386,7 +425,7 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 
 function Spacing({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title='Spacing'>
+		<Section title={t('style.spacing')}>
 			<BoxEditor ctx={ctx} kind='padding' />
 			<BoxEditor ctx={ctx} kind='margin' />
 		</Section>
@@ -407,11 +446,11 @@ function Size({ ctx }: { ctx: StyleContext }) {
 		</StyleRow>
 	)
 	return (
-		<Section title='Size'>
-			{row('width', 'Width', 'w', WIDTHS)}
-			{row('max-width', 'Max width', 'max-w', MAX_WIDTHS)}
-			{row('height', 'Height', 'h', HEIGHTS)}
-			{row('min-height', 'Min height', 'min-h', MIN_HEIGHTS)}
+		<Section title={t('style.size')}>
+			{row('width', t('style.width'), 'w', WIDTHS)}
+			{row('max-width', t('style.maxWidth'), 'max-w', MAX_WIDTHS)}
+			{row('height', t('style.height'), 'h', HEIGHTS)}
+			{row('min-height', t('style.minHeight'), 'min-h', MIN_HEIGHTS)}
 		</Section>
 	)
 }
@@ -436,7 +475,7 @@ function TextAlignRow({ ctx }: { ctx: StyleContext }) {
 		<StyleRow
 			ctx={ctx}
 			group='text-align'
-			label='Align'
+			label={t('style.align')}
 			note={hint}
 			apply={(utility, at) =>
 				applyAlign(
@@ -447,15 +486,15 @@ function TextAlignRow({ ctx }: { ctx: StyleContext }) {
 				)
 			}
 		>
-			{(state) => <Segmented state={state} options={ALIGNS} />}
+			{(state) => <Segmented state={state} options={alignChoices()} />}
 		</StyleRow>
 	)
 }
 
 function Typography({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title='Typography'>
-			<StyleRow ctx={ctx} group='font-size' label='Size'>
+		<Section title={t('style.typography')}>
+			<StyleRow ctx={ctx} group='font-size' label={t('style.fontSize')}>
 				{(state) => (
 					<Choose
 						state={state}
@@ -463,13 +502,17 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 					/>
 				)}
 			</StyleRow>
-			<StyleRow ctx={ctx} group='font-weight' label='Weight'>
+			<StyleRow ctx={ctx} group='font-weight' label={t('style.weight')}>
 				{(state) => (
 					<Choose state={state} options={choices('font', WEIGHTS)} />
 				)}
 			</StyleRow>
 			<TextAlignRow ctx={ctx} />
-			<StyleRow ctx={ctx} group='line-height' label='Line height'>
+			<StyleRow
+				ctx={ctx}
+				group='line-height'
+				label={t('style.lineHeight')}
+			>
 				{(state) => (
 					<Choose
 						state={state}
@@ -477,7 +520,12 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 					/>
 				)}
 			</StyleRow>
-			<StyleRow ctx={ctx} group='text-color' label='Color' stacked>
+			<StyleRow
+				ctx={ctx}
+				group='text-color'
+				label={t('style.color')}
+				stacked
+			>
 				{(state) => <ColorSwatches state={state} prefix='text' />}
 			</StyleRow>
 		</Section>
@@ -486,8 +534,13 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 
 function Background({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title='Background'>
-			<StyleRow ctx={ctx} group='background-color' label='Color' stacked>
+		<Section title={t('style.background')}>
+			<StyleRow
+				ctx={ctx}
+				group='background-color'
+				label={t('style.color')}
+				stacked
+			>
 				{(state) => <ColorSwatches state={state} prefix='bg' />}
 			</StyleRow>
 		</Section>
@@ -496,13 +549,13 @@ function Background({ ctx }: { ctx: StyleContext }) {
 
 function Effects({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title='Border and effects'>
-			<StyleRow ctx={ctx} group='radius' label='Radius'>
+		<Section title={t('style.effects')}>
+			<StyleRow ctx={ctx} group='radius' label={t('style.radius')}>
 				{(state) => (
 					<Choose state={state} options={choices('rounded', RADII)} />
 				)}
 			</StyleRow>
-			<StyleRow ctx={ctx} group='shadow' label='Shadow'>
+			<StyleRow ctx={ctx} group='shadow' label={t('style.shadow')}>
 				{(state) => (
 					<Choose
 						state={state}
@@ -510,7 +563,7 @@ function Effects({ ctx }: { ctx: StyleContext }) {
 					/>
 				)}
 			</StyleRow>
-			<StyleRow ctx={ctx} group='opacity' label='Opacity'>
+			<StyleRow ctx={ctx} group='opacity' label={t('style.opacity')}>
 				{(state) => (
 					<Choose
 						state={state}
@@ -538,13 +591,15 @@ export function StylePanel({ node }: { node: ElementNode }) {
 		<div className='flex flex-col'>
 			<div className='flex flex-col gap-1.5 px-3 py-2'>
 				<div className='flex items-center justify-between gap-2'>
-					<span className='text-xs font-medium'>Style</span>
+					<span className='text-xs font-medium'>
+						{t('style.title')}
+					</span>
 					<label className='flex items-center gap-1.5 text-xs'>
 						<span className='text-muted-foreground'>
-							Applies to
+							{t('style.appliesTo')}
 						</span>
 						<select
-							aria-label='Applies to'
+							aria-label={t('style.appliesTo')}
 							value={target}
 							className='border-input bg-background h-7 rounded-lg border px-1.5 text-xs'
 							onChange={(e) =>

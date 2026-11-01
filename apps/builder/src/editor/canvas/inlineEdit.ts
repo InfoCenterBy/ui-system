@@ -12,6 +12,7 @@ import { EditorView } from 'prosemirror-view'
 import { parseHtml, type SlotKind } from '@ui-system/core'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { schemaFor } from '@/editor/canvas/inlineSchema'
+import { t } from '@/i18n'
 import { setSlotContent } from '@/store/actions'
 
 const SAVE_DELAY = 250
@@ -47,7 +48,7 @@ export const promptLink: Command = (state, dispatch) => {
 		state.selection.to,
 		type
 	)
-	const href = window.prompt('Link address', current ? '' : 'https://')
+	const href = window.prompt(t('inline.prompt'), current ? '' : 'https://')
 	if (href === null) return true
 	const { from, to } = state.selection
 	const tr = state.tr.removeMark(from, to, type)

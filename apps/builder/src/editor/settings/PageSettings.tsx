@@ -20,10 +20,12 @@ import {
 	setPageSlug,
 	updatePageMeta,
 } from '@/store/pageActions'
+import { useTranslation } from 'react-i18next'
 
 const DESCRIPTION_LIMIT = 160
 
 function Form({ id }: { id: string }) {
+	const { t } = useTranslation()
 	const page = useDocument((s) => s.doc?.pages[id])
 	const [name, setName] = useState(page?.name ?? '')
 	const [slug, setSlug] = useState(page?.slug ?? '')
@@ -40,7 +42,7 @@ function Form({ id }: { id: string }) {
 
 	return (
 		<div className='flex flex-col gap-3 overflow-y-auto p-1'>
-			<Field label='Name'>
+			<Field label={t('pageSettings.name')}>
 				<Input
 					value={name}
 					onChange={(e) => {
@@ -49,7 +51,7 @@ function Form({ id }: { id: string }) {
 					}}
 				/>
 			</Field>
-			<Field label='File name'>
+			<Field label={t('pageSettings.file')}>
 				<div className='flex items-center gap-1.5'>
 					<Input
 						value={home ? HOME_SLUG : slug}
@@ -68,11 +70,11 @@ function Form({ id }: { id: string }) {
 				)}
 				{home && (
 					<span className='text-muted-foreground text-xs'>
-						The home page is always index.html
+						{t('pageSettings.homeNote')}
 					</span>
 				)}
 			</Field>
-			<Field label='SEO title'>
+			<Field label={t('pageSettings.seoTitle')}>
 				<Input
 					value={page.meta.title}
 					onChange={(e) =>
@@ -80,7 +82,7 @@ function Form({ id }: { id: string }) {
 					}
 				/>
 			</Field>
-			<Field label='SEO description'>
+			<Field label={t('pageSettings.seoDescription')}>
 				<textarea
 					rows={3}
 					value={page.meta.description}
@@ -96,8 +98,10 @@ function Form({ id }: { id: string }) {
 							: 'text-muted-foreground'
 					}`}
 				>
-					{page.meta.description.length} / {DESCRIPTION_LIMIT}{' '}
-					recommended
+					{t('pageSettings.recommended', {
+						n: page.meta.description.length,
+						max: DESCRIPTION_LIMIT,
+					})}
 				</span>
 			</Field>
 			<div className='flex flex-col gap-1.5 text-sm'>
@@ -115,7 +119,7 @@ function Form({ id }: { id: string }) {
 						<Button
 							size='icon-sm'
 							variant='ghost'
-							aria-label='Clear og:image'
+							aria-label={t('pageSettings.clearImage')}
 							onClick={() =>
 								updatePageMeta(id, { ogImage: null })
 							}
@@ -138,7 +142,7 @@ function Form({ id }: { id: string }) {
 							setPageFlags(id, { showHeader: e.target.checked })
 						}
 					/>
-					Show header
+					{t('pageSettings.showHeader')}
 				</label>
 				<label className='flex items-center gap-2'>
 					<input
@@ -148,7 +152,7 @@ function Form({ id }: { id: string }) {
 							setPageFlags(id, { showFooter: e.target.checked })
 						}
 					/>
-					Show footer
+					{t('pageSettings.showFooter')}
 				</label>
 			</div>
 		</div>
@@ -165,13 +169,14 @@ export function PageSettings({
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }) {
+	const { t } = useTranslation()
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className='flex max-h-[85svh] flex-col sm:max-w-lg'>
 				<DialogHeader>
-					<DialogTitle>Page settings</DialogTitle>
+					<DialogTitle>{t('top.pageSettingsTitle')}</DialogTitle>
 					<DialogDescription>
-						Changes are applied right away and can be undone.
+						{t('pageSettings.note')}
 					</DialogDescription>
 				</DialogHeader>
 				{pageId && <Form key={pageId} id={pageId} />}

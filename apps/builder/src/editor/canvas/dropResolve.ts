@@ -8,6 +8,7 @@ import {
 import { elementFor } from '@/editor/canvas/frame'
 import { scopeOf } from '@/editor/canvas/nodes'
 import { insertBlocker } from '@/editor/navigator/insertTarget'
+import { t } from '@/i18n'
 import { canContain } from '@/editor/navigator/structure'
 import type { Axis, Box, Candidate, Rect, Spot } from './dropTarget'
 import { spotAt } from './dropTarget'
@@ -116,11 +117,9 @@ export const hitAt = (
 	}
 	const message = insertBlocker(roots, hitId, editing)
 	if (!message) return null
-	const inInstance = message.includes('component instance')
+	const inInstance = message === t('insert.inInstance')
 	return {
 		kind: 'blocked',
-		message: inInstance
-			? 'Components are edited in component mode'
-			: message,
+		message: inInstance ? t('drop.componentMode') : message,
 	}
 }

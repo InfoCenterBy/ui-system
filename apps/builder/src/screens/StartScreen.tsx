@@ -3,9 +3,12 @@ import { toast } from 'sonner'
 import { api, type Project, type RecentProject } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { LangSwitch } from '@/components/LangSwitch'
+import { useTranslation } from 'react-i18next'
 import { useProject } from '@/store/project'
 
 export function StartScreen() {
+	const { t } = useTranslation()
 	const openProject = useProject((s) => s.openProject)
 	const [folder, setFolder] = useState('')
 	const [recent, setRecent] = useState<RecentProject[]>([])
@@ -34,15 +37,18 @@ export function StartScreen() {
 
 	function create() {
 		if (!creating) return setCreating(true)
-		if (!name.trim()) return void toast.error('Enter a site name')
+		if (!name.trim()) return void toast.error(t('start.enterName'))
 		void run(() => api.create(path, name.trim()))
 	}
 
 	return (
 		<main className='mx-auto flex min-h-svh max-w-xl flex-col justify-center gap-8 px-6 py-12'>
-			<h1 className='text-3xl font-semibold tracking-tight'>
-				UI Builder
-			</h1>
+			<div className='flex items-start justify-between gap-4'>
+				<h1 className='text-3xl font-semibold tracking-tight'>
+					UI Builder
+				</h1>
+				<LangSwitch />
+			</div>
 
 			<form
 				className='flex flex-col gap-3'
@@ -54,21 +60,21 @@ export function StartScreen() {
 				<Input
 					value={folder}
 					onChange={(e) => setFolder(e.target.value)}
-					placeholder='Project folder path'
-					aria-label='Project folder path'
+					placeholder={t('start.folderPath')}
+					aria-label={t('start.folderPath')}
 				/>
 				{creating && (
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder='Site name'
-						aria-label='Site name'
+						placeholder={t('start.siteName')}
+						aria-label={t('start.siteName')}
 						autoFocus
 					/>
 				)}
 				<div className='flex gap-2'>
 					<Button type='submit' disabled={busy || !path}>
-						Open
+						{t('start.open')}
 					</Button>
 					<Button
 						type='button'
@@ -76,18 +82,18 @@ export function StartScreen() {
 						disabled={busy || !path}
 						onClick={create}
 					>
-						Create
+						{t('start.create')}
 					</Button>
 				</div>
 			</form>
 
 			<section className='flex flex-col gap-2'>
 				<h2 className='text-muted-foreground text-sm font-medium'>
-					Recent projects
+					{t('start.recent')}
 				</h2>
 				{recent.length === 0 && (
 					<p className='text-muted-foreground text-sm'>
-						Nothing yet.
+						{t('start.nothing')}
 					</p>
 				)}
 				<ul className='flex flex-col'>

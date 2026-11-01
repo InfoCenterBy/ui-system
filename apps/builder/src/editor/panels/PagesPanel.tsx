@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { PageSettings } from '@/editor/settings/PageSettings'
+import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 import {
 	HOME_SLUG,
@@ -49,6 +50,7 @@ interface RowProps {
 }
 
 function PageRow({ page, index, last, onSettings, onDelete }: RowProps) {
+	const { t } = useTranslation()
 	const current = useProject((s) => s.currentPageId === page.id)
 	const setCurrentPage = useProject((s) => s.setCurrentPage)
 	const [editing, setEditing] = useState(false)
@@ -94,35 +96,35 @@ function PageRow({ page, index, last, onSettings, onDelete }: RowProps) {
 					<Button
 						size='icon-sm'
 						variant='ghost'
-						aria-label={`Actions for ${page.name}`}
+						aria-label={t('pages.actionsFor', { name: page.name })}
 					>
 						<MoreHorizontalIcon />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align='end'>
 					<DropdownMenuItem onSelect={onSettings}>
-						<SettingsIcon /> Settings
+						<SettingsIcon /> {t('common.settings')}
 					</DropdownMenuItem>
 					<DropdownMenuItem onSelect={() => duplicatePage(page.id)}>
-						<CopyIcon /> Duplicate
+						<CopyIcon /> {t('common.duplicate')}
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						disabled={home}
 						onSelect={() => setHomePage(page.id)}
 					>
-						<HomeIcon /> Set as home
+						<HomeIcon /> {t('pages.setHome')}
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						disabled={index === 0}
 						onSelect={() => movePage(page.id, index - 1)}
 					>
-						<ArrowUpIcon /> Move up
+						<ArrowUpIcon /> {t('common.moveUp')}
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						disabled={last}
 						onSelect={() => movePage(page.id, index + 1)}
 					>
-						<ArrowDownIcon /> Move down
+						<ArrowDownIcon /> {t('common.moveDown')}
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -130,7 +132,7 @@ function PageRow({ page, index, last, onSettings, onDelete }: RowProps) {
 						disabled={home}
 						onSelect={onDelete}
 					>
-						<Trash2Icon /> Delete
+						<Trash2Icon /> {t('common.delete')}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -139,6 +141,7 @@ function PageRow({ page, index, last, onSettings, onDelete }: RowProps) {
 }
 
 function AddPage() {
+	const { t } = useTranslation()
 	const [adding, setAdding] = useState(false)
 	const [name, setName] = useState('')
 
@@ -150,14 +153,14 @@ function AddPage() {
 	if (!adding)
 		return (
 			<Button variant='outline' size='sm' onClick={() => setAdding(true)}>
-				<PlusIcon /> Add page
+				<PlusIcon /> {t('pages.add')}
 			</Button>
 		)
 	return (
 		<Input
 			autoFocus
 			value={name}
-			placeholder='Page name, Enter to create'
+			placeholder={t('pages.namePlaceholder')}
 			onChange={(e) => setName(e.target.value)}
 			onBlur={close}
 			onKeyDown={(e) => {
@@ -172,6 +175,7 @@ function AddPage() {
 }
 
 export function PagesPanel() {
+	const { t } = useTranslation()
 	const site = useDocument((s) => s.doc?.site)
 	const byId = useDocument((s) => s.doc?.pages)
 	const [settingsId, setSettingsId] = useState<string | null>(null)
@@ -210,10 +214,11 @@ export function PagesPanel() {
 			>
 				<DialogContent className='sm:max-w-sm'>
 					<DialogHeader>
-						<DialogTitle>Delete page?</DialogTitle>
+						<DialogTitle>{t('pages.deleteTitle')}</DialogTitle>
 						<DialogDescription>
-							&quot;{deleting?.name}&quot; and its file will be
-							removed. You can undo this right after.
+							{t('pages.deleteText', {
+								name: deleting?.name ?? '',
+							})}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
@@ -221,7 +226,7 @@ export function PagesPanel() {
 							variant='outline'
 							onClick={() => setDeleting(null)}
 						>
-							Cancel
+							{t('common.cancel')}
 						</Button>
 						<Button
 							variant='destructive'
@@ -230,7 +235,7 @@ export function PagesPanel() {
 								setDeleting(null)
 							}}
 						>
-							Delete
+							{t('common.delete')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

@@ -33,6 +33,7 @@ import {
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
 import { scopeOf } from '@/editor/canvas/nodes'
 import { api } from '@/api'
+import { t } from '@/i18n'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
 import { useNav } from '@/editor/navigator/navState'
@@ -42,7 +43,7 @@ type PartialName = 'header' | 'footer'
 
 const pageId = () => {
 	const id = useProject.getState().currentPageId
-	if (!id) throw new Error('No page is open')
+	if (!id) throw new Error(t('err.noPage'))
 	return id
 }
 
@@ -108,7 +109,7 @@ const instanceAround = (roots: ElementNode[], id: NodeId) => {
 
 const assertNotEditingComponent = () => {
 	if (useProject.getState().editingComponentId) {
-		throw new Error('Finish editing the component first')
+		throw new Error(t('err.finishEditing'))
 	}
 }
 
@@ -591,7 +592,7 @@ const requireComponent = (draft: Doc, id: string) => {
 // puts an instance in its place
 export const createComponentFrom = (nodeId: NodeId, name: string) => {
 	const title = name.trim()
-	if (!title) throw new Error('A component needs a name')
+	if (!title) throw new Error(t('err.componentName'))
 	assertNotEditingComponent()
 	const id = randomId()
 	useDocument.getState().edit(`Create component ${title}`, (draft) => {
@@ -599,20 +600,20 @@ export const createComponentFrom = (nodeId: NodeId, name: string) => {
 		const node = findElement(roots, nodeId)
 		if (!node) throw new Error('Node is not in a page or partial')
 		if (isSharedPart(draft.partials, nodeId)) {
-			throw new Error('Header and footer cannot be components')
+			throw new Error(t('err.partialComponent'))
 		}
 		const topLevel = roots.some((root) => root.id === nodeId)
 		if (!topLevel) {
 			const section = sectionOf(roots, nodeId)
 			if (!section || section.section?.locked) {
-				throw new Error('The section is locked')
+				throw new Error(t('err.locked'))
 			}
 		}
 		if (ancestorsOf(roots, nodeId).some((a) => a.instance)) {
-			throw new Error('The node is part of an instance')
+			throw new Error(t('err.inInstance'))
 		}
 		if (hasInstance(node)) {
-			throw new Error('A component cannot contain another component')
+			throw new Error(t('err.nested'))
 		}
 		const { component, instance } = createComponent(
 			node,
@@ -640,16 +641,16 @@ export const insertInstance = (
 	useDocument.getState().edit('Insert component', (draft) => {
 		const component = requireComponent(draft, componentId)
 		if (component.root.section) {
-			throw new Error('A section component goes in as a section')
+			throw new Error(t('err.sectionComponent'))
 		}
 		const roots = pageRoots(draft)
 		const parent = findElement(roots, parentId)
 		const section = parent && sectionOf(roots, parentId)
 		if (!parent || !section || section.section?.locked) {
-			throw new Error('Parent must be inside an unlocked section')
+			throw new Error(t('err.parentUnlocked'))
 		}
 		if (instanceAround(roots, parentId)) {
-			throw new Error('Parent is part of an instance')
+			throw new Error(t('err.parentInstance'))
 		}
 		const instance = materialize(component.root, componentId, randomId)
 		instanceId = instance.id
@@ -670,7 +671,7 @@ export const addInstanceSection = (componentId: string, index?: number) => {
 	useDocument.getState().edit('Add component', (draft) => {
 		const component = requireComponent(draft, componentId)
 		if (!component.root.section) {
-			throw new Error('Only section components go in as a section')
+			throw new Error(t('err.onlySection'))
 		}
 		const sections = draft.pages[pageId()].sections
 		const instance = materialize(component.root, componentId, randomId)
@@ -731,7 +732,7 @@ export const resetAllContent = (instanceId: NodeId) => {
 
 export const renameComponent = (id: string, name: string) => {
 	const title = name.trim()
-	if (!title) throw new Error('A component needs a name')
+	if (!title) throw new Error(t('err.componentName'))
 	useDocument.getState().edit('Rename component', (draft) => {
 		requireComponent(draft, id).name = title
 	})

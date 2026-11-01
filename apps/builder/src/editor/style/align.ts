@@ -5,6 +5,7 @@ import {
 	type Breakpoint,
 	type UtilityGroup,
 } from '@ui-system/core'
+import { t } from '@/i18n'
 
 export interface AlignLayout {
 	display: string
@@ -27,8 +28,8 @@ const SIDE: Record<string, string> = {
 	'text-end': 'end',
 }
 
-const INLINE_HINT = 'Inline element: align its parent instead'
-const WRAP_HINT = 'As wide as its text: set a width or align the parent'
+const INLINE_HINT = () => t('style.hintInline')
+const WRAP_HINT = () => t('style.hintWrap')
 
 // Extra utility that makes a text-* alignment visible for the element's layout
 export const alignCompanion = (
@@ -48,13 +49,13 @@ export const alignCompanion = (
 	if (display === 'grid' || display === 'inline-grid') {
 		return { group: 'justify-items', utility: `justify-items-${side}` }
 	}
-	if (layout.inline) return { hint: INLINE_HINT }
+	if (layout.inline) return { hint: INLINE_HINT() }
 	return null
 }
 
 // Moves a shrink-wrapped element inside its parent when the parent allows it
 const parentCompanion = (layout: AlignLayout, side: string): AlignCompanion => {
-	if (layout.inline) return { hint: INLINE_HINT }
+	if (layout.inline) return { hint: INLINE_HINT() }
 	const parentFlex =
 		layout.parentDisplay === 'flex' ||
 		layout.parentDisplay === 'inline-flex'
@@ -67,7 +68,7 @@ const parentCompanion = (layout: AlignLayout, side: string): AlignCompanion => {
 	) {
 		return { group: 'justify-self', utility: `justify-self-${side}` }
 	}
-	return { hint: WRAP_HINT }
+	return { hint: WRAP_HINT() }
 }
 
 // Companion groups only ever hold start, center or end from this feature

@@ -18,10 +18,15 @@ import { useElementCss } from '@/editor/panels/elementCss'
 import { groupElements, type ElementEntry } from '@/editor/panels/elementGroups'
 import { ElementPreview } from '@/editor/panels/ElementPreview'
 import { parseOpenIds } from '@/editor/panels/sectionGroups'
+import { useTranslation } from 'react-i18next'
+import { groupName } from '@/i18n/names'
 import { addCustomBlock, insertElement } from '@/store/actions'
 import { useCurrentPage, useProject } from '@/store/project'
 
 const STORAGE_KEY = 'builder.elements.open'
+
+// Builder grid variants are titled by their column count
+const GRID_VARIANT = /^layout\/grid-\d$/
 
 const loadOpen = () => {
 	try {
@@ -54,6 +59,7 @@ function VariantItem({
 	enabled: boolean
 	onAdd: (html: string) => void
 }) {
+	const { t } = useTranslation()
 	const ref = useRef<HTMLDivElement>(null)
 	const [dragging, setDragging] = useState(false)
 
@@ -74,7 +80,7 @@ function VariantItem({
 			ref={ref}
 			role='button'
 			tabIndex={0}
-			aria-label={`Add ${title}`}
+			aria-label={t('common.addNamed', { name: title })}
 			aria-disabled={!enabled}
 			data-variant={id}
 			onClick={() => onAdd(html)}
@@ -107,6 +113,7 @@ function Entry({
 	enabled: boolean
 	onAdd: (html: string) => void
 }) {
+	const { t } = useTranslation()
 	const bodyId = `elements-${entry.slug}`
 	return (
 		<section className='flex flex-col gap-1'>
@@ -131,7 +138,13 @@ function Entry({
 						<VariantItem
 							key={v.id}
 							id={v.id}
-							title={v.title}
+							title={
+								GRID_VARIANT.test(v.id)
+									? t('elements.columns', {
+											count: Number(v.id.slice(-1)),
+										})
+									: v.title
+							}
 							html={v.html}
 							css={css}
 							enabled={enabled}
@@ -145,6 +158,7 @@ function Entry({
 }
 
 export function ElementsPanel() {
+	const { t } = useTranslation()
 	const [query, setQuery] = useState('')
 	const [open, setOpen] = useState(loadOpen)
 	const css = useElementCss()
@@ -202,26 +216,26 @@ export function ElementsPanel() {
 				disabled={editing}
 				title={
 					editing
-						? 'Not available while editing a component'
-						: 'Add a Custom block after the selected section'
+						? t('elements.blockEditing')
+						: t('elements.blockTitle')
 				}
 				onClick={addBlock}
 			>
 				<Plus />
-				Add empty block
+				{t('elements.addBlock')}
 			</Button>
 			<div className='flex items-center gap-1'>
 				<Input
 					type='search'
-					placeholder='Search elements'
+					placeholder={t('elements.search')}
 					value={query}
 					onChange={(e) => setQuery(e.target.value)}
 				/>
 				<Button
 					variant='ghost'
 					size='icon-sm'
-					title='Expand all'
-					aria-label='Expand all'
+					title={t('common.expandAll')}
+					aria-label={t('common.expandAll')}
 					onClick={() => update(allSlugs())}
 				>
 					<ChevronsUpDown />
@@ -229,8 +243,8 @@ export function ElementsPanel() {
 				<Button
 					variant='ghost'
 					size='icon-sm'
-					title='Collapse all'
-					aria-label='Collapse all'
+					title={t('common.collapseAll')}
+					aria-label={t('common.collapseAll')}
 					onClick={() => update(new Set())}
 				>
 					<ChevronsDownUp />
@@ -246,13 +260,13 @@ export function ElementsPanel() {
 			)}
 			{sections.length === 0 && (
 				<p className='text-muted-foreground text-sm'>
-					No elements found
+					{t('elements.none')}
 				</p>
 			)}
 			{sections.map((group) => (
 				<div key={group.id} className='flex flex-col gap-1'>
 					<h3 className='text-muted-foreground px-1 pt-2 text-xs font-medium uppercase'>
-						{group.name}
+						{groupName(group.id, group.name)}
 					</h3>
 					{group.entries.map((entry) => (
 						<Entry

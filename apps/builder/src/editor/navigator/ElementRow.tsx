@@ -19,6 +19,7 @@ import {
 import { labelOf } from '@/editor/canvas/nodes'
 import { asElement } from '@/editor/dnd'
 import { useDocument } from '@/store/document'
+import { useTranslation } from 'react-i18next'
 import { useProject } from '@/store/project'
 import {
 	asNode,
@@ -51,6 +52,7 @@ interface Props {
 }
 
 export function ElementRow({ node, depth, icon }: Props) {
+	const { t } = useTranslation()
 	const ref = useRef<HTMLDivElement>(null)
 	const nodeRef = useRef(node)
 	useEffect(() => {
@@ -129,7 +131,7 @@ export function ElementRow({ node, depth, icon }: Props) {
 			<button
 				type='button'
 				tabIndex={-1}
-				aria-label={open ? 'Collapse' : 'Expand'}
+				aria-label={open ? t('common.collapse') : t('common.expand')}
 				className={`text-muted-foreground flex size-4 shrink-0 items-center justify-center outline-none [&_svg]:size-3.5 ${expandable ? '' : 'invisible'}`}
 				onClick={() => toggle(id)}
 			>

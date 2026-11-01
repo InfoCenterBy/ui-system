@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/api'
+import { t } from '@/i18n'
 import type { SiteTheme } from '@/store/themeActions'
 
 const COLORS = [
@@ -57,7 +58,7 @@ export function ThemePreview({ theme }: { theme: SiteTheme }) {
 	}, [key])
 	return (
 		<iframe
-			title='Theme preview'
+			title={t('theme.previewTitle')}
 			srcDoc={doc}
 			className='border-border h-72 w-full rounded-md border'
 		/>

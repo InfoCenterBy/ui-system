@@ -3,6 +3,7 @@ import { UploadIcon } from 'lucide-react'
 import { api, type Asset } from '@/api'
 import { Button } from '@/components/ui/button'
 import { assetUrl } from '@/editor/properties/assetUrl'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
 	value: string
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function AssetPicker({ value, onPick }: Props) {
+	const { t } = useTranslation()
 	const [images, setImages] = useState<Asset[]>([])
 	const [error, setError] = useState<string | null>(null)
 	const [busy, setBusy] = useState(false)
@@ -38,7 +40,7 @@ export function AssetPicker({ value, onPick }: Props) {
 			await load()
 			onPick(path)
 		} catch (e) {
-			setError(e instanceof Error ? e.message : 'Upload failed')
+			setError(e instanceof Error ? e.message : t('assets.uploadFailed'))
 		} finally {
 			setBusy(false)
 		}
@@ -69,7 +71,7 @@ export function AssetPicker({ value, onPick }: Props) {
 			</div>
 			{images.length === 0 && (
 				<p className='text-muted-foreground text-xs'>
-					No images in the project yet
+					{t('assets.none')}
 				</p>
 			)}
 			<input
@@ -89,7 +91,8 @@ export function AssetPicker({ value, onPick }: Props) {
 				disabled={busy}
 				onClick={() => input.current?.click()}
 			>
-				<UploadIcon /> {busy ? 'Uploading' : 'Upload'}
+				<UploadIcon />{' '}
+				{busy ? t('assets.uploading') : t('assets.upload')}
 			</Button>
 			{error && <p className='text-destructive text-xs'>{error}</p>}
 		</div>

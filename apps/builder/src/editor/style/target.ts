@@ -5,6 +5,7 @@ import {
 	type Breakpoint,
 	type UtilityGroup,
 } from '@ui-system/core'
+import { t } from '@/i18n'
 
 // Breakpoint the style panel writes to, '' is every screen. UI state only, never saved
 export const useStyleTarget = create<{
@@ -19,20 +20,22 @@ export const minWidthOf = (bp: Breakpoint) =>
 
 export const targetLabel = (bp: Breakpoint) =>
 	bp === ''
-		? 'All screens'
-		: `From ${BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp}`
+		? t('style.allScreens')
+		: t('style.from', {
+				bp: BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp,
+			})
 
 // Hint under the target control, warn is set when the target is invisible on the canvas
 export const targetHint = (target: Breakpoint, canvasWidth: number) => {
 	if (target === '') {
-		return { text: 'Styles apply on every screen size', warn: false }
+		return { text: t('style.hintAll'), warn: false }
 	}
 	const label = BREAKPOINTS.find((b) => b.prefix === target)?.label ?? target
 	const hidden = minWidthOf(target) > canvasWidth
 	return {
 		text: hidden
-			? 'Not visible at the current canvas width'
-			: `Applies from ${label} and wider; smaller screens keep the base value`,
+			? t('style.hintHidden')
+			: t('style.hintFrom', { bp: label }),
 		warn: hidden,
 	}
 }

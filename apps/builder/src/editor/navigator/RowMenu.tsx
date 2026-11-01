@@ -20,6 +20,7 @@ import {
 	wrapNode,
 } from '@/store/actions'
 import { useDocument } from '@/store/document'
+import { useTranslation } from 'react-i18next'
 import { useProject } from '@/store/project'
 import { labelOf } from '@/editor/canvas/nodes'
 import { currentSections } from './dragHelpers'
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function RowMenu({ id, open, onOpenChange }: Props) {
+	const { t } = useTranslation()
 	const roots = useRoots()
 	const editing = useProject((s) => s.editingComponentId !== null)
 	const partials = useDocument((s) => s.doc?.partials)
@@ -53,7 +55,7 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 		!isSharedPart(partials, id)
 	const create = () => {
 		const name = window.prompt(
-			'Save as component: name (editing it updates every copy)',
+			t('row.saveAsPrompt'),
 			node ? labelOf(node) : ''
 		)
 		if (!name?.trim()) return
@@ -73,7 +75,7 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 				<Button
 					variant='ghost'
 					size='icon-xs'
-					aria-label='Element actions'
+					aria-label={t('row.actions')}
 					className={
 						open ? '' : 'opacity-0 group-hover/row:opacity-100'
 					}
@@ -91,10 +93,10 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 									.editComponent(node.instance!.component)
 							}
 						>
-							Edit component
+							{t('row.editComponent')}
 						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={() => detachRow(id)}>
-							Detach
+							{t('row.detach')}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 					</>
@@ -103,21 +105,21 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 					disabled={!free}
 					onSelect={() => duplicateSection(id)}
 				>
-					Duplicate
+					{t('common.duplicate')}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					disabled={!free}
 					onSelect={() => wrapNode(id)}
 				>
-					Wrap in container
+					{t('row.wrap')}
 				</DropdownMenuItem>
 				{canCreate && (
 					<DropdownMenuItem onSelect={create}>
-						Save as component…
+						{t('row.saveAs')}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuItem onSelect={selectParent}>
-					Select parent
+					{t('row.selectParent')}
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
@@ -127,7 +129,7 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 					}
 					onSelect={() => deleteNode(id)}
 				>
-					Delete
+					{t('common.delete')}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

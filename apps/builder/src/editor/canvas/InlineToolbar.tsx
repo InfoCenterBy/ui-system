@@ -5,11 +5,12 @@ import { useCanvas } from '@/editor/canvas/canvasStore'
 import { elementFor } from '@/editor/canvas/frame'
 import { activeEditor, promptLink, toggle } from '@/editor/canvas/inlineEdit'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { t, type Key } from '@/i18n'
 
-const BUTTONS = [
-	{ label: 'Bold (Ctrl+B)', icon: BoldIcon, command: toggle('strong') },
-	{ label: 'Italic (Ctrl+I)', icon: ItalicIcon, command: toggle('em') },
-	{ label: 'Link (Ctrl+K)', icon: LinkIcon, command: promptLink },
+const BUTTONS: { label: Key; icon: typeof BoldIcon; command: Command }[] = [
+	{ label: 'inline.bold', icon: BoldIcon, command: toggle('strong') },
+	{ label: 'inline.italic', icon: ItalicIcon, command: toggle('em') },
+	{ label: 'inline.link', icon: LinkIcon, command: promptLink },
 ]
 
 const run = (command: Command) => {
@@ -45,8 +46,8 @@ export function InlineToolbar({ scale }: { scale: number }) {
 				<button
 					key={label}
 					type='button'
-					title={label}
-					aria-label={label}
+					title={t(label)}
+					aria-label={t(label)}
 					className='rounded p-1.5 hover:bg-accent'
 					onClick={() => run(command)}
 				>

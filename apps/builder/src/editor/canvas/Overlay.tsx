@@ -6,6 +6,7 @@ import { elementFor } from '@/editor/canvas/frame'
 import { labelOf, scopeOf } from '@/editor/canvas/nodes'
 import { nodeDrag } from '@/editor/navigator/dragHelpers'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { t } from '@/i18n'
 import { useProject } from '@/store/project'
 
 interface Box {
@@ -85,7 +86,7 @@ function Chip({
 	return (
 		<span
 			ref={ref}
-			title={dragId ? 'Drag to move' : undefined}
+			title={dragId ? t('overlay.drag') : undefined}
 			className={`absolute left-0 rounded-sm ${component ? 'bg-purple-600' : 'bg-blue-500'} px-1.5 py-0.5 font-sans font-medium whitespace-nowrap text-white ${dragId ? 'pointer-events-auto cursor-grab active:cursor-grabbing' : ''}`}
 			style={{
 				bottom: '100%',

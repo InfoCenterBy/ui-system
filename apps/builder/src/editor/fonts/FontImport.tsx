@@ -5,6 +5,7 @@ import { api, type GoogleFontSuggestion } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, NativeSelect } from '@/editor/properties/Field'
+import { t } from '@/i18n'
 
 const ALL_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
@@ -24,7 +25,7 @@ function useJob(onDone: (choice: FontChoice) => void) {
 		try {
 			onDone(await job())
 		} catch (e) {
-			setError(e instanceof Error ? e.message : 'Import failed')
+			setError(e instanceof Error ? e.message : t('fonts.importFailed'))
 		} finally {
 			setBusy(false)
 		}
@@ -63,7 +64,7 @@ function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 	return (
 		<div className='flex flex-col gap-3'>
 			<div>
-				<Field label='Google Fonts family'>
+				<Field label={t('fonts.family')}>
 					<Input
 						value={query}
 						placeholder='Inter, Playfair Display...'
@@ -126,7 +127,7 @@ function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 						checked={italic}
 						onChange={(e) => setItalic(e.target.checked)}
 					/>
-					Italic
+					{t('fonts.italic')}
 				</label>
 			</div>
 			<div className='flex items-center gap-3'>
@@ -144,7 +145,7 @@ function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 					}
 				>
 					{busy && <LoaderIcon className='animate-spin' />}
-					{busy ? 'Importing...' : 'Import'}
+					{busy ? t('fonts.importing') : t('fonts.import')}
 				</Button>
 				{error && <p className='text-destructive text-xs'>{error}</p>}
 			</div>
@@ -162,13 +163,13 @@ function LocalImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 	return (
 		<div className='flex flex-col gap-3'>
 			<div className='grid grid-cols-3 gap-3'>
-				<Field label='Family name'>
+				<Field label={t('fonts.familyName')}>
 					<Input
 						value={family}
 						onChange={(e) => setFamily(e.target.value)}
 					/>
 				</Field>
-				<Field label='Weight'>
+				<Field label={t('fonts.weight')}>
 					<NativeSelect
 						value={weight}
 						onChange={(e) => setWeight(Number(e.target.value))}
@@ -180,7 +181,7 @@ function LocalImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 						))}
 					</NativeSelect>
 				</Field>
-				<Field label='Style'>
+				<Field label={t('fonts.style')}>
 					<NativeSelect
 						value={style}
 						onChange={(e) =>
@@ -191,8 +192,8 @@ function LocalImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 							)
 						}
 					>
-						<option value='normal'>Normal</option>
-						<option value='italic'>Italic</option>
+						<option value='normal'>{t('fonts.normal')}</option>
+						<option value='italic'>{t('fonts.italic')}</option>
 					</NativeSelect>
 				</Field>
 			</div>
@@ -218,7 +219,7 @@ function LocalImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 					}
 				>
 					{busy && <LoaderIcon className='animate-spin' />}
-					{busy ? 'Uploading...' : 'Upload files'}
+					{busy ? t('fonts.uploading') : t('fonts.upload')}
 				</Button>
 				{error && <p className='text-destructive text-xs'>{error}</p>}
 			</div>
@@ -237,14 +238,14 @@ export function FontImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 					variant={mode === 'google' ? 'secondary' : 'ghost'}
 					onClick={() => setMode('google')}
 				>
-					Google Fonts
+					{t('fonts.google')}
 				</Button>
 				<Button
 					size='sm'
 					variant={mode === 'local' ? 'secondary' : 'ghost'}
 					onClick={() => setMode('local')}
 				>
-					Upload files
+					{t('fonts.upload')}
 				</Button>
 			</div>
 			{mode === 'google' ? (

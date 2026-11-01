@@ -5,6 +5,7 @@ import {
 	type ElementNode,
 } from '@ui-system/core'
 import { scopeOf } from '@/editor/canvas/nodes'
+import { t } from '@/i18n'
 import type { Place } from './dropPosition'
 import { canContain } from './structure'
 
@@ -36,11 +37,11 @@ export const insertBlocker = (
 	if (insertPlace(roots, selectedId, editing)) return null
 	const node = selectedId ? findElement(roots, selectedId) : null
 	if (!selectedId || !node) {
-		return 'Select a container in an unlocked section, or click Add empty block'
+		return t('insert.select')
 	}
 	const chain = [...ancestorsOf(roots, node.id), node]
 	if (chain.some((el) => el.instance)) {
-		return 'Elements cannot be added inside a component instance'
+		return t('insert.inInstance')
 	}
-	return 'Unlock the section to add elements'
+	return t('insert.unlock')
 }

@@ -3,6 +3,7 @@ import { ChevronDownIcon, Redo2Icon, Undo2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
+import { LangSwitch } from '@/components/LangSwitch'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,18 +15,21 @@ import { Separator } from '@/components/ui/separator'
 import { PageSettings } from '@/editor/settings/PageSettings'
 import { ExportButton } from '@/editor/ExportButton'
 import { SiteSettingsDialog } from '@/editor/settings/SiteSettingsDialog'
+import { type Key } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { flushSave } from '@/store/autosave'
 import { useDocument, type SaveState } from '@/store/document'
 import { CANVAS_WIDTHS, useProject } from '@/store/project'
 
-const SAVE_LABEL: Record<SaveState, string> = {
-	saved: 'Saved',
-	unsaved: 'Unsaved changes',
-	saving: 'Saving…',
-	error: 'Save failed, retrying on next edit',
+const SAVE_LABEL: Record<SaveState, Key> = {
+	saved: 'top.saved',
+	unsaved: 'top.unsaved',
+	saving: 'top.saving',
+	error: 'top.saveError',
 }
 
 export function TopBar() {
+	const { t } = useTranslation()
 	const site = useDocument((s) => s.doc?.site)
 	const pagesById = useDocument((s) => s.doc?.pages)
 	const saveState = useDocument((s) => s.saveState)
@@ -61,7 +65,7 @@ export function TopBar() {
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button variant='outline' size='sm'>
-						{page?.name ?? 'No page'}
+						{page?.name ?? t('top.noPage')}
 						<ChevronDownIcon />
 					</Button>
 				</DropdownMenuTrigger>
@@ -79,7 +83,7 @@ export function TopBar() {
 						disabled={!page}
 						onSelect={() => setPageSettings(true)}
 					>
-						Page settings…
+						{t('top.pageSettings')}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -97,7 +101,7 @@ export function TopBar() {
 						variant={canvasWidth === width ? 'secondary' : 'ghost'}
 						onClick={() => setCanvasWidth(width)}
 					>
-						{label} {width}
+						{label === 'Phone' ? t('top.phone') : label} {width}
 					</Button>
 				))}
 			</div>
@@ -106,8 +110,8 @@ export function TopBar() {
 				<Button
 					size='icon-sm'
 					variant='ghost'
-					aria-label='Undo'
-					title='Undo (Ctrl+Z)'
+					aria-label={t('top.undo')}
+					title={t('top.undoTitle')}
 					disabled={!canUndo}
 					onClick={() => useDocument.getState().undo()}
 				>
@@ -116,8 +120,8 @@ export function TopBar() {
 				<Button
 					size='icon-sm'
 					variant='ghost'
-					aria-label='Redo'
-					title='Redo (Ctrl+Y)'
+					aria-label={t('top.redo')}
+					title={t('top.redoTitle')}
 					disabled={!canRedo}
 					onClick={() => useDocument.getState().redo()}
 				>
@@ -131,13 +135,14 @@ export function TopBar() {
 						: 'text-muted-foreground text-xs'
 				}
 			>
-				{SAVE_LABEL[saveState]}
+				{t(SAVE_LABEL[saveState])}
 			</span>
 			<SiteSettingsDialog />
 			<ExportButton />
 			<Button variant='outline' size='sm' onClick={() => void close()}>
-				Close project
+				{t('top.closeProject')}
 			</Button>
+			<LangSwitch />
 		</header>
 	)
 }

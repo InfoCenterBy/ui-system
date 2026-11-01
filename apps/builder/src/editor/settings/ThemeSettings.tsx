@@ -8,6 +8,7 @@ import { ShapeControls } from '@/editor/theme/ShapeControls'
 import { ThemePreview } from '@/editor/theme/ThemePreview'
 import { useDocument } from '@/store/document'
 import { resetTheme, setPreset, themeFromSite } from '@/store/themeActions'
+import { useTranslation } from 'react-i18next'
 
 const COLORS = [
 	['base-100', 'Base 100'],
@@ -35,6 +36,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function ThemeSettings() {
+	const { t } = useTranslation()
 	const siteTheme = useDocument((s) => s.doc?.site.theme)
 	const theme = useMemo(
 		() => (siteTheme ? themeFromSite(siteTheme) : null),
@@ -44,10 +46,10 @@ export function ThemeSettings() {
 
 	return (
 		<div className='flex flex-col gap-6 p-1 pe-3'>
-			<Section title='Preset'>
+			<Section title={t('theme.preset')}>
 				<div className='flex flex-wrap items-center gap-2'>
 					<select
-						aria-label='Theme preset'
+						aria-label={t('theme.presetAria')}
 						value={siteTheme.name}
 						onChange={(e) => setPreset(e.target.value)}
 						className='border-input bg-background h-8 rounded-md border px-2 text-sm'
@@ -59,23 +61,23 @@ export function ThemeSettings() {
 						))}
 					</select>
 					<Button variant='outline' size='sm' onClick={resetTheme}>
-						Reset
+						{t('common.reset')}
 					</Button>
 					<ImportBox />
 				</div>
 			</Section>
-			<Section title='Preview'>
+			<Section title={t('theme.preview')}>
 				<ThemePreview theme={siteTheme} />
 			</Section>
-			<Section title='Colors'>
+			<Section title={t('theme.colors')}>
 				{COLORS.map(([key, label]) => (
 					<ColorRow key={key} theme={theme} bg={key} label={label} />
 				))}
 			</Section>
-			<Section title='Shape'>
+			<Section title={t('theme.shape')}>
 				<ShapeControls theme={theme} />
 			</Section>
-			<Section title='Contrast'>
+			<Section title={t('theme.contrast')}>
 				<ContrastList theme={theme} />
 			</Section>
 		</div>

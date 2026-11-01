@@ -10,6 +10,7 @@ import {
 } from '@ui-system/theme'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { t } from '@/i18n'
 import { setThemeAuto, setThemeColor } from '@/store/themeActions'
 
 interface ColorInputProps {
@@ -29,7 +30,7 @@ function ColorInput({ label, value, onChange }: ColorInputProps) {
 		<div className='relative flex items-center gap-2'>
 			<button
 				type='button'
-				aria-label={`Pick ${label}`}
+				aria-label={t('theme.pick', { label })}
 				className='border-border size-7 shrink-0 rounded-md border'
 				style={{ background: value }}
 				onClick={() => picker.current?.click()}
@@ -87,10 +88,10 @@ export function ColorRow({ theme, bg, label }: ColorRowProps) {
 						variant={theme.auto[content] ? 'secondary' : 'outline'}
 						size='xs'
 						disabled={theme.auto[content]}
-						title='Pick a readable content color automatically'
+						title={t('theme.autoTitle')}
 						onClick={() => setThemeAuto(content)}
 					>
-						Auto
+						{t('theme.auto')}
 					</Button>
 				</div>
 			)}

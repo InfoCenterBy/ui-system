@@ -1,5 +1,6 @@
 import type { SectionPreset } from '@ui-system/core'
 import type { SectionCategory } from '@ui-system/blocks/sections'
+import { categoryName, sectionName } from '@/i18n/names'
 
 export type SectionGroup = {
 	category: SectionCategory
@@ -21,7 +22,9 @@ export function groupSections(
 					p.category === category.id &&
 					(!q ||
 						p.name.toLowerCase().includes(q) ||
-						category.name.toLowerCase().includes(q))
+						sectionName(p.name).toLowerCase().includes(q) ||
+						category.name.toLowerCase().includes(q) ||
+						categoryName(category).toLowerCase().includes(q))
 			),
 		}))
 		.filter((g) => g.presets.length > 0)

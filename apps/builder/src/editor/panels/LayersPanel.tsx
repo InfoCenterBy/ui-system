@@ -37,6 +37,7 @@ import {
 	iconKeyOf,
 	elementChildren,
 } from '@/editor/navigator/structure'
+import { useTranslation } from 'react-i18next'
 import { deleteNode, moveSection, setSectionLocked } from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
@@ -53,6 +54,7 @@ function useRowActions(id: string) {
 }
 
 function FixedRow({ node }: { node: ElementNode }) {
+	const { t } = useTranslation()
 	const selected = useProject((s) => s.selectedId === node.id)
 	const { choose, onEnter, onLeave } = useRowActions(node.id)
 	return (
@@ -68,7 +70,9 @@ function FixedRow({ node }: { node: ElementNode }) {
 			>
 				{labelOf(node)}
 			</button>
-			<span className='text-muted-foreground text-xs'>Shared</span>
+			<span className='text-muted-foreground text-xs'>
+				{t('layers.shared')}
+			</span>
 		</div>
 	)
 }
@@ -82,6 +86,7 @@ function SectionRow({
 	index: number
 	count: number
 }) {
+	const { t } = useTranslation()
 	const ref = useRef<HTMLDivElement>(null)
 	const [edge, setEdge] = useState<Edge | null>(null)
 	const [dragging, setDragging] = useState(false)
@@ -195,15 +200,15 @@ function SectionRow({
 							<Lock />
 						</span>
 					</TooltipTrigger>
-					<TooltipContent>
-						Unlock the section to edit its structure
-					</TooltipContent>
+					<TooltipContent>{t('layers.unlockTip')}</TooltipContent>
 				</Tooltip>
 			) : (
 				<button
 					type='button'
 					tabIndex={-1}
-					aria-label={open ? 'Collapse' : 'Expand'}
+					aria-label={
+						open ? t('common.collapse') : t('common.expand')
+					}
 					className={`text-muted-foreground flex size-4 shrink-0 items-center justify-center outline-none [&_svg]:size-3.5 ${expandable ? '' : 'invisible'}`}
 					onClick={() => toggle(id)}
 				>
@@ -224,21 +229,19 @@ function SectionRow({
 						<Button
 							variant='ghost'
 							size='icon-xs'
-							aria-label='Unlock'
+							aria-label={t('layers.unlock')}
 							onClick={() => setSectionLocked(id, false)}
 						>
 							<LockOpen />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						Unlock the section to edit its structure
-					</TooltipContent>
+					<TooltipContent>{t('layers.unlockTip')}</TooltipContent>
 				</Tooltip>
 			)}
 			<Button
 				variant='ghost'
 				size='icon-xs'
-				aria-label='Move up'
+				aria-label={t('common.moveUp')}
 				disabled={index === 0}
 				onClick={() => moveSection(id, index - 1)}
 			>
@@ -247,7 +250,7 @@ function SectionRow({
 			<Button
 				variant='ghost'
 				size='icon-xs'
-				aria-label='Move down'
+				aria-label={t('common.moveDown')}
 				disabled={index === count - 1}
 				onClick={() => moveSection(id, index + 1)}
 			>
@@ -263,6 +266,7 @@ function SectionRow({
 }
 
 export function LayersPanel() {
+	const { t } = useTranslation()
 	const page = useCurrentPage()
 	const editing = useProject((s) => s.editingComponentId)
 	const master = useDocument((s) =>
@@ -346,7 +350,9 @@ export function LayersPanel() {
 		>
 			<div className='flex items-center justify-between pb-1'>
 				<span className='text-muted-foreground px-1 text-xs'>
-					{master ? 'Component structure' : 'Structure'}
+					{master
+						? t('layers.componentStructure')
+						: t('layers.structure')}
 				</span>
 				<AddMenu />
 			</div>
@@ -364,7 +370,7 @@ export function LayersPanel() {
 			)}
 			{!master && sections?.length === 0 && (
 				<p className='text-muted-foreground p-2 text-sm'>
-					No sections yet
+					{t('layers.noSections')}
 				</p>
 			)}
 			{(master ? [] : (sections ?? [])).map((node, i) => (

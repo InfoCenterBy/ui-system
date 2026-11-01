@@ -2,6 +2,7 @@ import { randomId, type ElementNode, type TreeNode } from '@ui-system/core'
 import { Input } from '@/components/ui/input'
 import { Field, NativeSelect } from '@/editor/properties/Field'
 import { setAttribute, setSlotContent } from '@/store/actions'
+import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 
 const EXTERNAL = '__external'
@@ -12,6 +13,7 @@ const textOf = (nodes: TreeNode[]): string =>
 const fileOf = (slug: string) => `${slug}.html`
 
 export function LinkProperties({ node }: { node: ElementNode }) {
+	const { t } = useTranslation()
 	const site = useDocument((s) => s.doc?.site)
 	const pages = useDocument((s) => s.doc?.pages)
 	const list = (site?.pages ?? []).flatMap((id) => pages?.[id] ?? [])
@@ -26,7 +28,7 @@ export function LinkProperties({ node }: { node: ElementNode }) {
 
 	return (
 		<div className='flex flex-col gap-3'>
-			<Field label='Text'>
+			<Field label={t('link.text')}>
 				<Input
 					value={textOf(node.children)}
 					onChange={(e) =>
@@ -40,7 +42,7 @@ export function LinkProperties({ node }: { node: ElementNode }) {
 					}
 				/>
 			</Field>
-			<Field label='Link to'>
+			<Field label={t('link.to')}>
 				<NativeSelect
 					value={page ? href : EXTERNAL}
 					onChange={(e) =>
@@ -58,11 +60,11 @@ export function LinkProperties({ node }: { node: ElementNode }) {
 							{p.name}
 						</option>
 					))}
-					<option value={EXTERNAL}>External URL</option>
+					<option value={EXTERNAL}>{t('link.external')}</option>
 				</NativeSelect>
 			</Field>
 			{!page && (
-				<Field label='URL'>
+				<Field label={t('props.url')}>
 					<Input
 						value={href}
 						placeholder='https://'
@@ -79,7 +81,7 @@ export function LinkProperties({ node }: { node: ElementNode }) {
 					checked={node.attrs.target === '_blank'}
 					onChange={(e) => setNewTab(e.target.checked)}
 				/>
-				Open in new tab
+				{t('link.newTab')}
 			</label>
 		</div>
 	)

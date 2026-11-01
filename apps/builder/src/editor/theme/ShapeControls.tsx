@@ -1,5 +1,7 @@
 import type { Theme } from '@ui-system/theme'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { tOr, type Key } from '@/i18n'
 import { setThemeVar } from '@/store/themeActions'
 
 type Option = readonly [value: string, label: string]
@@ -25,27 +27,32 @@ const BORDERS: Option[] = [
 	['2px', '2px'],
 ]
 const TOGGLE: Option[] = [
-	['0', 'Off'],
-	['1', 'On'],
+	['0', 'common.off'],
+	['1', 'common.on'],
 ]
 
-const GROUPS: { key: string; label: string; options: Option[] }[] = [
-	{ key: '--radius-selector', label: 'Radius: selectors', options: RADIUS },
-	{ key: '--radius-field', label: 'Radius: fields', options: RADIUS },
-	{ key: '--radius-box', label: 'Radius: boxes', options: RADIUS },
-	{ key: '--size-selector', label: 'Size: selectors', options: SIZES },
-	{ key: '--size-field', label: 'Size: fields', options: SIZES },
-	{ key: '--border', label: 'Border', options: BORDERS },
-	{ key: '--depth', label: 'Depth', options: TOGGLE },
-	{ key: '--noise', label: 'Noise', options: TOGGLE },
+const GROUPS: { key: string; label: Key; options: Option[] }[] = [
+	{
+		key: '--radius-selector',
+		label: 'shape.radiusSelector',
+		options: RADIUS,
+	},
+	{ key: '--radius-field', label: 'shape.radiusField', options: RADIUS },
+	{ key: '--radius-box', label: 'shape.radiusBox', options: RADIUS },
+	{ key: '--size-selector', label: 'shape.sizeSelector', options: SIZES },
+	{ key: '--size-field', label: 'shape.sizeField', options: SIZES },
+	{ key: '--border', label: 'shape.border', options: BORDERS },
+	{ key: '--depth', label: 'shape.depth', options: TOGGLE },
+	{ key: '--noise', label: 'shape.noise', options: TOGGLE },
 ]
 
 export function ShapeControls({ theme }: { theme: Theme }) {
+	const { t } = useTranslation()
 	return (
 		<div className='grid gap-3 sm:grid-cols-2'>
 			{GROUPS.map(({ key, label, options }) => (
 				<div key={key}>
-					<div className='mb-1 text-sm'>{label}</div>
+					<div className='mb-1 text-sm'>{t(label)}</div>
 					<div className='flex flex-wrap gap-1'>
 						{options.map(([value, text]) => {
 							const active = (theme.vars[key] ?? '0') === value
@@ -57,7 +64,7 @@ export function ShapeControls({ theme }: { theme: Theme }) {
 									aria-pressed={active}
 									onClick={() => setThemeVar(key, value)}
 								>
-									{text}
+									{tOr(text, text)}
 								</Button>
 							)
 						})}

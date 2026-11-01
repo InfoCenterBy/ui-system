@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { parseThemeCss } from '@ui-system/theme'
 import { Button } from '@/components/ui/button'
 import { importTheme } from '@/store/themeActions'
+import { t } from '@/i18n'
 
 // Paste a daisyUI theme block, the values become overrides on the matching preset
 export function ImportBox() {
@@ -12,9 +13,7 @@ export function ImportBox() {
 	const apply = () => {
 		const result = parseThemeCss(text)
 		if (!result) {
-			setError(
-				'No theme colors found, paste a block with --color-* values'
-			)
+			setError(t('theme.importError'))
 			return
 		}
 		importTheme(result.theme)
@@ -26,14 +25,14 @@ export function ImportBox() {
 	if (!open) {
 		return (
 			<Button variant='outline' size='sm' onClick={() => setOpen(true)}>
-				Import CSS
+				{t('theme.import')}
 			</Button>
 		)
 	}
 	return (
 		<div className='flex w-full flex-col gap-2'>
 			<textarea
-				aria-label='Theme CSS'
+				aria-label={t('theme.cssAria')}
 				value={text}
 				onChange={(e) => setText(e.target.value)}
 				rows={6}
@@ -45,14 +44,14 @@ export function ImportBox() {
 			{error && <p className='text-destructive text-xs'>{error}</p>}
 			<div className='flex gap-2'>
 				<Button size='sm' disabled={!text.trim()} onClick={apply}>
-					Apply
+					{t('common.apply')}
 				</Button>
 				<Button
 					variant='ghost'
 					size='sm'
 					onClick={() => setOpen(false)}
 				>
-					Cancel
+					{t('common.cancel')}
 				</Button>
 			</div>
 		</div>

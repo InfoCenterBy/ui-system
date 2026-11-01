@@ -8,6 +8,7 @@ import {
 	type ElementNode,
 } from '@ui-system/core'
 import { resolveVars } from '@ui-system/theme'
+import { t } from '@/i18n'
 import { setClasses } from '@/store/actions'
 import {
 	Tooltip,
@@ -63,7 +64,7 @@ function ChipEditor({
 		<input
 			ref={ref}
 			autoFocus
-			aria-label='Edit class'
+			aria-label={t('classes.edit')}
 			value={text}
 			size={Math.max(6, text.length + 1)}
 			className='bg-background border-ring h-6 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none'
@@ -85,7 +86,7 @@ function ChipCss({ raw, index }: { raw: string; index: ClassIndex | null }) {
 	const css = index?.cssOf(raw)
 	return (
 		<pre className='max-h-48 overflow-auto font-mono text-[10px] leading-4 whitespace-pre-wrap'>
-			{css ?? 'No CSS for this class'}
+			{css ?? t('classes.noCss')}
 		</pre>
 	)
 }
@@ -165,7 +166,9 @@ export function ClassField({ node }: { node: ElementNode }) {
 
 	return (
 		<div className='flex flex-col gap-1.5 text-sm'>
-			<span className='text-muted-foreground text-xs'>Classes</span>
+			<span className='text-muted-foreground text-xs'>
+				{t('classes.title')}
+			</span>
 			<div
 				className={cn(
 					'border-input bg-background relative flex min-h-8 flex-wrap items-center gap-1 rounded-lg border p-1',
@@ -192,7 +195,9 @@ export function ClassField({ node }: { node: ElementNode }) {
 									</span>
 									<button
 										type='button'
-										aria-label={`Remove ${raw}`}
+										aria-label={t('classes.remove', {
+											name: raw,
+										})}
 										className='text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded'
 										onClick={(e) => {
 											e.stopPropagation()
@@ -215,9 +220,11 @@ export function ClassField({ node }: { node: ElementNode }) {
 				)}
 				<input
 					ref={inputRef}
-					aria-label='Add class'
+					aria-label={t('classes.add')}
 					value={typed}
-					placeholder={tokens.length ? '' : 'Add a class'}
+					placeholder={
+						tokens.length ? '' : t('classes.addPlaceholder')
+					}
 					autoComplete='off'
 					spellCheck={false}
 					className='placeholder:text-muted-foreground h-6 min-w-16 flex-1 bg-transparent px-1 font-mono text-xs outline-none'
@@ -273,7 +280,7 @@ export function ClassField({ node }: { node: ElementNode }) {
 										<span className='text-muted-foreground font-sans text-[10px]'>
 											{s.kind === 'component'
 												? 'daisyUI'
-												: 'variant'}
+												: t('classes.variant')}
 										</span>
 									)}
 								</li>
@@ -289,12 +296,12 @@ export function ClassField({ node }: { node: ElementNode }) {
 			)}
 			{state.status === 'loading' && focused && (
 				<p className='text-muted-foreground text-xs'>
-					Loading suggestions...
+					{t('classes.loading')}
 				</p>
 			)}
 			{state.status === 'error' && (
 				<p className='text-muted-foreground text-xs'>
-					Suggestions are not available
+					{t('classes.unavailable')}
 				</p>
 			)}
 		</div>

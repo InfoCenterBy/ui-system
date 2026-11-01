@@ -11,31 +11,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FontSettings } from '@/editor/settings/FontSettings'
 import { GeneralSettings } from '@/editor/settings/GeneralSettings'
 import { ThemeSettings } from '@/editor/settings/ThemeSettings'
+import { useTranslation } from 'react-i18next'
 
 const TABS = [
-	{ id: 'general', label: 'General', Panel: GeneralSettings },
-	{ id: 'theme', label: 'Theme', Panel: ThemeSettings },
-	{ id: 'fonts', label: 'Fonts', Panel: FontSettings },
+	{ id: 'general', label: 'settings.general', Panel: GeneralSettings },
+	{ id: 'theme', label: 'settings.theme', Panel: ThemeSettings },
+	{ id: 'fonts', label: 'settings.fonts', Panel: FontSettings },
 ] as const
 
 // Site-wide settings, each tab edits the document directly so undo works
 export function SiteSettingsDialog() {
+	const { t } = useTranslation()
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
 				<Button variant='ghost' size='sm'>
-					<SettingsIcon /> Site settings
+					<SettingsIcon /> {t('settings.title')}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className='flex max-h-[85svh] flex-col sm:max-w-3xl'>
 				<DialogHeader>
-					<DialogTitle>Site settings</DialogTitle>
+					<DialogTitle>{t('settings.title')}</DialogTitle>
 				</DialogHeader>
 				<Tabs defaultValue='general' className='min-h-0 flex-1'>
 					<TabsList>
 						{TABS.map(({ id, label }) => (
 							<TabsTrigger key={id} value={id}>
-								{label}
+								{t(label)}
 							</TabsTrigger>
 						))}
 					</TabsList>

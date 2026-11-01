@@ -7,6 +7,7 @@ import {
 	type ElementNode,
 } from '@ui-system/core'
 import { EMPTY_HINT_LABELS } from '@/editor/layoutPresets'
+import { currentLocale, t } from '@/i18n'
 
 export const PAGE_ROOT = 'page'
 
@@ -19,9 +20,14 @@ export const EMPTY_SLOT_ATTR = 'data-editor-empty'
 // Editor-only mark on a modal, popover or dropdown shown while it is selected
 export const OPEN_ATTR = 'data-editor-open'
 
+// The empty-slot text is written into the stylesheet in the current language,
+// the frame is rebuilt when the language changes
+const cssString = (text: string) =>
+	`'${text.replace(/['\\]/g, '\\$&').replace(/\s+/g, ' ')}'`
+
 // Empty document the canvas fills in, assets resolve against the builder origin
 export const frameSrcdoc = () => `<!doctype html>
-<html>
+<html lang="${currentLocale()}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -39,7 +45,7 @@ export const frameSrcdoc = () => `<!doctype html>
 	[contenteditable] { outline: none; cursor: text; }
 	a, button, label { cursor: default; }
 	[${EMPTY_SLOT_ATTR}] { position: relative; min-height: 6rem; outline: 1px dashed #94a3b8; outline-offset: -1px; }
-	[${EMPTY_SLOT_ATTR}]::after { content: 'Add elements from the Elements tab'; position: absolute; inset: 0; display: grid; place-items: center; padding: 0.5rem; text-align: center; color: #94a3b8; font: 14px system-ui; pointer-events: none; }
+	[${EMPTY_SLOT_ATTR}]::after { content: ${cssString(t('canvas.emptySlot'))}; position: absolute; inset: 0; display: grid; place-items: center; padding: 0.5rem; text-align: center; color: #94a3b8; font: 14px system-ui; pointer-events: none; }
 	dialog[${OPEN_ATTR}] { pointer-events: none !important; }
 	dialog[${OPEN_ATTR}] .modal-box { pointer-events: auto !important; }
 	dialog[${OPEN_ATTR}] .modal-backdrop { pointer-events: none !important; }
@@ -50,8 +56,6 @@ export const frameSrcdoc = () => `<!doctype html>
 <script type="module" src="${callyUrl}"></script>
 </body>
 </html>`
-
-const EMPTY = 'Add a section from the left panel'
 
 const renderNode = (doc: Document, node: ElementNode) => {
 	const template = doc.createElement('template')
@@ -117,7 +121,7 @@ export const syncRoots = (
 	if (roots.length === 0) {
 		const empty = doc.createElement('div')
 		empty.setAttribute('data-empty', '')
-		empty.textContent = EMPTY
+		empty.textContent = t('canvas.empty')
 		container.append(empty)
 	}
 }

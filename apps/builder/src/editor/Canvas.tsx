@@ -18,6 +18,7 @@ import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
 import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
 import { useRevealOpen } from '@/editor/canvas/useRevealOpen'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
 
@@ -41,6 +42,7 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function Canvas() {
+	const { t } = useTranslation()
 	const width = useProject((s) => s.canvasWidth)
 	const theme = useDocument((s) => s.doc?.site.theme)
 	const siteLayout = useDocument((s) => s.doc?.site.layout)
@@ -156,7 +158,7 @@ export function Canvas() {
 			>
 				<iframe
 					ref={frameRef}
-					title='Page canvas'
+					title={t('canvas.title')}
 					srcDoc={srcdoc}
 					className='block size-full border-0 bg-white'
 					onLoad={() =>

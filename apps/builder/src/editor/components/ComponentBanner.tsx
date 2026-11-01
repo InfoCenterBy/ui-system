@@ -3,11 +3,13 @@ import { ComponentIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { instancesIn } from '@/editor/components/instances'
 import { useNav } from '@/editor/navigator/navState'
+import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
 
 // Strip above the editor while a master is edited
 export function ComponentBanner() {
+	const { t } = useTranslation()
 	const id = useProject((s) => s.editingComponentId)
 	const name = useDocument((s) => (id ? s.doc?.components[id]?.name : null))
 	const count = useDocument((s) =>
@@ -34,17 +36,17 @@ export function ComponentBanner() {
 		<div className='flex h-9 shrink-0 items-center gap-2 border-b bg-purple-600 px-3 text-sm text-white'>
 			<ComponentIcon className='size-4' />
 			<span className='truncate'>
-				Editing component <strong>{name}</strong> — changes apply to{' '}
-				{count} {count === 1 ? 'instance' : 'instances'}
+				{t('banner.editing')} <strong>{name}</strong> —{' '}
+				{t('banner.applies', { count })}
 			</span>
 			<Button
 				size='xs'
 				variant='secondary'
 				className='ml-auto'
-				title='Back to the page (Esc)'
+				title={t('banner.backTitle')}
 				onClick={exit}
 			>
-				Done
+				{t('banner.done')}
 			</Button>
 		</div>
 	)

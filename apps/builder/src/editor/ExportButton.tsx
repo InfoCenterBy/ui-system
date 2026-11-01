@@ -3,9 +3,11 @@ import { DownloadIcon, LoaderCircleIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 import { flushSave } from '@/store/autosave'
 
-const kilobytes = (bytes: number) => `${Math.round(bytes / 1024)} KB`
+const kilobytes = (bytes: number) =>
+	t('export.size', { n: Math.round(bytes / 1024) })
 
 // Saves pending edits, writes dist/ and offers to open it
 export function ExportButton() {
@@ -16,9 +18,13 @@ export function ExportButton() {
 		try {
 			await flushSave()
 			const result = await api.exportSite()
-			const summary = `${result.pages.length} pages, ${result.files} files, CSS ${kilobytes(result.cssBytes)}`
+			const summary = t('export.summary', {
+				pages: result.pages.length,
+				files: result.files,
+				css: kilobytes(result.cssBytes),
+			})
 			const reveal = {
-				label: 'Open folder',
+				label: t('export.openFolder'),
 				onClick: () =>
 					void api
 						.reveal('dist')
@@ -26,7 +32,7 @@ export function ExportButton() {
 			}
 			if (result.warnings.length) {
 				toast.warning(
-					`Exported with ${result.warnings.length} warnings`,
+					t('export.warnings', { count: result.warnings.length }),
 					{
 						description: [
 							summary,
@@ -37,14 +43,14 @@ export function ExportButton() {
 					}
 				)
 			} else {
-				toast.success('Site exported to dist', {
+				toast.success(t('export.done'), {
 					description: summary,
 					action: reveal,
 					duration: 10000,
 				})
 			}
 		} catch (e) {
-			toast.error(`Export failed: ${(e as Error).message}`)
+			toast.error(t('export.failed', { message: (e as Error).message }))
 		} finally {
 			setBusy(false)
 		}
@@ -57,7 +63,7 @@ export function ExportButton() {
 			) : (
 				<DownloadIcon />
 			)}
-			Export
+			{t('export.button')}
 		</Button>
 	)
 }

@@ -3,15 +3,20 @@ import { repeatItems, type ElementNode } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
 import { addItem, removeItem, shiftItem } from '@/store/actions'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { useTranslation } from 'react-i18next'
 
 export function RepeatProperties({ item }: { item: ElementNode }) {
+	const { t } = useTranslation()
 	const items = repeatItems(useRoots(), item.id)
 	const position = items.findIndex((i) => i.id === item.id)
 	if (position < 0) return null
 	return (
 		<div className='flex flex-col gap-2'>
 			<p className='text-sm font-medium'>
-				Item {position + 1} of {items.length}
+				{t('repeat.position', {
+					n: position + 1,
+					total: items.length,
+				})}
 			</p>
 			<div className='flex flex-wrap gap-1'>
 				<Button
@@ -19,7 +24,7 @@ export function RepeatProperties({ item }: { item: ElementNode }) {
 					variant='outline'
 					onClick={() => addItem(item.id)}
 				>
-					<CopyIcon /> Add item
+					<CopyIcon /> {t('repeat.add')}
 				</Button>
 				<Button
 					size='sm'
@@ -27,7 +32,7 @@ export function RepeatProperties({ item }: { item: ElementNode }) {
 					disabled={position === 0}
 					onClick={() => shiftItem(item.id, -1)}
 				>
-					<ArrowUpIcon /> Move up
+					<ArrowUpIcon /> {t('common.moveUp')}
 				</Button>
 				<Button
 					size='sm'
@@ -35,7 +40,7 @@ export function RepeatProperties({ item }: { item: ElementNode }) {
 					disabled={position === items.length - 1}
 					onClick={() => shiftItem(item.id, 1)}
 				>
-					<ArrowDownIcon /> Move down
+					<ArrowDownIcon /> {t('common.moveDown')}
 				</Button>
 				<Button
 					size='sm'
@@ -43,7 +48,7 @@ export function RepeatProperties({ item }: { item: ElementNode }) {
 					disabled={items.length <= 1}
 					onClick={() => removeItem(item.id)}
 				>
-					<Trash2Icon /> Remove
+					<Trash2Icon /> {t('common.remove')}
 				</Button>
 			</div>
 		</div>

@@ -3,9 +3,11 @@ import { Input } from '@/components/ui/input'
 import { AssetPicker } from '@/editor/properties/AssetPicker'
 import { assetUrl } from '@/editor/properties/assetUrl'
 import { Field } from '@/editor/properties/Field'
+import { useTranslation } from 'react-i18next'
 import { setAttribute } from '@/store/actions'
 
 export function ImageProperties({ node }: { node: ElementNode }) {
+	const { t } = useTranslation()
 	const src = node.attrs.src ?? ''
 	return (
 		<div className='flex flex-col gap-3'>
@@ -22,7 +24,7 @@ export function ImageProperties({ node }: { node: ElementNode }) {
 				value={src}
 				onPick={(path) => setAttribute(node.id, 'src', path)}
 			/>
-			<Field label='URL'>
+			<Field label={t('props.url')}>
 				<Input
 					value={src}
 					placeholder='https://'
@@ -31,7 +33,7 @@ export function ImageProperties({ node }: { node: ElementNode }) {
 					}
 				/>
 			</Field>
-			<Field label='Alt text'>
+			<Field label={t('image.alt')}>
 				<Input
 					value={node.attrs.alt ?? ''}
 					onChange={(e) =>

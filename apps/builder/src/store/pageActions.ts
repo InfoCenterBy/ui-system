@@ -5,6 +5,7 @@ import {
 	type PageMeta,
 	type Site,
 } from '@ui-system/core'
+import { t } from '@/i18n'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
 import { useProject } from '@/store/project'
@@ -119,15 +120,14 @@ export function renamePage(id: string, name: string) {
 export function setPageSlug(id: string, slug: string): string | null {
 	const current = doc()
 	const page = current?.pages[id]
-	if (!current || !page) return 'Page not found'
-	if (isHome(page)) return 'The home page is always index.html'
-	if (!SLUG_RE.test(slug))
-		return 'Use lowercase latin letters, digits and hyphens'
+	if (!current || !page) return t('pageErr.notFound')
+	if (isHome(page)) return t('pageSettings.homeNote')
+	if (!SLUG_RE.test(slug)) return t('pageErr.format')
 	if (slug === HOME_SLUG) return 'index is reserved for the home page'
 	if (
 		Object.values(current.pages).some((p) => p.id !== id && p.slug === slug)
 	)
-		return 'Another page already uses this file name'
+		return t('pageErr.taken')
 	useDocument.getState().edit('Change page file name', (d) => {
 		const target = d.pages[id]
 		if (target) target.slug = slug
@@ -163,7 +163,7 @@ export function duplicatePage(id: string): string | null {
 	const current = doc()
 	const source = current?.pages[id]
 	if (!current || !source) return null
-	const name = `${source.name} copy`
+	const name = t('pages.copyName', { name: source.name })
 	const newId = freeName(current, name)
 	useDocument.getState().edit('Duplicate page', (d) => {
 		const from = d.pages[id]

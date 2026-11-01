@@ -10,13 +10,14 @@ import {
 	weightsOf,
 	type FontRole,
 } from '@/store/fontActions'
+import { t, type Key } from '@/i18n'
 
 const RUSSIAN = 'Съешь же ещё этих мягких французских булок'
 const LATIN = 'The quick brown fox jumps over the lazy dog'
 
-const ROLES: { role: FontRole; title: string; weight: number }[] = [
-	{ role: 'heading', title: 'Headings', weight: 700 },
-	{ role: 'body', title: 'Body text', weight: 400 },
+const ROLES: { role: FontRole; title: Key; weight: number }[] = [
+	{ role: 'heading', title: 'fonts.headings', weight: 700 },
+	{ role: 'body', title: 'fonts.body', weight: 400 },
 ]
 
 const stack = (family: string) =>
@@ -45,7 +46,7 @@ function RoleBlock({
 	onImported,
 }: {
 	role: FontRole
-	title: string
+	title: Key
 	weight: number
 	library: FontChoice[]
 	onImported: () => void
@@ -55,9 +56,9 @@ function RoleBlock({
 		<section className='flex flex-col gap-3 rounded-lg border p-4'>
 			<div className='flex items-center justify-between gap-2'>
 				<div>
-					<h3 className='text-sm font-medium'>{title}</h3>
+					<h3 className='text-sm font-medium'>{t(title)}</h3>
 					<p className='text-muted-foreground text-xs'>
-						{current ? current.family : 'System font'}
+						{current ? current.family : t('fonts.system')}
 						{current && ` (${weightsOf(current).join(', ')})`}
 					</p>
 				</div>
@@ -67,14 +68,14 @@ function RoleBlock({
 					disabled={!current}
 					onClick={() => setFont(role, null)}
 				>
-					Use system font
+					{t('fonts.useSystem')}
 				</Button>
 			</div>
 			<Sample family={current?.family ?? null} weight={weight} />
 			{library.length > 0 && (
 				<div className='flex flex-col gap-1.5'>
 					<span className='text-muted-foreground text-xs'>
-						Fonts in this project
+						{t('fonts.inProject')}
 					</span>
 					<div className='flex flex-wrap gap-1.5'>
 						{library.map((choice) => (

@@ -6,12 +6,13 @@ import {
 	type Theme,
 } from '@ui-system/theme'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 import { setAutoFor } from '@/store/themeActions'
 
 const MIN = 4.5
 
 const grade = (ratio: number) =>
-	ratio >= 7 ? 'AAA' : ratio >= MIN ? 'AA' : 'low'
+	ratio >= 7 ? 'AAA' : ratio >= MIN ? 'AA' : t('theme.low')
 
 // WCAG ratio for every text and background pair
 export function ContrastList({ theme }: { theme: Theme }) {
@@ -56,7 +57,7 @@ export function ContrastList({ theme }: { theme: Theme }) {
 					className='mt-1 self-start'
 					onClick={() => setAutoFor(low.map((row) => row.content))}
 				>
-					Fix low contrast ({low.length})
+					{t('theme.fixLow', { count: low.length })}
 				</Button>
 			)}
 		</div>

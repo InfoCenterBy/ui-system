@@ -7,6 +7,8 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { tOr } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { insertHtml } from '@/store/actions'
 import { useProject } from '@/store/project'
 import { ELEMENT_PRESETS } from './elementPresets'
@@ -14,6 +16,7 @@ import { insertPlace } from './insertTarget'
 import { useNav } from './navState'
 
 export function AddMenu() {
+	const { t } = useTranslation()
 	const roots = useRoots()
 	const selectedId = useProject((s) => s.selectedId)
 	const editing = useProject((s) => s.editingComponentId !== null)
@@ -32,20 +35,16 @@ export function AddMenu() {
 					variant='outline'
 					size='xs'
 					disabled={!place}
-					title={
-						place
-							? 'Add an element'
-							: 'Select an element outside of components and locked sections'
-					}
+					title={place ? t('addMenu.title') : t('addMenu.disabled')}
 				>
 					<Plus />
-					Add
+					{t('common.add')}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align='end'>
 				{ELEMENT_PRESETS.map((p) => (
 					<DropdownMenuItem key={p.id} onSelect={() => add(p.html)}>
-						{p.label}
+						{tOr(`preset.${p.id}`, p.label)}
 					</DropdownMenuItem>
 				))}
 			</DropdownMenuContent>

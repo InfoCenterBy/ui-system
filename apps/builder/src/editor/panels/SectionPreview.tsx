@@ -4,6 +4,7 @@ import {
 	serializeHtml,
 	type SectionPreset,
 } from '@ui-system/core'
+import { sectionName } from '@/i18n/names'
 
 const VIRTUAL_WIDTH = 1280
 // Fixed 16:9 box, so cards never change height while the preview loads
@@ -57,7 +58,7 @@ export function SectionPreview({
 		>
 			{srcDoc !== null && scale > 0 && (
 				<iframe
-					title={preset.name}
+					title={sectionName(preset.name)}
 					srcDoc={srcDoc}
 					tabIndex={-1}
 					className={`pointer-events-none absolute top-0 left-0 border-0 bg-white transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}

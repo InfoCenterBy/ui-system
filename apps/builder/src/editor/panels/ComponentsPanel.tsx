@@ -25,6 +25,7 @@ import { componentDrag } from '@/editor/dnd'
 import { insertPlace } from '@/editor/navigator/insertTarget'
 import { useNav } from '@/editor/navigator/navState'
 import { SectionPreview } from '@/editor/panels/SectionPreview'
+import { useTranslation } from 'react-i18next'
 import {
 	addInstanceSection,
 	deleteComponent,
@@ -80,6 +81,7 @@ function ComponentRow({
 	component: Component
 	css: string | null
 }) {
+	const { t } = useTranslation()
 	const ref = useRef<HTMLDivElement>(null)
 	const [dragging, setDragging] = useState(false)
 	const [renaming, setRenaming] = useState(false)
@@ -110,9 +112,7 @@ function ComponentRow({
 			}
 			const place = insertPlace(roots, selectedId, editing)
 			if (!place) {
-				throw new Error(
-					'Select an element in an unlocked section first'
-				)
+				throw new Error(t('components.selectFirst'))
 			}
 			insertInstance(component.id, place.parentId, place.index)
 			useNav.getState().setOpen([place.parentId])
@@ -125,7 +125,7 @@ function ComponentRow({
 		const doc = useDocument.getState().doc
 		const count = doc ? instancesIn(doc, component.id).length : 0
 		const ok = window.confirm(
-			`Delete component "${component.name}"? ${count} ${count === 1 ? 'instance becomes' : 'instances become'} plain elements.`
+			t('components.confirmDelete', { name: component.name, count })
 		)
 		if (!ok) return
 		try {
@@ -155,7 +155,7 @@ function ComponentRow({
 				<div
 					role='button'
 					tabIndex={-1}
-					aria-label={`Add ${component.name}`}
+					aria-label={t('common.addNamed', { name: component.name })}
 					className='cursor-grab'
 					onClick={add}
 				>
@@ -167,7 +167,7 @@ function ComponentRow({
 					<Input
 						autoFocus
 						value={name}
-						aria-label='Component name'
+						aria-label={t('components.name')}
 						className='h-7'
 						onChange={(e) => setName(e.target.value)}
 						onBlur={rename}
@@ -186,8 +186,8 @@ function ComponentRow({
 						className='flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm outline-none [&_svg]:size-3.5 [&_svg]:shrink-0'
 						title={
 							isSection
-								? 'Add to the page'
-								: 'Insert into the selected element'
+								? t('components.addToPage')
+								: t('components.insertInto')
 						}
 						onClick={add}
 					>
@@ -200,7 +200,9 @@ function ComponentRow({
 						<Button
 							variant='ghost'
 							size='icon-xs'
-							aria-label={`${component.name} actions`}
+							aria-label={t('components.actions', {
+								name: component.name,
+							})}
 						>
 							<MoreHorizontal />
 						</Button>
@@ -213,7 +215,7 @@ function ComponentRow({
 									.editComponent(component.id)
 							}
 						>
-							Edit
+							{t('common.edit')}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => {
@@ -221,14 +223,14 @@ function ComponentRow({
 								setRenaming(true)
 							}}
 						>
-							Rename
+							{t('common.rename')}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							variant='destructive'
 							onSelect={remove}
 						>
-							Delete
+							{t('common.delete')}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -238,6 +240,7 @@ function ComponentRow({
 }
 
 export function ComponentsPanel() {
+	const { t } = useTranslation()
 	const map = useDocument((s) => s.doc?.components)
 	const components = useMemo(
 		() =>
@@ -251,8 +254,7 @@ export function ComponentsPanel() {
 		<div className='flex flex-col gap-2 p-3'>
 			{components.length === 0 && (
 				<p className='text-muted-foreground text-sm'>
-					No components yet. Select a section or an element and press
-					Create component in the properties.
+					{t('components.empty')}
 				</p>
 			)}
 			{components.map((c) => (

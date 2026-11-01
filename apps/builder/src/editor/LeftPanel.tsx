@@ -10,6 +10,7 @@ import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { asElement } from '@/editor/dnd'
+import { useTranslation } from 'react-i18next'
 import { ComponentsPanel } from '@/editor/panels/ComponentsPanel'
 import { ElementsPanel } from '@/editor/panels/ElementsPanel'
 import { LayersPanel } from '@/editor/panels/LayersPanel'
@@ -17,11 +18,11 @@ import { PagesPanel } from '@/editor/panels/PagesPanel'
 import { SectionsPanel } from '@/editor/panels/SectionsPanel'
 
 const TABS = [
-	{ value: 'Sections', icon: LayoutTemplate },
-	{ value: 'Elements', icon: Shapes },
-	{ value: 'Pages', icon: Files },
-	{ value: 'Layers', icon: Layers },
-	{ value: 'Components', icon: ComponentIcon },
+	{ value: 'Sections', key: 'tab.sections', icon: LayoutTemplate },
+	{ value: 'Elements', key: 'tab.elements', icon: Shapes },
+	{ value: 'Pages', key: 'tab.pages', icon: Files },
+	{ value: 'Layers', key: 'tab.layers', icon: Layers },
+	{ value: 'Components', key: 'tab.components', icon: ComponentIcon },
 ] as const
 
 const HOVER_MS = 400
@@ -52,6 +53,7 @@ function useOpenOnDrag(onOpen: () => void) {
 }
 
 export function LeftPanel() {
+	const { t } = useTranslation()
 	const [tab, setTab] = useState('Sections')
 	const openLayers = useCallback(() => setTab('Layers'), [])
 	const layersRef = useOpenOnDrag(openLayers)
@@ -62,18 +64,18 @@ export function LeftPanel() {
 			className='@container h-full gap-0'
 		>
 			<TabsList className='m-2 w-[calc(100%-1rem)]'>
-				{TABS.map(({ value, icon: Icon }) => (
+				{TABS.map(({ value, key, icon: Icon }) => (
 					<TabsTrigger
 						key={value}
 						ref={value === 'Layers' ? layersRef : undefined}
 						value={value}
-						title={value}
-						className='min-w-0 truncate @max-[20rem]:px-0.5 @max-[20rem]:text-xs @max-[20rem]:data-[state=active]:flex-3'
+						title={t(key)}
+						className='min-w-0 truncate @max-[20rem]:px-0.5 @max-[20rem]:text-xs @max-[20rem]:data-[state=active]:flex-4'
 					>
 						<Icon />
 						{/* On a narrow panel only the open tab keeps its label */}
 						<span className='truncate @max-[20rem]:[[data-state=inactive]>&]:sr-only'>
-							{value}
+							{t(key)}
 						</span>
 					</TabsTrigger>
 				))}

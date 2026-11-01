@@ -9,6 +9,7 @@ import {
 	type Breakpoint,
 	type UtilityGroup,
 } from '@ui-system/core'
+import { t } from '@/i18n'
 import { setClasses } from '@/store/actions'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import {
@@ -51,7 +52,7 @@ export interface StyleContext {
 
 const labelOfBreakpoint = (bp: Breakpoint) =>
 	bp === ''
-		? 'All screens'
+		? t('style.allScreens')
 		: (BREAKPOINTS.find((b) => b.prefix === bp)?.label ?? bp)
 
 export interface RowState {
@@ -99,7 +100,7 @@ export function StyleRow({
 				'grid items-center gap-x-2 gap-y-1',
 				stacked
 					? 'grid-cols-[1fr_1.25rem]'
-					: 'grid-cols-[4.25rem_1fr_1.25rem]'
+					: 'grid-cols-[6.25rem_1fr_1.25rem]'
 			)}
 		>
 			<div className='flex min-w-0 flex-col leading-tight'>
@@ -108,7 +109,9 @@ export function StyleRow({
 				</span>
 				{inherited && resolved && (
 					<span className='text-muted-foreground/70 truncate text-[10px]'>
-						from {labelOfBreakpoint(resolved.from)}
+						{t('style.inheritedFrom', {
+							bp: labelOfBreakpoint(resolved.from),
+						})}
 					</span>
 				)}
 			</div>
@@ -123,8 +126,8 @@ export function StyleRow({
 			)}
 			<button
 				type='button'
-				aria-label={`Reset ${label}`}
-				title={`Reset at ${labelOfBreakpoint(ctx.bp)}`}
+				aria-label={t('style.reset', { label })}
+				title={t('style.resetAt', { bp: labelOfBreakpoint(ctx.bp) })}
 				className={cn(
 					'text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded',
 					stacked ? 'col-start-2 row-start-1' : 'col-start-3',
@@ -145,7 +148,11 @@ export function StyleRow({
 			)}
 			{overrideFrom !== null && (
 				<p className='text-muted-foreground/80 col-span-full flex items-center gap-1 text-[10px] leading-tight'>
-					<span>Overridden at {labelOfBreakpoint(overrideFrom)}</span>
+					<span>
+						{t('style.overriddenAt', {
+							bp: labelOfBreakpoint(overrideFrom),
+						})}
+					</span>
 					<button
 						type='button'
 						className='text-primary underline'
@@ -163,7 +170,7 @@ export function StyleRow({
 							)
 						}
 					>
-						Reset override
+						{t('style.resetOverride')}
 					</button>
 				</p>
 			)}
@@ -500,19 +507,19 @@ function CustomColor({
 						)}
 						<input
 							type='color'
-							aria-label={`${prefix} custom color`}
+							aria-label={t('style.customColorOf', { prefix })}
 							value={(css && colorForPicker(css)) || '#000000'}
 							className='absolute inset-0 size-full cursor-pointer opacity-0'
 							onChange={(e) => apply(e.target.value)}
 						/>
 					</label>
 				</TooltipTrigger>
-				<TooltipContent>Custom color</TooltipContent>
+				<TooltipContent>{t('style.customColor')}</TooltipContent>
 			</Tooltip>
 			<input
 				value={shown}
 				placeholder='#hex, rgb(), oklch()'
-				aria-label={`${prefix} hex`}
+				aria-label={t('style.hexOf', { prefix })}
 				autoComplete='off'
 				spellCheck={false}
 				className='border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-6 w-32 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none focus-visible:ring-3'
@@ -576,7 +583,7 @@ export function ColorSwatches({
 			</div>
 			<div className='flex items-center gap-2'>
 				<select
-					aria-label={`${prefix} opacity`}
+					aria-label={t('style.opacityOf', { prefix })}
 					disabled={!token}
 					value={token?.opacity ?? ''}
 					className='border-input bg-background h-6 rounded-md border px-1 text-xs disabled:opacity-50'
@@ -591,10 +598,10 @@ export function ColorSwatches({
 						)
 					}
 				>
-					<option value=''>Opacity 100</option>
+					<option value=''>{t('style.opacityN', { n: 100 })}</option>
 					{OPACITY_STEPS.slice(1).map((o) => (
 						<option key={o} value={o}>
-							Opacity {o}
+							{t('style.opacityN', { n: o })}
 						</option>
 					))}
 				</select>

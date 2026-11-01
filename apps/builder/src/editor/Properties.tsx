@@ -44,10 +44,12 @@ import {
 	setPartial,
 	setSectionLocked,
 } from '@/store/actions'
+import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
 
 function SectionActions({ id }: { id: string }) {
+	const { t } = useTranslation()
 	const page = useCurrentPage()
 	const index = page?.sections.findIndex((s) => s.id === id) ?? -1
 	if (!page || index < 0) return null
@@ -59,7 +61,7 @@ function SectionActions({ id }: { id: string }) {
 				disabled={index === 0}
 				onClick={() => moveSection(id, index - 1)}
 			>
-				<ArrowUpIcon /> Up
+				<ArrowUpIcon /> {t('common.up')}
 			</Button>
 			<Button
 				size='sm'
@@ -67,17 +69,17 @@ function SectionActions({ id }: { id: string }) {
 				disabled={index === page.sections.length - 1}
 				onClick={() => moveSection(id, index + 1)}
 			>
-				<ArrowDownIcon /> Down
+				<ArrowDownIcon /> {t('common.down')}
 			</Button>
 			<Button
 				size='sm'
 				variant='outline'
 				onClick={() => duplicateSection(id)}
 			>
-				<CopyIcon /> Duplicate
+				<CopyIcon /> {t('common.duplicate')}
 			</Button>
 			<Button size='sm' variant='outline' onClick={() => deleteNode(id)}>
-				<Trash2Icon /> Delete
+				<Trash2Icon /> {t('common.delete')}
 			</Button>
 		</div>
 	)
@@ -86,6 +88,7 @@ function SectionActions({ id }: { id: string }) {
 // Shared sections are changed for the whole site, not per page
 // Locked sections edit only their slots, unlocked ones every element
 function LockToggle({ section }: { section: ElementNode }) {
+	const { t } = useTranslation()
 	const locked = section.section?.locked ?? true
 	return (
 		<div className='flex flex-col gap-1.5 text-sm'>
@@ -96,33 +99,33 @@ function LockToggle({ section }: { section: ElementNode }) {
 				onClick={() => setSectionLocked(section.id, !locked)}
 			>
 				{locked ? <LockOpenIcon /> : <LockIcon />}
-				{locked ? 'Unlock structure' : 'Lock structure'}
+				{locked ? t('props.unlock') : t('props.lock')}
 			</Button>
 			<p className='text-muted-foreground text-xs'>
-				{locked
-					? 'Unlock to select any element, change its classes and move it around.'
-					: 'Every element is editable. Lock again to keep the layout safe.'}
+				{locked ? t('props.unlockHint') : t('props.lockHint')}
 			</p>
 		</div>
 	)
 }
 
 function PartialActions({ name }: { name: 'header' | 'footer' }) {
+	const { t } = useTranslation()
 	return (
 		<div className='flex flex-col gap-2 text-sm'>
 			<p className='text-muted-foreground'>
-				Shared {name}: changes appear on every page. A page can hide it
-				in its settings.
+				{name === 'header'
+					? t('props.headerNote')
+					: t('props.footerNote')}
 			</p>
 			{name === 'header' && (
 				<Button
 					size='sm'
 					variant='outline'
 					className='w-fit'
-					title='Replace the menu items with links to the site pages'
+					title={t('props.fillMenuTitle')}
 					onClick={fillMenuWithPages}
 				>
-					<ListIcon /> Fill menu with pages
+					<ListIcon /> {t('props.fillMenu')}
 				</Button>
 			)}
 			{name === 'header' ? (
@@ -136,13 +139,17 @@ function PartialActions({ name }: { name: 'header' | 'footer' }) {
 				className='w-fit'
 				onClick={() => setPartial(name, null)}
 			>
-				<Trash2Icon /> Remove {name}
+				<Trash2Icon />{' '}
+				{name === 'header'
+					? t('props.removeHeader')
+					: t('props.removeFooter')}
 			</Button>
 		</div>
 	)
 }
 
 export function Properties() {
+	const { t } = useTranslation()
 	const selectedId = useProject((s) => s.selectedId)
 	const select = useProject((s) => s.select)
 	const page = useCurrentPage()
@@ -163,18 +170,17 @@ export function Properties() {
 		return (
 			<aside className='flex h-full flex-col'>
 				<h2 className='border-b px-3 py-2 text-sm font-medium'>
-					{page?.name ?? 'Properties'}
+					{page?.name ?? t('props.title')}
 				</h2>
 				{page && (
 					<div className='flex flex-col gap-1 p-3 text-sm'>
 						<p>
-							{page.sections.length}{' '}
-							{page.sections.length === 1
-								? 'section'
-								: 'sections'}
+							{t('props.sectionCount', {
+								count: page.sections.length,
+							})}
 						</p>
 						<p className='text-muted-foreground'>
-							Select an element on the canvas to edit it
+							{t('props.selectHint')}
 						</p>
 					</div>
 				)}
@@ -251,7 +257,7 @@ export function Properties() {
 				{node.slot === 'link' && <LinkProperties node={node} />}
 				{(node.slot === 'text' || node.slot === 'rich') && (
 					<p className='text-muted-foreground text-sm'>
-						Double-click the text on the canvas to edit it
+						{t('props.textHint')}
 					</p>
 				)}
 				{countdown && (
@@ -268,7 +274,7 @@ export function Properties() {
 						className='w-fit'
 						onClick={() => deleteNode(node.id)}
 					>
-						<Trash2Icon /> Delete
+						<Trash2Icon /> {t('common.delete')}
 					</Button>
 				)}
 				{free && <ClassField node={node} />}
