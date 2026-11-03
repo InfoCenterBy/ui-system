@@ -1,16 +1,16 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
 	CONTENT_OF,
 	getColor,
 	hexToOklch,
 	oklchToHex,
-	parseOklch,
 	type ContentKey,
 	type Theme,
 } from '@ui-system/theme'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { t } from '@/i18n'
+import { toOklchString } from '@/editor/theme/parseColor'
 import { setThemeAuto, setThemeColor } from '@/store/themeActions'
 
 interface ColorInputProps {
@@ -19,21 +19,39 @@ interface ColorInputProps {
 	onChange: (value: string) => void
 }
 
-// Swatch opens the native picker, the text field takes any OKLCH value
+// Swatch opens the native picker, the text field takes oklch, hex, rgb or hsl
 function ColorInput({ label, value, onChange }: ColorInputProps) {
 	const picker = useRef<HTMLInputElement>(null)
+	const [invalid, setInvalid] = useState(false)
+	// Remounts the field so a typed hex is replaced even when the color is unchanged
+	const [round, setRound] = useState(0)
 	const commit = (text: string) => {
 		const clean = text.trim()
-		if (clean !== value && parseOklch(clean)) onChange(clean)
+		if (clean === value) return setInvalid(false)
+		const color = toOklchString(clean)
+		setInvalid(!color)
+		if (!color) return
+		onChange(color)
+		setRound((n) => n + 1)
+	}
+	const open = () => {
+		const input = picker.current
+		if (!input) return
+		// showPicker needs a user gesture, click is the fallback
+		try {
+			input.showPicker()
+		} catch {
+			input.click()
+		}
 	}
 	return (
-		<div className='relative flex items-center gap-2'>
+		<div className='relative flex flex-wrap items-center gap-x-2 gap-y-0.5'>
 			<button
 				type='button'
 				aria-label={t('theme.pick', { label })}
-				className='border-border size-7 shrink-0 rounded-md border'
+				className='border-border focus-visible:ring-ring/50 size-7 shrink-0 rounded-md border outline-none focus-visible:ring-3'
 				style={{ background: value }}
-				onClick={() => picker.current?.click()}
+				onClick={open}
 			/>
 			<input
 				ref={picker}
@@ -42,18 +60,31 @@ function ColorInput({ label, value, onChange }: ColorInputProps) {
 				aria-hidden
 				className='pointer-events-none absolute size-0 opacity-0'
 				value={oklchToHex(value)}
-				onChange={(e) => onChange(hexToOklch(e.target.value))}
+				onChange={(e) => {
+					setInvalid(false)
+					onChange(hexToOklch(e.target.value))
+				}}
 			/>
 			<Input
-				key={value}
+				key={`${value}:${round}`}
 				aria-label={label}
+				aria-invalid={invalid || undefined}
 				defaultValue={value}
 				className='h-7 w-48 font-mono text-xs'
+				onChange={() => invalid && setInvalid(false)}
 				onBlur={(e) => commit(e.target.value)}
 				onKeyDown={(e) =>
 					e.key === 'Enter' && commit(e.currentTarget.value)
 				}
 			/>
+			{invalid && (
+				<span
+					role='alert'
+					className='text-destructive w-full pl-9 text-xs'
+				>
+					{t('colorField.invalid')}
+				</span>
+			)}
 		</div>
 	)
 }

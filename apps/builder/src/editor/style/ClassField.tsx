@@ -35,15 +35,21 @@ function ChipText({ raw }: { raw: string }) {
 	)
 }
 
-// Ends on Enter, Escape, blur (Tab) or a pointer-down outside, clicks inside move the caret
+const SUGGEST_ATTR = 'data-class-suggest'
+
+// Ends on Enter, Escape, blur (Tab) or a pointer-down outside; the suggestion list counts as inside
 function ChipEditor({
-	initial,
+	text,
+	onText,
+	onKeys,
 	onDone,
 }: {
-	initial: string
+	text: string
+	onText: (text: string) => void
+	// Suggestion keys: null when not handled, true when handled, a string to finish with
+	onKeys: (e: KeyboardEvent<HTMLInputElement>) => string | true | null
 	onDone: (value: string | null) => void
 }) {
-	const [text, setText] = useState(initial)
 	const ref = useRef<HTMLInputElement>(null)
 	const done = useRef(false)
 	const finish = (value: string | null) => {
@@ -53,8 +59,12 @@ function ChipEditor({
 	}
 	useEffect(() => {
 		const onDown = (e: PointerEvent) => {
-			if (!ref.current?.contains(e.target as Node))
-				finish(ref.current?.value ?? initial)
+			const target = e.target as Element
+			if (
+				!ref.current?.contains(target) &&
+				!target.closest?.(`[${SUGGEST_ATTR}]`)
+			)
+				finish(ref.current?.value ?? text)
 		}
 		document.addEventListener('pointerdown', onDown, true)
 		return () => document.removeEventListener('pointerdown', onDown, true)
@@ -67,13 +77,16 @@ function ChipEditor({
 			aria-label={t('classes.edit')}
 			value={text}
 			size={Math.max(6, text.length + 1)}
+			autoComplete='off'
+			spellCheck={false}
 			className='bg-background border-ring h-6 min-w-0 rounded-md border px-1.5 font-mono text-xs outline-none'
 			// The field below must not take focus from the editor
 			onClick={(e) => e.stopPropagation()}
-			onChange={(e) => setText(e.target.value)}
+			onChange={(e) => onText(e.target.value.replace(/\s+/g, ''))}
 			onKeyDown={(e) => {
-				if (e.key === 'Enter') finish(text)
-				if (e.key === 'Escape') finish(null)
+				const result = onKeys(e)
+				if (typeof result === 'string') finish(result)
+				else if (result === null && e.key === 'Escape') finish(null)
 			}}
 			// Tab and other focus loss commit, finish ignores repeats
 			onBlur={(e) => finish(e.currentTarget.value)}
@@ -100,17 +113,38 @@ export function ClassField({ node }: { node: ElementNode }) {
 	const [active, setActive] = useState(-1)
 	const [hovered, setHovered] = useState<number | null>(null)
 	const [editing, setEditing] = useState<number | null>(null)
+	const [editText, setEditText] = useState('')
+	const listRef = useRef<HTMLUListElement>(null)
 	const tokens = splitClasses(node.classes)
 	const index = state.status === 'ready' ? state.index : null
 
+	// The main field and an edited chip share one suggestion list
+	const query = editing !== null ? editText : typed
+	const open = focused || editing !== null
 	const suggestions = useMemo(
-		() => (index && focused ? suggest(typed, index) : []),
-		[index, focused, typed]
+		() => (index && open ? suggest(query, index) : []),
+		[index, open, query]
 	)
 	const preview = suggestions[hovered ?? active]
 	const previewCss = preview && index ? index.cssOf(preview.name) : null
 
+	useEffect(() => {
+		if (active < 0) return
+		listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' })
+	}, [active])
+
 	const commit = (list: string[]) => setClasses(node.id, list.join(' '))
+
+	// Known and custom classes stay as typed; an unfinished one is completed: "text-3x" becomes "text-3xl"
+	const resolve = (text: string) => {
+		const clean = text.trim().replace(/,$/, '')
+		const chosen = active >= 0 ? suggestions[active] : null
+		if (chosen) return chosen.value
+		if (!clean || clean.endsWith(':') || !index || index.cssOf(clean))
+			return clean
+		const best = suggestions[0]?.value
+		return best?.startsWith(clean) ? best : clean
+	}
 
 	const add = (raw: string) => {
 		const clean = raw.trim().replace(/,$/, '')
@@ -122,28 +156,48 @@ export function ClassField({ node }: { node: ElementNode }) {
 	}
 
 	const pick = (value: string) => {
+		setActive(-1)
 		// A variant stays in the field so the class can follow
-		if (value.endsWith(':')) {
+		if (editing !== null) {
+			if (value.endsWith(':')) setEditText(value)
+			else finishEdit(editing, value)
+		} else if (value.endsWith(':')) {
 			setTyped(value)
-			setActive(-1)
 			inputRef.current?.focus()
 		} else add(value)
 	}
 
-	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+	// Arrows move through the list; Enter takes the highlighted or best suggestion
+	const listKeys = (
+		e: KeyboardEvent<HTMLInputElement>,
+		text: string
+	): string | true | null => {
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-			if (suggestions.length === 0) return
+			if (suggestions.length === 0) return null
 			e.preventDefault()
 			const step = e.key === 'ArrowDown' ? 1 : -1
+			setHovered(null)
 			setActive(
 				(a) => (a + step + suggestions.length) % suggestions.length
 			)
-		} else if (e.key === 'Enter' || e.key === ',') {
+			return true
+		}
+		if (e.key === 'Enter' || e.key === ',') {
 			e.preventDefault()
-			const chosen = active >= 0 ? suggestions[active] : null
-			if (chosen) pick(chosen.value)
-			else add(typed)
-		} else if (e.key === 'Backspace' && typed === '' && tokens.length) {
+			const value = resolve(text)
+			setActive(-1)
+			return value
+		}
+		return null
+	}
+
+	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+		const result = listKeys(e, typed)
+		if (typeof result === 'string') {
+			if (result.endsWith(':')) setTyped(result)
+			else add(result)
+		} else if (result) return
+		else if (e.key === 'Backspace' && typed === '' && tokens.length) {
 			commit(tokens.slice(0, -1))
 		} else if (e.key === 'Escape') {
 			setTyped('')
@@ -151,12 +205,33 @@ export function ClassField({ node }: { node: ElementNode }) {
 		}
 	}
 
+	const chipKeys = (e: KeyboardEvent<HTMLInputElement>) => {
+		const result = listKeys(e, editText)
+		// A variant keeps the chip open so the class can follow
+		if (typeof result === 'string' && result.endsWith(':')) {
+			setEditText(result)
+			return true
+		}
+		return result
+	}
+
+	const startEdit = (at: number) => {
+		setEditText(tokens[at])
+		setActive(-1)
+		setHovered(null)
+		setEditing(at)
+	}
+
 	const finishEdit = (at: number, value: string | null) => {
 		setEditing(null)
+		setActive(-1)
 		if (value === null) return
 		const next = splitClasses(value)
 		commit([...tokens.slice(0, at), ...next, ...tokens.slice(at + 1)])
 	}
+
+	// Typos and custom classes have no CSS, they get a dashed outline
+	const unknown = (raw: string) => index !== null && !index.cssOf(raw)
 
 	const swatch = (name: string, kind: string) => {
 		if (!index || kind === 'variant') return null
@@ -180,15 +255,29 @@ export function ClassField({ node }: { node: ElementNode }) {
 					editing === i ? (
 						<ChipEditor
 							key={`${raw}:${i}`}
-							initial={raw}
-							onDone={(value) => finishEdit(i, value)}
+							text={editText}
+							onText={(text) => {
+								setEditText(text)
+								setActive(-1)
+							}}
+							onKeys={chipKeys}
+							onDone={(value) =>
+								finishEdit(
+									i,
+									value === null ? null : value.trim()
+								)
+							}
 						/>
 					) : (
 						<Tooltip key={`${raw}:${i}`} delayDuration={500}>
 							<TooltipTrigger asChild>
 								<span
-									className='bg-muted flex min-h-6 items-center gap-0.5 rounded-md py-0.5 pr-0.5 pl-1.5 font-mono text-xs break-all'
-									onDoubleClick={() => setEditing(i)}
+									className={cn(
+										'bg-muted flex min-h-6 items-center gap-0.5 rounded-md border border-transparent py-0.5 pr-0.5 pl-1.5 font-mono text-xs break-all',
+										unknown(raw) &&
+											'border-muted-foreground/60 border-dashed'
+									)}
+									onDoubleClick={() => startEdit(i)}
 								>
 									<span>
 										<ChipText raw={raw} />
@@ -242,8 +331,12 @@ export function ClassField({ node }: { node: ElementNode }) {
 				/>
 			</div>
 			{suggestions.length > 0 && (
-				<div className='border-border bg-popover relative rounded-lg border shadow-sm'>
+				<div
+					{...{ [SUGGEST_ATTR]: '' }}
+					className='border-border bg-popover relative rounded-lg border shadow-sm'
+				>
 					<ul
+						ref={listRef}
 						role='listbox'
 						className='max-h-56 overflow-y-auto p-1'
 						onMouseLeave={() => setHovered(null)}

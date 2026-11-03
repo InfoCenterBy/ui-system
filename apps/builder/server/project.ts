@@ -79,11 +79,11 @@ async function isEmptyOrMissing(dir: string): Promise<boolean> {
 	}
 }
 
-export function defaultSite(name: string, homeId: string): Site {
+export function defaultSite(name: string, homeId: string, lang = 'ru'): Site {
 	return {
 		version: 1,
 		name,
-		lang: 'ru',
+		lang,
 		pathPrefix: '',
 		theme: { name: 'light', vars: {} },
 		fonts: { heading: null, body: null },
@@ -116,7 +116,7 @@ export class ProjectStore {
 		return resolveInside(this.require().path, 'assets')
 	}
 
-	async create(dir: string, name: string): Promise<Project> {
+	async create(dir: string, name: string, lang?: string): Promise<Project> {
 		const root = path.resolve(dir)
 		if (!(await isEmptyOrMissing(root))) {
 			throw new HttpError(409, 'Folder must be empty or not exist yet')
@@ -124,7 +124,7 @@ export class ProjectStore {
 		const homeId = 'home'
 		const project: Project = {
 			path: root,
-			site: defaultSite(name, homeId),
+			site: defaultSite(name, homeId, lang),
 			pages: [defaultPage(homeId, name)],
 			partials: { header: null, footer: null },
 			components: [],

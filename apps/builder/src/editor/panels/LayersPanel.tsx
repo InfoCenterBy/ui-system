@@ -131,30 +131,12 @@ function SectionRow({
 			onDragStart: () => setDragging(true),
 			onDrop: () => setDragging(false),
 		})
+		// One target per element: pragmatic-dnd warns on a second registration
 		const stopDrop = dropTargetForElements({
 			element: el,
 			canDrop: ({ source }) => {
 				const layer = asLayer(source.data)
-				return layer !== null && layer.id !== id
-			},
-			onDrag: ({ location }) =>
-				setEdge(edgeAt(location.current.input.clientY)),
-			onDragLeave: clear,
-			onDrop: ({ source, location }) => {
-				clear()
-				const layer = asLayer(source.data)
-				if (!layer) return
-				const to = destination(
-					layer.id,
-					edgeAt(location.current.input.clientY)
-				)
-				if (to !== null) moveSection(layer.id, to)
-			},
-		})
-		// Elements of this section can be dropped on its row to become last children
-		const stopNodeDrop = dropTargetForElements({
-			element: el,
-			canDrop: ({ source }) => {
+				if (layer) return layer.id !== id
 				const drag = asNode(source.data)
 				if (drag) return canDropNode(drag.id, id)
 				return (
@@ -164,10 +146,31 @@ function SectionRow({
 					canDropElement(id)
 				)
 			},
-			onDragEnter: () => setInside(true),
-			onDragLeave: () => setInside(false),
-			onDrop: ({ source }) => {
+			// Elements of this section can be dropped on its row to become last children
+			onDragEnter: ({ source }) => {
+				if (!asLayer(source.data)) setInside(true)
+			},
+			onDrag: ({ source, location }) => {
+				if (asLayer(source.data)) {
+					setEdge(edgeAt(location.current.input.clientY))
+				}
+			},
+			onDragLeave: () => {
+				clear()
 				setInside(false)
+			},
+			onDrop: ({ source, location }) => {
+				clear()
+				setInside(false)
+				const layer = asLayer(source.data)
+				if (layer) {
+					const to = destination(
+						layer.id,
+						edgeAt(location.current.input.clientY)
+					)
+					if (to !== null) moveSection(layer.id, to)
+					return
+				}
 				const drag = asNode(source.data)
 				if (drag) dropNode(drag.id, id, 'inside')
 				const element = asElement(source.data)
@@ -177,7 +180,6 @@ function SectionRow({
 		return () => {
 			stopDrag()
 			stopDrop()
-			stopNodeDrop()
 		}
 	}, [id, locked, isInstance])
 

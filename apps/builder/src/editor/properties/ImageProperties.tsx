@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ElementNode } from '@ui-system/core'
 import { Input } from '@/components/ui/input'
 import { AssetPicker } from '@/editor/properties/AssetPicker'
@@ -9,6 +10,13 @@ import { setAttribute } from '@/store/actions'
 export function ImageProperties({ node }: { node: ElementNode }) {
 	const { t } = useTranslation()
 	const src = node.attrs.src ?? ''
+	// Id of the image whose picture changed while its description did not
+	const [stale, setStale] = useState<string | null>(null)
+	const replace = (value: string) => {
+		setStale(node.id)
+		setAttribute(node.id, 'src', value)
+	}
+	const needsAlt = stale === node.id && Boolean(node.attrs.alt)
 	return (
 		<div className='flex flex-col gap-3'>
 			{src && (
@@ -20,26 +28,28 @@ export function ImageProperties({ node }: { node: ElementNode }) {
 					/>
 				</div>
 			)}
-			<AssetPicker
-				value={src}
-				onPick={(path) => setAttribute(node.id, 'src', path)}
-			/>
+			<AssetPicker value={src} onPick={replace} />
 			<Field label={t('props.url')}>
 				<Input
 					value={src}
 					placeholder='https://'
-					onChange={(e) =>
-						setAttribute(node.id, 'src', e.target.value)
-					}
+					onChange={(e) => replace(e.target.value)}
 				/>
 			</Field>
 			<Field label={t('image.alt')}>
 				<Input
 					value={node.attrs.alt ?? ''}
-					onChange={(e) =>
+					className={needsAlt ? 'border-amber-500' : undefined}
+					onChange={(e) => {
+						setStale(null)
 						setAttribute(node.id, 'alt', e.target.value)
-					}
+					}}
 				/>
+				{needsAlt && (
+					<p className='text-xs text-amber-600 dark:text-amber-400'>
+						{t('imageAlt.stale')}
+					</p>
+				)}
 			</Field>
 		</div>
 	)

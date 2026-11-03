@@ -12,12 +12,14 @@ import {
 	breakpointFor,
 	type Breakpoint,
 	resolveUtility,
+	setUtility,
 	type ElementNode,
 	type UtilityGroup,
 } from '@ui-system/core'
 import { cn } from 'cn'
 import { useStyleTarget, targetHint, targetLabel } from '@/editor/style/target'
 import { useProject } from '@/store/project'
+import { setClasses } from '@/store/actions'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { alignCompanion, applyAlign, readLayout } from '@/editor/style/align'
 import {
@@ -432,14 +434,40 @@ function Spacing({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
+// A max width stops "full" and other widths from growing past it
+function maxWidthNote(ctx: StyleContext) {
+	const width = resolveUtility(ctx.classes, 'width', ctx.bp)
+	const max = resolveUtility(ctx.classes, 'max-width', ctx.bp)
+	if (!width || !max || ['max-w-none', 'max-w-full'].includes(max.utility))
+		return undefined
+	return (
+		<span className='flex flex-wrap items-center gap-x-1'>
+			<span>{t('style.maxWidthLimits', { value: max.utility })}</span>
+			<button
+				type='button'
+				className='text-primary underline'
+				onClick={() =>
+					setClasses(
+						ctx.id,
+						setUtility(ctx.classes, 'max-width', max.from, null)
+					)
+				}
+			>
+				{t('style.removeMaxWidth')}
+			</button>
+		</span>
+	)
+}
+
 function Size({ ctx }: { ctx: StyleContext }) {
 	const row = (
 		group: UtilityGroup,
 		label: string,
 		prefix: string,
-		options: readonly string[]
+		options: readonly string[],
+		note?: ReactNode
 	) => (
-		<StyleRow ctx={ctx} group={group} label={label}>
+		<StyleRow ctx={ctx} group={group} label={label} note={note}>
 			{(state) => (
 				<ValueInput state={state} prefix={prefix} options={options} />
 			)}
@@ -447,7 +475,7 @@ function Size({ ctx }: { ctx: StyleContext }) {
 	)
 	return (
 		<Section title={t('style.size')}>
-			{row('width', t('style.width'), 'w', WIDTHS)}
+			{row('width', t('style.width'), 'w', WIDTHS, maxWidthNote(ctx))}
 			{row('max-width', t('style.maxWidth'), 'max-w', MAX_WIDTHS)}
 			{row('height', t('style.height'), 'h', HEIGHTS)}
 			{row('min-height', t('style.minHeight'), 'min-h', MIN_HEIGHTS)}
@@ -496,9 +524,10 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 		<Section title={t('style.typography')}>
 			<StyleRow ctx={ctx} group='font-size' label={t('style.fontSize')}>
 				{(state) => (
-					<Choose
+					<ValueInput
 						state={state}
-						options={choices('text', FONT_SIZES)}
+						prefix='text'
+						options={FONT_SIZES}
 					/>
 				)}
 			</StyleRow>

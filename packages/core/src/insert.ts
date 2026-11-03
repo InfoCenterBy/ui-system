@@ -57,6 +57,34 @@ const renameAnchors = (style: string, names: Map<string, string>) =>
 			: `${prop}${sep}${list.replace(/--[\w-]+/g, (n: string) => names.get(n) ?? n)}`
 	)
 
+// Points demo photos (img, source and inline background urls) at a local file
+const swapDemoImage = (
+	tag: string,
+	attrs: Record<string, string>,
+	imageSrc: string
+) => {
+	const name = tag.toLowerCase()
+	if (name === 'img' && attrs.src?.startsWith(DEMO_IMAGES)) {
+		attrs.src = imageSrc
+		delete attrs.srcset
+	} else if (name === 'source' && attrs.srcset?.startsWith(DEMO_IMAGES)) {
+		attrs.srcset = imageSrc
+	}
+	// Background images set inline, like a hero with an overlay
+	if (attrs.style?.includes(DEMO_IMAGES)) {
+		attrs.style = attrs.style.replace(
+			/url\(\s*['"]?https:\/\/img\.daisyui\.com[^)'"]*['"]?\s*\)/g,
+			`url(${imageSrc})`
+		)
+	}
+}
+
+// In place, for freshly parsed trees such as a section preset
+export const replaceDemoImages = (nodes: TreeNode[], imageSrc: string) =>
+	walk(nodes, (node) => {
+		if (isElement(node)) swapDemoImage(node.tag, node.attrs, imageSrc)
+	})
+
 // Deep copy of nodes for inserting into a page: ids, radio or checkbox names
 // and inline CSS anchor names become unique, references follow, demo images
 // are swapped. Node ids stay
@@ -94,25 +122,8 @@ export const prepareInsert = (
 				attrs[key] = renameAnchors(value, anchors)
 			else attrs[key] = value
 		}
-		const tag = node.tag.toLowerCase()
-		if (opts.imageSrc !== undefined) {
-			if (tag === 'img' && attrs.src?.startsWith(DEMO_IMAGES)) {
-				attrs.src = opts.imageSrc
-				delete attrs.srcset
-			} else if (
-				tag === 'source' &&
-				attrs.srcset?.startsWith(DEMO_IMAGES)
-			) {
-				attrs.srcset = opts.imageSrc
-			}
-		}
-		// Background images set inline, like a hero with an overlay
-		if (opts.imageSrc !== undefined && attrs.style?.includes(DEMO_IMAGES)) {
-			attrs.style = attrs.style.replace(
-				/url\(\s*['"]?https:\/\/img\.daisyui\.com[^)'"]*['"]?\s*\)/g,
-				`url(${opts.imageSrc})`
-			)
-		}
+		if (opts.imageSrc !== undefined)
+			swapDemoImage(node.tag, attrs, opts.imageSrc)
 		return {
 			...node,
 			attrs,

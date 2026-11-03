@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { counterIds } from './ids'
 import { parseHtml, serializeHtml } from './html'
-import { prepareInsert } from './insert'
+import { prepareInsert, replaceDemoImages } from './insert'
 import type { ElementNode } from './types'
 
 const prepare = (html: string, token = 't', imageSrc?: string) =>
@@ -98,5 +98,24 @@ describe('prepareInsert', () => {
 		expect(out[0].id).toBe(nodes[0].id)
 		expect((nodes[0] as ElementNode).attrs.id).toBe('a')
 		expect(out[0]).not.toBe(nodes[0])
+	})
+})
+
+describe('replaceDemoImages', () => {
+	it('swaps demo photos in place and keeps other sources and ids', () => {
+		const nodes = parseHtml(
+			'<section id="s"><img src="https://img.daisyui.com/a.webp" srcset="x 2x" />' +
+				'<img src="assets/mine.png" />' +
+				'<div style="background:url(https://img.daisyui.com/b.webp)"></div></section>',
+			counterIds()
+		)
+		replaceDemoImages(nodes, 'assets/placeholder.svg')
+		const out = serializeHtml(nodes)
+		expect(out).not.toContain('daisyui.com')
+		expect(out).not.toContain('srcset')
+		expect(out).toContain('src="assets/placeholder.svg"')
+		expect(out).toContain('src="assets/mine.png"')
+		expect(out).toContain('url(assets/placeholder.svg)')
+		expect(out).toContain('id="s"')
 	})
 })

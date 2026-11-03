@@ -38,6 +38,7 @@ import {
 	joinPrefix,
 	parseColorUtility,
 	parseValueInput,
+	pxHint,
 	stripPrefix,
 } from '@/editor/style/values'
 
@@ -286,6 +287,8 @@ export function ValueInput({
 	const [active, setActive] = useState(-1)
 	const anchorRef = useRef<HTMLDivElement>(null)
 	const listRef = useRef<HTMLUListElement>(null)
+	// Open state when the mouse went down, so a click toggles the list
+	const pressRef = useRef<boolean | null>(null)
 	const shown =
 		draft && draft.from === (current ?? '') ? draft.text : (current ?? '')
 
@@ -294,6 +297,8 @@ export function ValueInput({
 	const visible = typing
 		? options.filter((o) => o.toLowerCase().includes(shown.toLowerCase()))
 		: options
+	const typed = shown ? parseValueInput(shown, options, negative) : null
+	const hint = typed === null ? null : pxHint(prefix, typed)
 
 	useEffect(() => {
 		if (!open || active < 0) return
@@ -319,7 +324,12 @@ export function ValueInput({
 	return (
 		<Popover open={open && visible.length > 0} onOpenChange={setOpen}>
 			<PopoverAnchor asChild>
-				<div ref={anchorRef}>
+				<div ref={anchorRef} className='relative'>
+					{hint && (
+						<span className='text-muted-foreground/70 pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-[10px]'>
+							{hint}
+						</span>
+					)}
 					<input
 						value={shown}
 						role='combobox'
@@ -330,10 +340,22 @@ export function ValueInput({
 						spellCheck={false}
 						className={cn(
 							'border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-7 w-full min-w-0 rounded-lg border px-1.5 text-xs outline-none focus-visible:ring-3',
+							hint && 'pr-12',
 							state.inherited && 'text-muted-foreground italic'
 						)}
-						onFocus={() => setOpen(true)}
-						onClick={() => setOpen(true)}
+						onMouseDown={() => {
+							pressRef.current = open
+						}}
+						// Keyboard focus opens the list, a mouse click toggles it
+						onFocus={() => {
+							if (pressRef.current === null) setOpen(true)
+						}}
+						onClick={() => {
+							const wasOpen = pressRef.current
+							pressRef.current = null
+							setActive(-1)
+							setOpen(!wasOpen)
+						}}
 						onChange={(e) => {
 							setDraft({
 								from: current ?? '',
@@ -343,6 +365,7 @@ export function ValueInput({
 							setOpen(true)
 						}}
 						onBlur={(e) => {
+							pressRef.current = null
 							setOpen(false)
 							setActive(-1)
 							commit(e.currentTarget.value)
@@ -399,7 +422,7 @@ export function ValueInput({
 							role='option'
 							aria-selected={o === current}
 							className={cn(
-								'cursor-pointer rounded-md px-2 py-1 text-xs',
+								'flex cursor-pointer items-baseline justify-between gap-2 rounded-md px-2 py-1 text-xs',
 								i === active && 'bg-accent',
 								o === current && 'font-semibold'
 							)}
@@ -408,7 +431,12 @@ export function ValueInput({
 							onMouseEnter={() => setActive(i)}
 							onClick={() => choose(o)}
 						>
-							{o}
+							<span>{o}</span>
+							{pxHint(prefix, o) && (
+								<span className='text-muted-foreground text-[10px] font-normal'>
+									{pxHint(prefix, o)}
+								</span>
+							)}
 						</li>
 					))}
 				</ul>

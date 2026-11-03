@@ -75,10 +75,19 @@ export function createApp(options: AppOptions = {}) {
 	)
 
 	app.post('/api/projects/create', async (c) => {
-		const data = (await body(c)) as { name?: unknown }
+		const data = (await body(c)) as {
+			name?: unknown
+			lang?: unknown
+		}
 		const dir = pathBody(data)
 		assertString(data.name, 'name')
-		const project = await store.create(dir, data.name.trim())
+		const project = await store.create(
+			dir,
+			data.name.trim(),
+			typeof data.lang === 'string' && /^[a-z]{2,3}$/.test(data.lang)
+				? data.lang
+				: undefined
+		)
 		await addRecent(recentFile, {
 			path: project.path,
 			name: data.name.trim(),

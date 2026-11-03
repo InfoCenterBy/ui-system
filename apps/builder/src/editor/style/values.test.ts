@@ -16,6 +16,7 @@ import {
 	parseColorUtility,
 	parseValueInput,
 	stripPrefix,
+	pxHint,
 } from './values'
 
 describe('spacing values', () => {
@@ -147,5 +148,29 @@ describe('custom colors', () => {
 	it('expands short hex for the picker', () => {
 		expect(hexForPicker('#abc')).toBe('#aabbcc')
 		expect(hexForPicker('#11223344')).toBe('#112233')
+	})
+})
+
+describe('pixel hints', () => {
+	it('turns spacing steps into pixels', () => {
+		expect(pxHint('p', '4')).toBe('16px')
+		expect(pxHint('m', '0.5')).toBe('2px')
+		expect(pxHint('m', '-2')).toBe('-8px')
+		expect(pxHint('w', '0')).toBe('0px')
+	})
+
+	it('knows font and container sizes', () => {
+		expect(pxHint('text', 'lg')).toBe('18px')
+		expect(pxHint('text', '4')).toBeNull()
+		expect(pxHint('max-w', '7xl')).toBe('1280px')
+		expect(pxHint('max-w', '4')).toBe('16px')
+	})
+
+	it('converts rem and skips values with no fixed size', () => {
+		expect(pxHint('w', '[1.5rem]')).toBe('24px')
+		expect(pxHint('w', '[18px]')).toBeNull()
+		expect(pxHint('w', '1/2')).toBeNull()
+		expect(pxHint('w', 'full')).toBeNull()
+		expect(pxHint('max-w', 'prose')).toBeNull()
 	})
 })

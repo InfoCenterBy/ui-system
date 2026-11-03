@@ -92,6 +92,8 @@ export function SectionsPanel() {
 	const css = usePresetCss()
 	const searching = query.trim() !== ''
 
+	// Inserted presets get the local placeholder instead of stock photos
+
 	const groups = useMemo(
 		() => groupSections(sectionCategories, sectionPresets, query),
 		[query]

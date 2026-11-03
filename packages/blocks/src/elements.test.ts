@@ -63,11 +63,11 @@ describe('element library', () => {
 
 	it('wraps several roots and labels them with the component name', () => {
 		const [root] = rootsOf(
-			getElementVariant('button/colors')!.html
+			getElementVariant('badge/in-button')!.html
 		) as ElementNode[]
-		expect(root.label).toBe('Button')
+		expect(root.label).toBe('Badge')
 		expect(root.classes).toBe('flex flex-wrap items-center gap-2')
-		expect(root.children.length).toBe(8)
+		expect(root.children.length).toBeGreaterThan(1)
 		const [accordion] = rootsOf(
 			getElementVariant('accordion/default')!.html
 		) as ElementNode[]
@@ -122,5 +122,76 @@ describe('element library', () => {
 		const calendar = getElementVariant('calendar/in-dropdown')!.html
 		expect(calendar).toContain('calendar-date')
 		expect(calendar).not.toContain('onchange')
+	})
+
+	it('marks the items of dropdowns, accordions, menus, steps and tables', () => {
+		const repeatsOf = (id: string) => {
+			const groups: Record<string, number> = {}
+			walk(rootsOf(getElementVariant(id)!.html), (n) => {
+				if (isElement(n) && n.repeat)
+					groups[n.repeat] = (groups[n.repeat] ?? 0) + 1
+			})
+			return groups
+		}
+		for (const id of [
+			'dropdown/details',
+			'dropdown/hover',
+			'dropdown/popover',
+		])
+			expect(repeatsOf(id)).toEqual({ li: 2 })
+		expect(repeatsOf('accordion/default')).toEqual({ collapse: 3 })
+		expect(repeatsOf('accordion/joined')).toEqual({ collapse: 3 })
+		// The title entries stay out of the group
+		expect(repeatsOf('menu/with-title')).toEqual({ li: 3 })
+		expect(repeatsOf('menu/submenu').li).toBe(8)
+		expect(repeatsOf('steps/default')).toEqual({ step: 4 })
+		expect(repeatsOf('table/default')).toEqual({ tr: 3 })
+		// Tab and panel pairs cannot be duplicated one by one
+		expect(repeatsOf('tabs/with-content')).toEqual({})
+		expect(repeatsOf('tabs/border')).toEqual({ tab: 3 })
+		expect(getElementVariant('menu/default')!.html).toContain(
+			'data-repeat="li"'
+		)
+	})
+
+	it('hides variants that only show a range of colors, sizes or positions', () => {
+		for (const id of [
+			'button/colors',
+			'button/sizes',
+			'badge/colors',
+			'tooltip/positions',
+			'tabs/sizes',
+			'card/sizes',
+			'chat/colors',
+			'navbar/colors',
+		])
+			expect(getElementVariant(id)).toBeUndefined()
+		expect(getElementVariant('loading/types')).toBeDefined()
+	})
+
+	it('keeps the first instance of single variants without a wrapper', () => {
+		for (const id of [
+			'button/soft',
+			'button/shapes',
+			'badge/styles',
+			'alert/dash',
+			'dropdown/positions',
+			'progress/default',
+			'stack/directions',
+			'loading/types',
+			'mask/shapes',
+			'megamenu/sizes',
+		]) {
+			const roots = rootsOf(getElementVariant(id)!.html) as ElementNode[]
+			expect(roots).toHaveLength(1)
+			expect(roots[0].classes).not.toMatch(/flex/)
+		}
+	})
+
+	it('never makes the root of an element a repeat item', () => {
+		for (const v of variants) {
+			const [root] = rootsOf(v.html) as ElementNode[]
+			expect(root.repeat).toBeUndefined()
+		}
 	})
 })

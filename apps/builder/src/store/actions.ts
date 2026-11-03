@@ -17,6 +17,7 @@ import {
 	parseSection,
 	prepareInsert,
 	randomId,
+	replaceDemoImages,
 	removeNode,
 	removeRepeatItem,
 	sectionOf,
@@ -27,10 +28,12 @@ import {
 	type ElementNode,
 	type ElementPatch,
 	type NodeId,
+	type SectionPreset,
 	type SlotKind,
 	type TreeNode,
 } from '@ui-system/core'
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
+import { canBecomeLink } from '@/editor/properties/linkable'
 import { scopeOf } from '@/editor/canvas/nodes'
 import { api } from '@/api'
 import { t } from '@/i18n'
@@ -38,6 +41,7 @@ import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
 import { useNav } from '@/editor/navigator/navState'
 import { useProject } from '@/store/project'
+import { addSlides, moveSlide, removeSlide, slideImage } from '@/store/carousel'
 
 type PartialName = 'header' | 'footer'
 
@@ -148,10 +152,22 @@ const editNode = (
 		{ mergeKey }
 	)
 
+// The server always writes the placeholder under this name
+const PLACEHOLDER_SRC = 'assets/placeholder.svg'
+
+// Section from a preset, demo photos point at the local placeholder; the file is written in the background
+const presetSection = (preset: SectionPreset) => {
+	const section = parseSection(preset)
+	const before = JSON.stringify(section)
+	replaceDemoImages([section], PLACEHOLDER_SRC)
+	if (JSON.stringify(section) !== before) void placeholderPath()
+	return section
+}
+
 export const addSection = (presetId: string, index?: number) => {
 	const preset = getSectionPreset(presetId)
 	if (!preset) throw new Error(`Unknown section ${presetId}`)
-	const section = parseSection(preset)
+	const section = presetSection(preset)
 	useDocument.getState().edit(`Add ${preset.name}`, (draft) => {
 		const sections = draft.pages[pageId()].sections
 		sections.splice(index ?? sections.length, 0, section)
@@ -186,6 +202,47 @@ export const duplicateSection = (id: NodeId) => {
 	)
 	if (copyId) useProject.getState().select(copyId)
 }
+
+const editCarousel = (
+	label: string,
+	carouselId: NodeId,
+	change: (carousel: ElementNode) => void
+) =>
+	editNode(
+		label,
+		carouselId,
+		(list) => {
+			const carousel = findElement(list, carouselId)
+			if (carousel) change(carousel)
+		},
+		undefined,
+		inFreeScope
+	)
+
+export const addCarouselSlides = (carouselId: NodeId, sources: string[]) => {
+	let first: NodeId | null = null
+	editCarousel('Add slides', carouselId, (carousel) => {
+		const added = addSlides(carousel, sources, randomId)
+		first = (added[0] && slideImage(added[0])?.id) ?? added[0]?.id ?? null
+	})
+	if (first) useProject.getState().select(first)
+}
+
+export const removeCarouselSlide = (carouselId: NodeId, slideId: NodeId) => {
+	editCarousel('Remove slide', carouselId, (carousel) =>
+		removeSlide(carousel, slideId)
+	)
+	useProject.getState().select(carouselId)
+}
+
+export const moveCarouselSlide = (
+	carouselId: NodeId,
+	slideId: NodeId,
+	step: -1 | 1
+) =>
+	editCarousel('Move slide', carouselId, (carousel) =>
+		moveSlide(carousel, slideId, step)
+	)
 
 export const deleteNode = (id: NodeId) => {
 	editNode(
@@ -230,6 +287,23 @@ export const patchElement = (id: NodeId, patch: ElementPatch, label = 'Edit') =>
 		inFreeScope
 	)
 
+// A plain button becomes an anchor with the same classes and children, one undo step
+export const convertToLink = (id: NodeId) =>
+	editNode(
+		'Make it a link',
+		id,
+		(list) => {
+			const node = findElement(list, id)
+			if (!node || node.instance || !canBecomeLink(node)) return
+			node.tag = 'a'
+			delete node.attrs.type
+			delete node.attrs.disabled
+			node.attrs.href = '#'
+		},
+		undefined,
+		inFreeScope
+	)
+
 export const addItem = (id: NodeId) => {
 	let copyId: NodeId | null = null
 	editNode('Add item', id, (list) => {
@@ -251,7 +325,7 @@ export const setPartial = (name: PartialName, presetId: string | null) => {
 	const preset = presetId ? getSectionPreset(presetId) : null
 	if (presetId && !preset) throw new Error(`Unknown section ${presetId}`)
 	useDocument.getState().edit(`Set ${name}`, (draft) => {
-		draft.partials[name] = preset ? parseSection(preset) : null
+		draft.partials[name] = preset ? presetSection(preset) : null
 	})
 }
 
@@ -321,7 +395,7 @@ export const switchVariant = (sectionId: NodeId, presetId: string) => {
 		const sections = draft.pages[pageId()].sections
 		const index = sections.findIndex((s) => s.id === sectionId)
 		if (index < 0) return
-		const next = parseSection(preset)
+		const next = presetSection(preset)
 		const from = slotsByKind(sections[index])
 		const to = slotsByKind(next)
 		for (const kind of ['text', 'rich', 'link'] as const) {
@@ -371,41 +445,45 @@ export const fillMenuWithPages = () =>
 	useDocument.getState().edit('Fill menu with pages', (draft) => {
 		const header = draft.partials.header
 		if (!header) return
-		let first: ElementNode | null = null
+		// One template per sibling list: a header may hold a desktop and a mobile menu
+		const templates: ElementNode[] = []
+		const lists = new Set<TreeNode[]>()
 		walk([header], (node) => {
-			if (!first && isElement(node) && node.repeat) {
-				first = node
-				return false
-			}
+			if (!isElement(node) || !node.repeat) return
+			const at = locate([header], node.id)
+			if (!at || lists.has(at.list)) return
+			lists.add(at.list)
+			templates.push(node)
+			return false
 		})
-		const template = first as ElementNode | null
-		if (!template) return
-		const at = locate([header], template.id)
-		if (!at) return
-		const group = template.repeat
-		const items = draft.site.pages.flatMap((id) => {
-			const page = draft.pages[id]
-			if (!page) return []
-			const item = cloneNode(template, randomId)
-			walk([item], (node) => {
-				if (isElement(node) && node.slot === 'link') {
-					node.attrs.href = pageHref(page.slug)
-					node.children = [
-						{ id: randomId(), type: 'text', text: page.name },
-					]
-				}
+		for (const template of templates) {
+			const at = locate([header], template.id)
+			if (!at) continue
+			const group = template.repeat
+			const items = draft.site.pages.flatMap((id) => {
+				const page = draft.pages[id]
+				if (!page) return []
+				const item = cloneNode(template, randomId)
+				walk([item], (node) => {
+					if (isElement(node) && node.slot === 'link') {
+						node.attrs.href = pageHref(page.slug)
+						node.children = [
+							{ id: randomId(), type: 'text', text: page.name },
+						]
+					}
+				})
+				return [item]
 			})
-			return [item]
-		})
-		// Old items of the group are replaced in place by the page links
-		const kept = at.list.filter(
-			(node) => !(isElement(node) && node.repeat === group)
-		)
-		const insertAt = at.list.findIndex(
-			(node) => isElement(node) && node.repeat === group
-		)
-		at.list.splice(0, at.list.length, ...kept)
-		at.list.splice(insertAt, 0, ...items)
+			// Old items of the group are replaced in place by the page links
+			const insertAt = at.list.findIndex(
+				(node) => isElement(node) && node.repeat === group
+			)
+			const kept = at.list.filter(
+				(node) => !(isElement(node) && node.repeat === group)
+			)
+			at.list.splice(0, at.list.length, ...kept)
+			at.list.splice(insertAt, 0, ...items)
+		}
 	})
 
 // Unlocked sections are edited as a free tree of elements
@@ -456,14 +534,16 @@ let placeholder: {
 	project: string | null
 	path: Promise<string | undefined>
 } | null = null
-const placeholderPath = () => {
+export const placeholderPath = () => {
 	const project = useProject.getState().projectPath
 	if (!placeholder || placeholder.project !== project) {
-		const path = api.placeholder().then(
-			(r) => r.path,
-			() => undefined
-		)
-		placeholder = { project, path }
+		placeholder = {
+			project,
+			path: api.placeholder().then(
+				(r) => r.path,
+				() => undefined
+			),
+		}
 	}
 	return placeholder.path
 }

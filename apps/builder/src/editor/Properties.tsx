@@ -28,7 +28,11 @@ import {
 	FooterPositionField,
 	HeaderPositionField,
 } from '@/editor/properties/PartialLayout'
+import { CarouselProperties } from '@/editor/properties/CarouselProperties'
+import { ButtonProperties } from '@/editor/properties/ButtonProperties'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
+import { carouselOf, slidesOf } from '@/store/carousel'
+import { OptionsProperties } from '@/editor/properties/OptionsProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
 import { ClassField } from '@/editor/style/ClassField'
 import { StylePanel } from '@/editor/style/StylePanel'
@@ -217,10 +221,21 @@ export function Properties() {
 			? node
 			: ancestors.findLast((a) => a.attrs[COUNTDOWN_ATTR] !== undefined)
 	// The master root has no siblings, so it is not a repeat item there
+	const carousel = free ? carouselOf(roots, node.id) : null
+	// Slides have their own list, it also keeps slide ids and arrows in step
 	const item =
-		repeatNode && !(editing && topLevelOf(roots, repeatNode.id))
+		repeatNode &&
+		!(editing && topLevelOf(roots, repeatNode.id)) &&
+		!(carousel && slidesOf(carousel).includes(repeatNode))
 			? repeatNode
 			: undefined
+	// Any picture where the structure is free, not only marked image slots
+	const image =
+		node.slot === 'image' || (free && node.tag.toLowerCase() === 'img')
+
+	// Slot links already have the link panel
+	const buttonLike =
+		!node.slot && ['a', 'button'].includes(node.tag.toLowerCase())
 
 	return (
 		<aside className='flex h-full flex-col overflow-y-auto'>
@@ -253,7 +268,8 @@ export function Properties() {
 				{owner && node.slot && !node.instance && (
 					<OverrideRow node={node} instance={owner} />
 				)}
-				{node.slot === 'image' && <ImageProperties node={node} />}
+				{image && <ImageProperties node={node} />}
+				{carousel && <CarouselProperties carousel={carousel} />}
 				{node.slot === 'link' && <LinkProperties node={node} />}
 				{(node.slot === 'text' || node.slot === 'rich') && (
 					<p className='text-muted-foreground text-sm'>
@@ -277,6 +293,8 @@ export function Properties() {
 						<Trash2Icon /> {t('common.delete')}
 					</Button>
 				)}
+				{free && buttonLike && <ButtonProperties node={node} />}
+				{free && <OptionsProperties node={node} />}
 				{free && <ClassField node={node} />}
 				{canCreate && <CreateComponent key={node.id} node={node} />}
 			</div>

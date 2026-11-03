@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LangSwitch } from '@/components/LangSwitch'
 import { useTranslation } from 'react-i18next'
+import { currentLocale } from '@/i18n'
 import { useProject } from '@/store/project'
 
 export function StartScreen() {
@@ -38,7 +39,7 @@ export function StartScreen() {
 	function create() {
 		if (!creating) return setCreating(true)
 		if (!name.trim()) return void toast.error(t('start.enterName'))
-		void run(() => api.create(path, name.trim()))
+		void run(() => api.create(path, name.trim(), currentLocale()))
 	}
 
 	return (

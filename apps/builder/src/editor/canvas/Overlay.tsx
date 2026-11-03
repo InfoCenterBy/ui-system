@@ -36,12 +36,15 @@ function useFrameTick(doc: Document | null) {
 			attributes: true,
 			characterData: true,
 		})
+		// Images change size when they finish loading or get a new source
+		doc.addEventListener('load', bump, true)
 		win.addEventListener('scroll', bump, true)
 		win.addEventListener('resize', bump)
 		return () => {
 			win.cancelAnimationFrame(raf)
 			resize.disconnect()
 			mutations.disconnect()
+			doc.removeEventListener('load', bump, true)
 			win.removeEventListener('scroll', bump, true)
 			win.removeEventListener('resize', bump)
 		}

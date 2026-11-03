@@ -1,8 +1,33 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { walk, type ElementNode, type Page, type Site } from '@ui-system/core'
-import { fillMenuWithPages, placePreset } from '@/store/actions'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+	findElement,
+	serializeHtml,
+	walk,
+	type ElementNode,
+	type Page,
+	type Site,
+} from '@ui-system/core'
+import { sectionPresets } from '@ui-system/blocks/sections'
+import {
+	addSection,
+	fillMenuWithPages,
+	placeholderPath,
+	placePreset,
+} from '@/store/actions'
 import { useDocument } from '@/store/document'
 import { useProject } from '@/store/project'
+
+vi.mock('@/api', () => ({
+	api: {
+		placeholder: () => Promise.resolve({ path: 'assets/placeholder.svg' }),
+	},
+}))
+
+const PAGES = [
+	['index.html', 'Главная'],
+	['about.html', 'О нас'],
+	['blog.html', 'Блог'],
+]
 
 const page = (id: string, slug: string, name: string): Page => ({
 	id,
@@ -73,15 +98,33 @@ describe('shared sections', () => {
 	})
 
 	it('fills the header menu with the site pages in order', () => {
-		placePreset('header-cta')
+		placePreset('header-simple')
 		fillMenuWithPages()
-		expect(links(doc().partials.header!)).toEqual([
-			['index.html', 'Главная'],
-			['about.html', 'О нас'],
-			['blog.html', 'Блог'],
-		])
+		expect(links(doc().partials.header!)).toEqual(PAGES)
 		useDocument.getState().undo()
 		expect(links(doc().partials.header!)).toHaveLength(3)
 		expect(links(doc().partials.header!)[1]).toEqual(['#', 'About'])
+	})
+
+	it('fills the desktop and the mobile menu of a header', () => {
+		for (const id of ['header-cta', 'header-dark']) {
+			placePreset(id)
+			fillMenuWithPages()
+			expect(links(doc().partials.header!)).toEqual([...PAGES, ...PAGES])
+		}
+	})
+
+	it('swaps demo photos of inserted presets for the local placeholder', () => {
+		expect(
+			sectionPresets.some((p) => p.html.includes('img.daisyui.com'))
+		).toBe(true)
+		return placeholderPath().then(() => {
+			for (const preset of sectionPresets) {
+				if (!preset.html.includes('img.daisyui.com')) continue
+				const id = addSection(preset.id)
+				const section = findElement(doc().pages.home.sections, id)!
+				expect(serializeHtml([section])).not.toContain('daisyui.com')
+			}
+		})
 	})
 })

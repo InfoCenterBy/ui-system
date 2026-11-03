@@ -42,6 +42,11 @@ export const frameSrcdoc = () => `<!doctype html>
 	@media (prefers-reduced-motion: reduce) { #page[data-header="autohide"] > [${SHELL_ATTR}="header"] { transition: none; } }
 	#page[data-header="fixed"] > [${SHELL_ATTR}="header"] { position: fixed; inset-inline: 0; top: 0; z-index: 40; }
 	[data-empty] { display: grid; place-items: center; min-height: 60vh; color: #888; font: 14px system-ui; }
+	.ProseMirror { position: relative; word-wrap: break-word; white-space: pre-wrap; white-space: break-spaces; font-variant-ligatures: none; }
+	.ProseMirror pre { white-space: pre-wrap; }
+	.ProseMirror li { position: relative; }
+	.ProseMirror-hideselection *::selection { background: transparent; }
+	.ProseMirror-hideselection { caret-color: transparent; }
 	[contenteditable] { outline: none; cursor: text; }
 	a, button, label { cursor: default; }
 	[${EMPTY_SLOT_ATTR}] { position: relative; min-height: 6rem; outline: 1px dashed #94a3b8; outline-offset: -1px; }

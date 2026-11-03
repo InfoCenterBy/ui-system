@@ -12,7 +12,13 @@ const textOf = (nodes: TreeNode[]): string =>
 
 const fileOf = (slug: string) => `${slug}.html`
 
-export function LinkProperties({ node }: { node: ElementNode }) {
+export function LinkProperties({
+	node,
+	showText = true,
+}: {
+	node: ElementNode
+	showText?: boolean
+}) {
 	const { t } = useTranslation()
 	const site = useDocument((s) => s.doc?.site)
 	const pages = useDocument((s) => s.doc?.pages)
@@ -28,20 +34,22 @@ export function LinkProperties({ node }: { node: ElementNode }) {
 
 	return (
 		<div className='flex flex-col gap-3'>
-			<Field label={t('link.text')}>
-				<Input
-					value={textOf(node.children)}
-					onChange={(e) =>
-						setSlotContent(node.id, [
-							{
-								id: randomId(),
-								type: 'text',
-								text: e.target.value,
-							},
-						])
-					}
-				/>
-			</Field>
+			{showText && (
+				<Field label={t('link.text')}>
+					<Input
+						value={textOf(node.children)}
+						onChange={(e) =>
+							setSlotContent(node.id, [
+								{
+									id: randomId(),
+									type: 'text',
+									text: e.target.value,
+								},
+							])
+						}
+					/>
+				</Field>
+			)}
 			<Field label={t('link.to')}>
 				<NativeSelect
 					value={page ? href : EXTERNAL}

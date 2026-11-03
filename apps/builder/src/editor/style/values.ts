@@ -91,6 +91,59 @@ export const parseValueInput = (
 	return arbitraryValue(text)
 }
 
+// Tailwind 4 defaults with a 16px root font size
+const ROOT_PX = 16
+const SPACING_PX = 4
+const FONT_SIZE_PX: Record<string, number> = {
+	xs: 12,
+	sm: 14,
+	base: 16,
+	lg: 18,
+	xl: 20,
+	'2xl': 24,
+	'3xl': 30,
+	'4xl': 36,
+	'5xl': 48,
+	'6xl': 60,
+	'7xl': 72,
+	'8xl': 96,
+	'9xl': 128,
+}
+const CONTAINER_PX: Record<string, number> = {
+	'3xs': 256,
+	'2xs': 288,
+	xs: 320,
+	sm: 384,
+	md: 448,
+	lg: 512,
+	xl: 576,
+	'2xl': 672,
+	'3xl': 768,
+	'4xl': 896,
+	'5xl': 1024,
+	'6xl': 1152,
+	'7xl': 1280,
+}
+
+const px = (n: number) => `${Number(n.toFixed(2))}px`
+
+// Pixel size of a control value ("4" for p-4 gives "16px"), null when it has none or is typed in px
+export const pxHint = (prefix: string, value: string): string | null => {
+	const text = value.replace(/^(-?)\[(.*)\]$/, '$1$2')
+	const rem = /^(-?\d*\.?\d+)rem$/.exec(text)
+	if (rem) return px(Number(rem[1]) * ROOT_PX)
+	if (prefix === 'text') {
+		return text in FONT_SIZE_PX ? px(FONT_SIZE_PX[text]) : null
+	}
+	if (prefix === 'max-w' && text in CONTAINER_PX) {
+		return px(CONTAINER_PX[text])
+	}
+	if (/^-?\d*\.?\d+$/.test(text) && text === value) {
+		return px(Number(text) * SPACING_PX)
+	}
+	return null
+}
+
 export interface ColorValue {
 	token: string
 	opacity: number | null

@@ -5,14 +5,14 @@ import { useDocument } from '@/store/document'
 import { updateSite } from '@/store/pageActions'
 import { useTranslation } from 'react-i18next'
 
-const LANGS = ['ru', 'en', 'be', 'uk', 'kk', 'de']
+const LANGS = ['ru', 'en', 'be', 'uk', 'kk', 'de'] as const
 const OTHER = 'other'
 
 export function GeneralSettings() {
 	const { t } = useTranslation()
 	const site = useDocument((s) => s.doc?.site)
 	const [other, setOther] = useState(
-		() => !!site && !LANGS.includes(site.lang)
+		() => !!site && !(LANGS as readonly string[]).includes(site.lang)
 	)
 	if (!site) return null
 	const selected = other ? OTHER : site.lang
@@ -38,7 +38,7 @@ export function GeneralSettings() {
 				>
 					{LANGS.map((l) => (
 						<option key={l} value={l}>
-							{l}
+							{t(`siteLang.${l}`)} ({l})
 						</option>
 					))}
 					<option value={OTHER}>{t('settings.langOther')}</option>

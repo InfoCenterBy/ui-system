@@ -74,8 +74,8 @@ export interface ExportResult {
 
 export const api = {
 	recent: () => request<RecentProject[]>('GET', '/api/projects/recent'),
-	create: (path: string, name: string) =>
-		request<Project>('POST', '/api/projects/create', { path, name }),
+	create: (path: string, name: string, lang?: string) =>
+		request<Project>('POST', '/api/projects/create', { path, name, lang }),
 	open: (path: string) =>
 		request<Project>('POST', '/api/projects/open', { path }),
 	close: () => request<{ ok: true }>('POST', '/api/projects/close'),

@@ -307,6 +307,32 @@ const en = {
 		stickyHint:
 			'On short pages the footer stays at the bottom of the window instead of right after the content.',
 	},
+	options: {
+		title: 'Options',
+		off: 'Off',
+		on: 'On',
+		color: 'Color',
+		size: 'Size',
+		style: 'Style',
+		shape: 'Shape',
+		state: 'Active',
+		position: 'Position',
+		align: 'Align',
+		type: 'Type',
+		direction: 'Direction',
+		placement: 'Placement',
+		layout: 'Side layout',
+		icon: 'Icon',
+		effect: 'Effect',
+		hover: 'On hover',
+		open: 'Open',
+		compact: 'Compact',
+		zebra: 'Zebra rows',
+		pinRows: 'Pin rows',
+		pinCols: 'Pin columns',
+		horizontal: 'Horizontal',
+		vertical: 'Vertical',
+	},
 	variant: {
 		label: 'Variant',
 	},
@@ -326,6 +352,13 @@ const en = {
 	repeat: {
 		position: 'Item {{n}} of {{total}}',
 		add: 'Add item',
+	},
+	carousel: {
+		title: 'Slides ({{count}})',
+		slide: 'Slide {{n}}',
+		addPhotos: 'Add photos',
+		fromLibrary: 'From uploaded',
+		hint: 'Each photo becomes a new slide, a copy of the last one. Click a slide to edit its picture and alt text.',
 	},
 	assets: {
 		uploadFailed: 'Upload failed',
@@ -383,6 +416,8 @@ const en = {
 		left: 'Left',
 		width: 'Width',
 		maxWidth: 'Max width',
+		maxWidthLimits: 'Limited by {{value}}',
+		removeMaxWidth: 'Remove max width',
 		height: 'Height',
 		minHeight: 'Min height',
 		alignLeft: 'Left',
@@ -409,6 +444,14 @@ const en = {
 		variant: 'variant',
 		loading: 'Loading suggestions...',
 		unavailable: 'Suggestions are not available',
+	},
+	siteLang: {
+		ru: 'Russian',
+		en: 'English',
+		be: 'Belarusian',
+		uk: 'Ukrainian',
+		kk: 'Kazakh',
+		de: 'German',
 	},
 	settings: {
 		title: 'Site settings',
@@ -511,6 +554,19 @@ const en = {
 		parentInstance: 'Parent is part of an instance',
 		onlySection: 'Only section components go in as a section',
 		request: 'Request failed ({{status}})',
+	},
+	colorField: {
+		invalid: 'Not a color. Use oklch(), hex, rgb() or hsl()',
+	},
+	imageAlt: {
+		stale: 'Update the description for the new image',
+	},
+	linkable: {
+		text: 'Text',
+		complexText:
+			'Double-click the element on the canvas to edit its content',
+		makeLink: 'Make it a link',
+		makeLinkHint: 'Turns the button into a link with the same look',
 	},
 } as const
 

@@ -9,7 +9,7 @@ import { OPEN_ATTR } from '@/editor/canvas/frame'
 import { useProject } from '@/store/project'
 
 const REVEAL =
-	'dialog.modal, [popover], details.dropdown, .dropdown:not([popover]):not(details)'
+	'dialog.modal, [popover], details.dropdown, .dropdown:not([popover]):not(details), .collapse'
 // Not in the DOM typings yet
 type WithSource = HTMLElement & {
 	showPopover(options: { source: HTMLElement | null }): void
@@ -54,6 +54,8 @@ const setOpen = (el: HTMLElement, open: boolean) => {
 	} else if (tag === 'dialog' || tag === 'details') {
 		if (open) el.setAttribute('open', '')
 		else el.removeAttribute('open')
+	} else if (el.classList.contains('collapse')) {
+		el.classList.toggle('collapse-open', open)
 	} else {
 		el.classList.toggle('dropdown-open', open)
 	}
@@ -114,6 +116,13 @@ export function useRevealOpen(doc: Document | null, roots: ElementNode[]) {
 				!findElement([owner], selected!.id)
 			)
 				continue
+			// One accordion item opens, the one holding the selection
+			if (
+				el.classList.contains('collapse') &&
+				node.id !== selected!.id &&
+				!findElement([node], selected!.id)
+			)
+				continue
 			if (!isPopover(el)) {
 				wanted.add(el)
 				continue
@@ -128,6 +137,18 @@ export function useRevealOpen(doc: Document | null, roots: ElementNode[]) {
 				popovers.set(owner.id, { el, inside })
 		}
 		for (const { el } of popovers.values()) wanted.add(el)
+		// Radio tabs show the panel holding the selection
+		const panel = selected
+			? doc
+					.querySelector(
+						`[${NODE_ID_ATTR}="${CSS.escape(selected.id)}"]`
+					)
+					?.closest('.tab-content')
+			: null
+		const tab = panel?.previousElementSibling
+		// The canvas is another window, so no instanceof checks
+		if (tab?.tagName === 'INPUT' && tab.classList.contains('tab'))
+			(tab as HTMLInputElement).checked = true
 		for (const el of all) if (!wanted.has(el)) setOpen(el, false)
 		for (const el of wanted) setOpen(el, true)
 		const frame = requestAnimationFrame(() =>
