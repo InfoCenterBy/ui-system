@@ -4,10 +4,11 @@
 	"type": "module",
 	"packageManager": "pnpm@11.10.0",
 	"scripts": {
-		"dev": "pnpm --filter catalog dev",
+		"dev": "node scripts/dev.mjs",
 		"build": "pnpm --filter catalog build",
 		"preview": "pnpm --filter catalog preview",
-		"builder": "pnpm --filter builder dev",
+		"builder": "node scripts/dev.mjs builder",
+		"catalog": "node scripts/dev.mjs catalog",
 		"test": "pnpm -r test",
 		"lint": "eslint .",
 		"format": "prettier --write .",

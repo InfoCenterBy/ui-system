@@ -17,6 +17,8 @@ pnpm install
 pnpm dev
 ```
 
+`pnpm dev` asks what to run: the UI kit (catalog) or the site builder. Pick with the arrow keys or a number, or skip the menu with `pnpm dev builder` / `pnpm dev catalog`. One Ctrl+C stops every process.
+
 ## Repository layout
 
 This is a pnpm workspace.
@@ -31,7 +33,9 @@ This is a pnpm workspace.
 
 | Script              | What it does                                |
 | ------------------- | ------------------------------------------- |
-| `pnpm dev`          | Start the catalog dev server                |
+| `pnpm dev`          | Choose the catalog or the builder and start |
+| `pnpm catalog`      | Start the catalog dev server                |
+| `pnpm builder`      | Start the site builder (UI and API)         |
 | `pnpm build`        | Build the catalog to `apps/catalog/dist`    |
 | `pnpm preview`      | Serve the production build locally          |
 | `pnpm lint`         | Run ESLint                                  |

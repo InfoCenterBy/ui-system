@@ -27,3 +27,6 @@ dist-ssr
 
 # Local builder projects made while trying the app
 apps/builder/test/
+
+# Playwright MCP screenshots and traces
+.playwright-mcp
