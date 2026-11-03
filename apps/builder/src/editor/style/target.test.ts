@@ -31,3 +31,12 @@ describe('target text', () => {
 		expect(targetHint('md', 1280).text).toContain('md and wider')
 	})
 })
+
+describe('overriddenAt in a state', () => {
+	it('only counts state classes', () => {
+		expect(overriddenAt('md:p-4', 'padding', '', 'md', 'hover')).toBeNull()
+		expect(overriddenAt('md:hover:p-4', 'padding', '', 'md', 'hover')).toBe(
+			'md'
+		)
+	})
+})

@@ -1,5 +1,6 @@
 import {
 	addRepeatItem,
+	applyClassesToItems,
 	ancestorsOf,
 	cloneNode,
 	createComponent,
@@ -40,6 +41,7 @@ import { t } from '@/i18n'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
 import { useNav } from '@/editor/navigator/navState'
+import { fillMenuDraft } from '@/store/menuSync'
 import { useProject } from '@/store/project'
 import { addSlides, moveSlide, removeSlide, slideImage } from '@/store/carousel'
 
@@ -278,11 +280,45 @@ export const setAttribute = (id: NodeId, name: string, value: string | null) =>
 		`attr:${id}:${name}`
 	)
 
+// Points a button or link at a popup in one undo step, naming the popup when it has no id
+export const linkPopup = (
+	triggerId: NodeId,
+	attrs: Record<string, string | null>,
+	named?: { nodeId: NodeId; id: string }
+) =>
+	useDocument.getState().edit('Open popup', (draft) => {
+		const list = listOf(draft, triggerId)
+		const trigger = list && findElement(list, triggerId)
+		// Link slots change their href in locked sections too
+		if (
+			!trigger ||
+			(trigger.slot !== 'link' && !inFreeScope(list, triggerId))
+		)
+			return
+		for (const [name, value] of Object.entries(attrs)) {
+			if (value === null) delete trigger.attrs[name]
+			else trigger.attrs[name] = value
+		}
+		const popupList = named && listOf(draft, named.nodeId)
+		const popup = popupList && findElement(popupList, named.nodeId)
+		if (popup && named) popup.attrs.id = named.id
+	})
+
 export const patchElement = (id: NodeId, patch: ElementPatch, label = 'Edit') =>
 	editNode(
 		label,
 		id,
 		(list) => updateElement(list, id, patch),
+		undefined,
+		inFreeScope
+	)
+
+// Copies the classes of a node inside a repeat item to the same place in the other items
+export const applyStylesToItems = (id: NodeId) =>
+	editNode(
+		'Apply styles to all items',
+		id,
+		(list) => applyClassesToItems(list, id),
 		undefined,
 		inFreeScope
 	)
@@ -438,53 +474,9 @@ export const placePreset = (presetId: string, index?: number) => {
 	return partial?.id ?? null
 }
 
-const pageHref = (slug: string) => `${slug}.html`
-
 // Rewrites the header menu so it lists the site pages in order
 export const fillMenuWithPages = () =>
-	useDocument.getState().edit('Fill menu with pages', (draft) => {
-		const header = draft.partials.header
-		if (!header) return
-		// One template per sibling list: a header may hold a desktop and a mobile menu
-		const templates: ElementNode[] = []
-		const lists = new Set<TreeNode[]>()
-		walk([header], (node) => {
-			if (!isElement(node) || !node.repeat) return
-			const at = locate([header], node.id)
-			if (!at || lists.has(at.list)) return
-			lists.add(at.list)
-			templates.push(node)
-			return false
-		})
-		for (const template of templates) {
-			const at = locate([header], template.id)
-			if (!at) continue
-			const group = template.repeat
-			const items = draft.site.pages.flatMap((id) => {
-				const page = draft.pages[id]
-				if (!page) return []
-				const item = cloneNode(template, randomId)
-				walk([item], (node) => {
-					if (isElement(node) && node.slot === 'link') {
-						node.attrs.href = pageHref(page.slug)
-						node.children = [
-							{ id: randomId(), type: 'text', text: page.name },
-						]
-					}
-				})
-				return [item]
-			})
-			// Old items of the group are replaced in place by the page links
-			const insertAt = at.list.findIndex(
-				(node) => isElement(node) && node.repeat === group
-			)
-			const kept = at.list.filter(
-				(node) => !(isElement(node) && node.repeat === group)
-			)
-			at.list.splice(0, at.list.length, ...kept)
-			at.list.splice(insertAt, 0, ...items)
-		}
-	})
+	useDocument.getState().edit('Fill menu with pages', fillMenuDraft)
 
 // Unlocked sections are edited as a free tree of elements
 export const setSectionLocked = (id: NodeId, locked: boolean) =>

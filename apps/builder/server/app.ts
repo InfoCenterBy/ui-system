@@ -1,15 +1,18 @@
 import { readFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { ensurePlaceholder, listAssets, saveUpload } from './assets'
 import { registerClassRoutes } from './classes'
-import { CssBuilder } from './css'
-import { exportSite, type Optimize } from './export'
+import { buildExportCss, CssBuilder } from './css'
+import { exportSite, writeCally, type Optimize } from './export'
 import { faceCss, toChoices, toSiteFonts } from './fontCss'
 import { registerFontRoutes, type FetchFn } from './fonts'
 import { HttpError } from './errors'
 import { resolveInside } from './fs-utils'
+import { CALLY_FILE, previewHtml, previewSiteAssets } from './preview'
 import { ProjectStore, type PartialName } from './project'
 import { addRecent, defaultRecentFile, readRecent } from './recent'
 import {
@@ -238,6 +241,65 @@ export function createApp(options: AppOptions = {}) {
 		}
 		const type = getMimeType(file) ?? 'application/octet-stream'
 		return c.body(new Uint8Array(data), 200, { 'Content-Type': type })
+	})
+
+	// The saved page as a visitor would see it, files come straight from the project
+	app.get('/api/preview/*', async (c) => {
+		const project = store.require()
+		let rel: string
+		try {
+			rel = decodeURIComponent(c.req.path.slice('/api/preview/'.length))
+		} catch {
+			throw new HttpError(400, 'Invalid path')
+		}
+		const noStore = { 'Cache-Control': 'no-store' }
+		if (rel === '' || rel.endsWith('.html')) {
+			const html = previewHtml(
+				project,
+				rel.replace(/.html$/, '') || 'index'
+			)
+			if (html === null) throw new HttpError(404, 'Page not found')
+			return c.html(html, 200, noStore)
+		}
+		if (rel === 'assets/site.css') {
+			const { classes } = previewSiteAssets(project)
+			const text = await buildExportCss(
+				classes,
+				project.site.theme,
+				project.site.fonts,
+				'../'
+			)
+			return c.body(text, 200, {
+				'Content-Type': 'text/css; charset=utf-8',
+				...noStore,
+			})
+		}
+		if (rel === 'assets/site.js') {
+			return c.body(previewSiteAssets(project).script, 200, {
+				'Content-Type': 'text/javascript; charset=utf-8',
+				...noStore,
+			})
+		}
+		if (rel === CALLY_FILE) {
+			const tmp = path.join(os.tmpdir(), 'ui-builder-preview-cally.js')
+			await writeCally(tmp)
+			return c.body(await readFile(tmp, 'utf8'), 200, {
+				'Content-Type': 'text/javascript; charset=utf-8',
+			})
+		}
+		if (!rel.startsWith('assets/'))
+			throw new HttpError(404, 'File not found')
+		const file = resolveInside(project.path, rel)
+		let data: Buffer
+		try {
+			data = await readFile(file)
+		} catch {
+			throw new HttpError(404, 'File not found')
+		}
+		return c.body(new Uint8Array(data), 200, {
+			'Content-Type': getMimeType(file) ?? 'application/octet-stream',
+			...noStore,
+		})
 	})
 
 	app.post('/api/project/export', async (c) => {

@@ -8,6 +8,8 @@ import {
 	removeClass,
 	resolveUtility,
 	setUtility,
+	usedStates,
+	hasGroupClass,
 } from './classes'
 
 describe('classes', () => {
@@ -58,10 +60,12 @@ describe('classes', () => {
 		expect(resolveUtility(classes, 'padding', 'lg')).toEqual({
 			utility: 'p-8',
 			from: 'md',
+			state: '',
 		})
 		expect(resolveUtility(classes, 'font-size', 'md')).toEqual({
 			utility: 'text-lg',
 			from: '',
+			state: '',
 		})
 		expect(resolveUtility(classes, 'margin', 'xl')).toBeNull()
 	})
@@ -83,5 +87,76 @@ describe('classes', () => {
 		expect(addClass('a b', 'c')).toBe('a b c')
 		expect(addClass('a b', 'a')).toBe('a b')
 		expect(removeClass('a  b c', 'b')).toBe('a c')
+	})
+
+	it('reads and writes variant chains of breakpoint and state', () => {
+		const classes = 'p-2 hover:p-4 md:hover:p-6 md:p-3'
+		expect(getUtility(classes, 'padding', '', 'hover')).toBe('p-4')
+		expect(getUtility(classes, 'padding', 'md', 'hover')).toBe('p-6')
+		expect(getUtility(classes, 'padding', 'md')).toBe('p-3')
+		expect(setUtility(classes, 'padding', 'md', 'p-8', 'hover')).toBe(
+			'p-2 hover:p-4 md:hover:p-8 md:p-3'
+		)
+		expect(setUtility('p-2', 'padding', 'md', 'p-8', 'focus')).toBe(
+			'p-2 md:focus:p-8'
+		)
+		expect(setUtility(classes, 'padding', 'md', null, 'hover')).toBe(
+			'p-2 hover:p-4 md:p-3'
+		)
+	})
+
+	it('resolves a state to its own value or the base value', () => {
+		expect(
+			resolveUtility('p-2 hover:p-4', 'padding', 'md', 'hover')
+		).toEqual({ utility: 'p-4', from: '', state: 'hover' })
+		expect(resolveUtility('p-2 md:p-3', 'padding', 'md', 'hover')).toEqual({
+			utility: 'p-3',
+			from: 'md',
+			state: '',
+		})
+		expect(resolveUtility('bg-primary', 'padding', '', 'hover')).toBeNull()
+	})
+
+	it('lists the states in use', () => {
+		expect(usedStates('p-2 md:hover:p-4 focus:bg-primary')).toEqual([
+			'hover',
+			'focus',
+		])
+		expect(usedStates('p-2 md:p-4')).toEqual([])
+	})
+
+	it('sorts the new groups', () => {
+		expect(groupOf('italic')).toBe('font-style')
+		expect(groupOf('tracking-wide')).toBe('letter-spacing')
+		expect(groupOf('uppercase')).toBe('text-transform')
+		expect(groupOf('absolute')).toBe('position')
+		expect(groupOf('-top-2')).toBe('top')
+		expect(groupOf('z-10')).toBe('z-index')
+		expect(groupOf('overflow-x-auto')).toBe('overflow-x')
+		expect(groupOf('aspect-video')).toBe('aspect-ratio')
+		expect(groupOf('object-cover')).toBe('object-fit')
+		expect(groupOf('object-left-top')).toBe('object-position')
+		expect(groupOf('border')).toBe('border-width')
+		expect(groupOf('border-2')).toBe('border-width')
+		expect(groupOf('border-dashed')).toBe('border-style')
+		expect(groupOf('border-primary/50')).toBe('border-color')
+		expect(groupOf('bg-linear-to-br')).toBe('gradient-direction')
+		expect(groupOf('from-primary')).toBe('gradient-from')
+		expect(groupOf('via-red-500')).toBe('gradient-via')
+		expect(groupOf('to-secondary')).toBe('gradient-to')
+		expect(groupOf('font-heading')).toBe('font-family')
+	})
+	it('sorts motion utilities and finds the group marker', () => {
+		expect(groupOf('transition')).toBe('transition')
+		expect(groupOf('transition-colors')).toBe('transition')
+		expect(groupOf('duration-200')).toBe('duration')
+		expect(groupOf('ease-in-out')).toBe('ease')
+		expect(groupOf('delay-75')).toBe('delay')
+		expect(groupOf('scale-105')).toBe('scale')
+		expect(groupOf('scale-x-50')).toBe(null)
+		expect(groupOf('-translate-y-1')).toBe('translate-y')
+		expect(groupOf('-rotate-3')).toBe('rotate')
+		expect(hasGroupClass('card group p-4')).toBe(true)
+		expect(hasGroupClass('group-hover:underline')).toBe(false)
 	})
 })

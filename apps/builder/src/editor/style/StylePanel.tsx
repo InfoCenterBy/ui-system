@@ -6,20 +6,39 @@ import {
 	AlignRightIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
+	CopyIcon,
+	ItalicIcon,
+	StrikethroughIcon,
+	UnderlineIcon,
 } from 'lucide-react'
 import {
 	BREAKPOINTS,
+	DEVICES,
+	GROUP_CLASS,
+	ancestorsOf,
+	hasGroupClass,
+	parseClass,
+	splitClasses,
 	breakpointFor,
+	readVisibility,
+	repeatPath,
+	setVisibility,
+	usedStates,
 	type Breakpoint,
+	type Device,
+	type State,
 	resolveUtility,
 	setUtility,
 	type ElementNode,
 	type UtilityGroup,
 } from '@ui-system/core'
 import { cn } from 'cn'
+import { Button } from '@/components/ui/button'
 import { useStyleTarget, targetHint, targetLabel } from '@/editor/style/target'
 import { useProject } from '@/store/project'
-import { setClasses } from '@/store/actions'
+import { applyStylesToItems, setClasses } from '@/store/actions'
+import { useRoots } from '@/editor/canvas/useRoots'
+import { labelOf, scopeOf } from '@/editor/canvas/nodes'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { alignCompanion, applyAlign, readLayout } from '@/editor/style/align'
 import {
@@ -82,7 +101,34 @@ const MAX_WIDTHS = [
 	'prose',
 ]
 
+const TRACKINGS = ['tighter', 'tight', 'normal', 'wide', 'wider', 'widest']
+const Z_INDEXES = ['auto', '0', '10', '20', '30', '40', '50']
+const OVERFLOWS = ['visible', 'hidden', 'auto', 'scroll', 'clip']
+const OBJECT_FITS = ['cover', 'contain', 'fill', 'none', 'scale-down']
+const OBJECT_POSITIONS = [
+	'center',
+	'top',
+	'bottom',
+	'left',
+	'right',
+	'left-top',
+	'right-top',
+	'left-bottom',
+	'right-bottom',
+]
+const POSITIONS = ['static', 'relative', 'absolute', 'fixed', 'sticky']
+const BORDER_WIDTHS = [
+	['border-0', '0'],
+	['border', '1'],
+	['border-2', '2'],
+	['border-4', '4'],
+	['border-8', '8'],
+]
+const BORDER_STYLES = ['solid', 'dashed', 'dotted', 'double', 'none']
+const GRADIENT_DIRECTIONS = ['t', 'tr', 'r', 'br', 'b', 'bl', 'l', 'tl']
+
 const SPACING = [...SPACING_STEPS] as string[]
+const INSETS = [...new Set(['auto', 'full', '1/2', ...SPACING])]
 const MARGIN_STEPS = [...SPACING, 'auto']
 const WIDTHS = ['auto', 'full', 'fit', 'screen', ...FRACTIONS, ...SPACING]
 const HEIGHTS = ['auto', 'full', 'fit', 'screen', ...SPACING]
@@ -119,16 +165,40 @@ const alignChoices = (): Choice[] => [
 	},
 ]
 
+const OPEN_KEY = 'builder.style.open'
+
+const readOpen = (): Record<string, boolean> => {
+	try {
+		return JSON.parse(localStorage.getItem(OPEN_KEY) ?? '{}') ?? {}
+	} catch {
+		return {}
+	}
+}
+
+const saveOpen = (id: string, open: boolean) => {
+	try {
+		localStorage.setItem(
+			OPEN_KEY,
+			JSON.stringify({ ...readOpen(), [id]: open })
+		)
+	} catch {
+		// Storage can be blocked, the group just does not remember
+	}
+}
+
+// Collapsible group, the open state is remembered per group
 function Section({
+	id,
 	title,
 	children,
 	open: initial = true,
 }: {
+	id: string
 	title: string
 	children: ReactNode
 	open?: boolean
 }) {
-	const [open, setOpen] = useState(initial)
+	const [open, setOpen] = useState(() => readOpen()[id] ?? initial)
 	const Icon = open ? ChevronDownIcon : ChevronRightIcon
 	return (
 		<section className='border-t'>
@@ -136,7 +206,10 @@ function Section({
 				type='button'
 				aria-expanded={open}
 				className='hover:bg-muted/50 flex w-full items-center gap-1 px-3 py-2 text-xs font-medium'
-				onClick={() => setOpen(!open)}
+				onClick={() => {
+					setOpen(!open)
+					saveOpen(id, !open)
+				}}
 			>
 				<Icon className='size-3.5' />
 				{title}
@@ -294,12 +367,59 @@ function AlignRow({
 	)
 }
 
+const deviceLabel = (device: Device) =>
+	({
+		phone: t('style.devicePhone'),
+		tablet: t('style.deviceTablet'),
+		desktop: t('style.deviceDesktop'),
+	})[device]
+
+// Hides or shows the element per device with display classes at base, md and lg
+function VisibilityRow({ ctx }: { ctx: StyleContext }) {
+	if (ctx.state) return null
+	const visible = readVisibility(ctx.classes)
+	return (
+		<div className='grid grid-cols-[6.25rem_1fr_1.25rem] items-center gap-x-2'>
+			<span className='text-muted-foreground truncate text-xs'>
+				{t('style.visibleOn')}
+			</span>
+			<div className='border-input flex overflow-hidden rounded-lg border'>
+				{DEVICES.map(({ device }) => (
+					<button
+						key={device}
+						type='button'
+						aria-pressed={visible[device]}
+						className={cn(
+							'h-7 min-w-0 flex-1 truncate px-1 text-xs not-first:border-l',
+							visible[device]
+								? 'text-primary-foreground bg-primary'
+								: 'hover:bg-muted text-muted-foreground line-through'
+						)}
+						onClick={() =>
+							setClasses(
+								ctx.id,
+								setVisibility(ctx.classes, {
+									...visible,
+									[device]: !visible[device],
+								})
+							)
+						}
+					>
+						{deviceLabel(device)}
+					</button>
+				))}
+			</div>
+		</div>
+	)
+}
+
 function Layout({ ctx }: { ctx: StyleContext }) {
 	const display = resolveUtility(ctx.classes, 'display', ctx.bp)?.utility
 	const isFlex = display === 'flex' || display === 'inline-flex'
 	const isGrid = display === 'grid' || display === 'inline-grid'
 	return (
-		<Section title={t('style.layout')}>
+		<Section id='layout' title={t('style.layout')}>
+			<VisibilityRow ctx={ctx} />
 			<StyleRow
 				ctx={ctx}
 				group='display'
@@ -427,7 +547,7 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 
 function Spacing({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title={t('style.spacing')}>
+		<Section id='spacing' title={t('style.spacing')}>
 			<BoxEditor ctx={ctx} kind='padding' />
 			<BoxEditor ctx={ctx} kind='margin' />
 		</Section>
@@ -474,11 +594,46 @@ function Size({ ctx }: { ctx: StyleContext }) {
 		</StyleRow>
 	)
 	return (
-		<Section title={t('style.size')}>
+		<Section id='size' title={t('style.size')}>
 			{row('width', t('style.width'), 'w', WIDTHS, maxWidthNote(ctx))}
 			{row('max-width', t('style.maxWidth'), 'max-w', MAX_WIDTHS)}
 			{row('height', t('style.height'), 'h', HEIGHTS)}
 			{row('min-height', t('style.minHeight'), 'min-h', MIN_HEIGHTS)}
+			<StyleRow ctx={ctx} group='aspect-ratio' label={t('style.aspect')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={[
+							{ value: 'aspect-auto', label: 'auto' },
+							{
+								value: 'aspect-square',
+								label: t('style.square'),
+							},
+							{ value: 'aspect-video', label: t('style.video') },
+						]}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={ctx} group='object-fit' label={t('style.objectFit')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={choices('object', OBJECT_FITS)}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
+				group='object-position'
+				label={t('style.objectPosition')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={choices('object', OBJECT_POSITIONS)}
+					/>
+				)}
+			</StyleRow>
 		</Section>
 	)
 }
@@ -521,7 +676,30 @@ function TextAlignRow({ ctx }: { ctx: StyleContext }) {
 
 function Typography({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title={t('style.typography')}>
+		<Section id='typography' title={t('style.typography')}>
+			<StyleRow
+				ctx={ctx}
+				group='font-family'
+				label={t('style.fontFamily')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={[
+							{ value: 'font-sans', label: t('style.fontBody') },
+							{
+								value: 'font-heading',
+								label: t('style.fontHeading'),
+							},
+							{
+								value: 'font-serif',
+								label: t('style.fontSerif'),
+							},
+							{ value: 'font-mono', label: t('style.fontMono') },
+						]}
+					/>
+				)}
+			</StyleRow>
 			<StyleRow ctx={ctx} group='font-size' label={t('style.fontSize')}>
 				{(state) => (
 					<ValueInput
@@ -551,6 +729,80 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 			</StyleRow>
 			<StyleRow
 				ctx={ctx}
+				group='letter-spacing'
+				label={t('style.letterSpacing')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={choices('tracking', TRACKINGS)}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
+				group='text-transform'
+				label={t('style.textTransform')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={[
+							{ value: 'uppercase', label: t('style.uppercase') },
+							{ value: 'lowercase', label: t('style.lowercase') },
+							{
+								value: 'capitalize',
+								label: t('style.capitalize'),
+							},
+							{
+								value: 'normal-case',
+								label: t('style.normalCase'),
+							},
+						]}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={ctx} group='font-style' label={t('style.italic')}>
+				{(state) => (
+					<Segmented
+						state={state}
+						options={[
+							{
+								value: 'italic',
+								label: <ItalicIcon className='size-3.5' />,
+								title: t('style.italic'),
+							},
+						]}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
+				group='text-decoration'
+				label={t('style.underline')}
+			>
+				{(state) => (
+					<Segmented
+						state={state}
+						options={[
+							{
+								value: 'underline',
+								label: <UnderlineIcon className='size-3.5' />,
+								title: t('style.underline'),
+							},
+							{
+								value: 'line-through',
+								label: (
+									<StrikethroughIcon className='size-3.5' />
+								),
+								title: t('style.lineThrough'),
+							},
+						]}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
 				group='text-color'
 				label={t('style.color')}
 				stacked
@@ -563,7 +815,7 @@ function Typography({ ctx }: { ctx: StyleContext }) {
 
 function Background({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title={t('style.background')}>
+		<Section id='background' title={t('style.background')}>
 			<StyleRow
 				ctx={ctx}
 				group='background-color'
@@ -576,9 +828,138 @@ function Background({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
+function Position({ ctx }: { ctx: StyleContext }) {
+	const inset = (
+		group: 'top' | 'right' | 'bottom' | 'left',
+		label: string
+	) => (
+		<StyleRow ctx={ctx} group={group} label={label}>
+			{(state) => (
+				<ValueInput
+					state={state}
+					prefix={group}
+					options={INSETS}
+					negative
+				/>
+			)}
+		</StyleRow>
+	)
+	const overflow = (
+		group: 'overflow' | 'overflow-x' | 'overflow-y',
+		label: string
+	) => (
+		<StyleRow ctx={ctx} group={group} label={label}>
+			{(state) => (
+				<Choose state={state} options={choices(group, OVERFLOWS)} />
+			)}
+		</StyleRow>
+	)
+	return (
+		<Section id='position' title={t('style.position')} open={false}>
+			<StyleRow ctx={ctx} group='position' label={t('style.position')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={POSITIONS.map((name) => ({
+							value: name,
+							label: name,
+						}))}
+					/>
+				)}
+			</StyleRow>
+			{inset('top', t('style.top'))}
+			{inset('right', t('style.right'))}
+			{inset('bottom', t('style.bottom'))}
+			{inset('left', t('style.left'))}
+			<StyleRow ctx={ctx} group='z-index' label={t('style.zIndex')}>
+				{(state) => (
+					<Choose state={state} options={choices('z', Z_INDEXES)} />
+				)}
+			</StyleRow>
+			{overflow('overflow', t('style.overflow'))}
+			{overflow('overflow-x', t('style.overflowX'))}
+			{overflow('overflow-y', t('style.overflowY'))}
+		</Section>
+	)
+}
+
+function Gradient({ ctx }: { ctx: StyleContext }) {
+	return (
+		<Section id='gradient' title={t('style.gradient')} open={false}>
+			<StyleRow
+				ctx={ctx}
+				group='gradient-direction'
+				label={t('style.gradientDirection')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={GRADIENT_DIRECTIONS.map((d) => ({
+							value: `bg-linear-to-${d}`,
+							label: `to ${d}`,
+						}))}
+					/>
+				)}
+			</StyleRow>
+			{(
+				[
+					['gradient-from', 'from', t('style.gradientFrom')],
+					['gradient-via', 'via', t('style.gradientVia')],
+					['gradient-to', 'to', t('style.gradientTo')],
+				] as const
+			).map(([group, prefix, label]) => (
+				<StyleRow
+					key={group}
+					ctx={ctx}
+					group={group}
+					label={label}
+					stacked
+				>
+					{(state) => <ColorSwatches state={state} prefix={prefix} />}
+				</StyleRow>
+			))}
+		</Section>
+	)
+}
+
 function Effects({ ctx }: { ctx: StyleContext }) {
 	return (
-		<Section title={t('style.effects')}>
+		<Section id='effects' title={t('style.effects')} open={false}>
+			<StyleRow
+				ctx={ctx}
+				group='border-width'
+				label={t('style.borderWidth')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={BORDER_WIDTHS.map(([value, label]) => ({
+							value,
+							label,
+						}))}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
+				group='border-style'
+				label={t('style.borderStyle')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={choices('border', BORDER_STYLES)}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow
+				ctx={ctx}
+				group='border-color'
+				label={t('style.borderColor')}
+				stacked
+			>
+				{(state) => <ColorSwatches state={state} prefix='border' />}
+			</StyleRow>
 			<StyleRow ctx={ctx} group='radius' label={t('style.radius')}>
 				{(state) => (
 					<Choose state={state} options={choices('rounded', RADII)} />
@@ -604,21 +985,302 @@ function Effects({ ctx }: { ctx: StyleContext }) {
 	)
 }
 
+const TRANSITIONS: [string, string][] = [
+	['transition-none', 'style.transitionNone'],
+	['transition', 'style.transitionCommon'],
+	['transition-colors', 'style.transitionColors'],
+	['transition-opacity', 'style.transitionOpacity'],
+	['transition-shadow', 'style.transitionShadow'],
+	['transition-transform', 'style.transitionTransform'],
+	['transition-all', 'style.transitionAll'],
+]
+const DURATIONS = ['75', '100', '150', '200', '300', '500', '700', '1000']
+const EASINGS: [string, string][] = [
+	['ease-linear', 'style.easeLinear'],
+	['ease-in', 'style.easeIn'],
+	['ease-out', 'style.easeOut'],
+	['ease-in-out', 'style.easeInOut'],
+]
+const DELAYS = ['0', '75', '100', '150', '200', '300', '500', '700', '1000']
+const SCALES = ['50', '75', '90', '95', '100', '105', '110', '125', '150']
+const MOVES = ['0', '0.5', '1', '2', '3', '4', '6', '8']
+const ROTATIONS = ['0', '1', '2', '3', '6', '12', '45', '90', '180']
+// Goes on the normal state so a hover change animates both ways
+const SMOOTH_CLASSES = 'transition duration-200 ease-out'
+
+const ms = (prefix: string, values: string[]): Choice[] =>
+	values.map((v) => ({
+		value: `${prefix}-${v}`,
+		label: t('style.ms', { n: v }),
+	}))
+
+// Negative then positive steps of a signed utility, e.g. -rotate-3 and rotate-3
+const signed = (
+	prefix: string,
+	values: string[],
+	unit: (v: string) => string
+): Choice[] => [
+	...values
+		.slice(1)
+		.reverse()
+		.map((v) => ({ value: `-${prefix}-${v}`, label: `-${unit(v)}` })),
+	...values.map((v) => ({ value: `${prefix}-${v}`, label: unit(v) })),
+]
+
+const px = (v: string) => `${Number(v) * 4}px`
+
+const addClass = (classes: string, name: string) =>
+	[classes, name].filter(Boolean).join(' ')
+
+// Transforms follow the chosen state, the transition itself always sits on the normal state
+function Motion({ ctx }: { ctx: StyleContext }) {
+	const base: StyleContext = { ...ctx, state: '' }
+	return (
+		<Section id='motion' title={t('style.motion')}>
+			<StyleRow ctx={ctx} group='scale' label={t('style.scale')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={SCALES.map((v) => ({
+							value: `scale-${v}`,
+							label: `${v}%`,
+						}))}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={ctx} group='translate-y' label={t('style.moveY')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={signed('translate-y', MOVES, px)}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={ctx} group='translate-x' label={t('style.moveX')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={signed('translate-x', MOVES, px)}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={ctx} group='rotate' label={t('style.rotate')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={signed('rotate', ROTATIONS, (v) => `${v}°`)}
+					/>
+				)}
+			</StyleRow>
+			<p className='text-muted-foreground text-xs'>
+				{t('style.transitionNote')}
+			</p>
+			<StyleRow
+				ctx={base}
+				group='transition'
+				label={t('style.transition')}
+			>
+				{(state) => (
+					<Choose
+						state={state}
+						options={TRANSITIONS.map(([value, key]) => ({
+							value,
+							label: t(key as 'style.transitionNone'),
+						}))}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={base} group='duration' label={t('style.duration')}>
+				{(state) => (
+					<Choose state={state} options={ms('duration', DURATIONS)} />
+				)}
+			</StyleRow>
+			<StyleRow ctx={base} group='ease' label={t('style.easing')}>
+				{(state) => (
+					<Choose
+						state={state}
+						options={EASINGS.map(([value, key]) => ({
+							value,
+							label: t(key as 'style.easeLinear'),
+						}))}
+					/>
+				)}
+			</StyleRow>
+			<StyleRow ctx={base} group='delay' label={t('style.delay')}>
+				{(state) => (
+					<Choose state={state} options={ms('delay', DELAYS)} />
+				)}
+			</StyleRow>
+			<GroupToggle ctx={ctx} />
+		</Section>
+	)
+}
+
+// The group class has no breakpoint or state, it only names the hover parent
+function GroupToggle({ ctx }: { ctx: StyleContext }) {
+	const on = hasGroupClass(ctx.classes)
+	const toggle = () =>
+		setClasses(
+			ctx.id,
+			on
+				? splitClasses(ctx.classes)
+						.filter((c) => c !== GROUP_CLASS)
+						.join(' ')
+				: addClass(ctx.classes, GROUP_CLASS)
+		)
+	return (
+		<label className='flex items-start gap-2 text-xs'>
+			<input
+				type='checkbox'
+				className='mt-0.5'
+				checked={on}
+				onChange={toggle}
+			/>
+			<span className='flex flex-col gap-0.5'>
+				<span>{t('style.groupParent')}</span>
+				<span className='text-muted-foreground'>
+					{t('style.groupParentHint')}
+				</span>
+			</span>
+		</label>
+	)
+}
+
+// State changes jump without a transition, offer the usual one
+function SmoothHint({ node }: { node: ElementNode }) {
+	const smooth = splitClasses(node.classes).some((c) =>
+		parseClass(c).utility.startsWith('transition')
+	)
+	if (smooth) return null
+	return (
+		<div className='flex items-center justify-between gap-2 text-xs'>
+			<span className='text-muted-foreground'>
+				{t('style.instantNote')}
+			</span>
+			<Button
+				size='sm'
+				variant='outline'
+				className='h-6 shrink-0 px-2 text-xs'
+				onClick={() =>
+					setClasses(node.id, addClass(node.classes, SMOOTH_CLASSES))
+				}
+			>
+				{t('style.makeSmooth')}
+			</Button>
+		</div>
+	)
+}
+
+// Plain tags read better with their first class, div.card instead of div
+const parentName = (node: ElementNode) => {
+	const label = labelOf(node)
+	const first = splitClasses(node.classes).find((c) => c !== GROUP_CLASS)
+	return label === node.tag && first ? `${label}.${first}` : label
+}
+
+// group-hover: needs a parent with the group class, show it or let the user pick one
+function GroupParentHint({ node }: { node: ElementNode }) {
+	const roots = useRoots()
+	const select = useProject((s) => s.select)
+	const editing = useProject((s) => Boolean(s.editingComponentId))
+	const ancestors = ancestorsOf(roots, node.id)
+	const group = ancestors.findLast((a) => hasGroupClass(a.classes))
+	if (group) {
+		return (
+			<p className='text-muted-foreground text-xs'>
+				{t('style.groupIs')}{' '}
+				<button
+					type='button'
+					className='text-foreground underline underline-offset-2'
+					onClick={() => select(group.id)}
+				>
+					{parentName(group)}
+				</button>
+			</p>
+		)
+	}
+	// Nearest parents first, only those whose classes can change
+	const candidates = ancestors
+		.filter((a) => scopeOf(roots, a.id, editing) === 'free' && !a.instance)
+		.reverse()
+		.slice(0, 6)
+	return (
+		<div className='flex flex-col gap-1 text-xs'>
+			<span className='text-amber-600 dark:text-amber-400'>
+				{t('style.noGroup')}
+			</span>
+			{candidates.length > 0 && (
+				<select
+					aria-label={t('style.makeGroup')}
+					value=''
+					className='border-input bg-background h-7 rounded-lg border px-1.5 text-xs'
+					onChange={(e) => {
+						const parent = candidates.find(
+							(a) => a.id === e.target.value
+						)
+						if (parent) {
+							setClasses(
+								parent.id,
+								addClass(parent.classes, GROUP_CLASS)
+							)
+						}
+					}}
+				>
+					<option value=''>{t('style.makeGroup')}</option>
+					{candidates.map((a) => (
+						<option key={a.id} value={a.id}>
+							{parentName(a)}
+						</option>
+					))}
+				</select>
+			)}
+		</div>
+	)
+}
+
+const stateOptions = (): { value: State; label: string }[] => [
+	{ value: '', label: t('style.stateNone') },
+	{ value: 'hover', label: t('style.stateHover') },
+	{ value: 'focus', label: t('style.stateFocus') },
+	{ value: 'active', label: t('style.stateActive') },
+	{ value: 'group-hover', label: t('style.stateGroupHover') },
+]
+
+// Copies this node's classes to the same node in the other repeat items
+function ApplyToItems({ id }: { id: string }) {
+	const roots = useRoots()
+	if (!repeatPath(roots, id)) return null
+	return (
+		<Button
+			size='sm'
+			variant='outline'
+			className='w-fit'
+			title={t('style.appliedToItems')}
+			onClick={() => applyStylesToItems(id)}
+		>
+			<CopyIcon /> {t('style.applyToItems')}
+		</Button>
+	)
+}
+
 // Style controls write classes at the chosen target, All screens by default
 export function StylePanel({ node }: { node: ElementNode }) {
 	const width = useProject((s) => s.canvasWidth)
-	const { target, setTarget } = useStyleTarget()
+	const { target, setTarget, state, setState } = useStyleTarget()
 	const canvasBp = breakpointFor(width)
 	const hint = targetHint(target, width)
+	const used = usedStates(node.classes)
+	const options = stateOptions()
 	const ctx: StyleContext = {
 		id: node.id,
 		classes: node.classes,
 		bp: target,
 		canvasBp,
+		state,
 	}
 	return (
 		<div className='flex flex-col'>
-			<div className='flex flex-col gap-1.5 px-3 py-2'>
+			<div className='bg-background sticky top-0 z-10 flex flex-col gap-1.5 border-b px-3 py-2'>
 				<div className='flex items-center justify-between gap-2'>
 					<span className='text-xs font-medium'>
 						{t('style.title')}
@@ -643,6 +1305,36 @@ export function StylePanel({ node }: { node: ElementNode }) {
 						</select>
 					</label>
 				</div>
+				<div
+					role='group'
+					aria-label={t('style.stateLabel')}
+					className='border-input flex overflow-hidden rounded-lg border'
+				>
+					{options.map((option) => {
+						const has =
+							option.value !== '' && used.includes(option.value)
+						return (
+							<button
+								key={option.value}
+								type='button'
+								aria-pressed={state === option.value}
+								title={has ? t('style.stateUsed') : undefined}
+								className={cn(
+									'relative h-7 min-w-0 flex-1 truncate px-1 text-[11px] not-first:border-l',
+									state === option.value
+										? 'text-secondary-foreground bg-secondary'
+										: 'hover:bg-muted'
+								)}
+								onClick={() => setState(option.value)}
+							>
+								{option.label}
+								{has && (
+									<span className='absolute top-0.5 right-0.5 size-1.5 rounded-full bg-primary' />
+								)}
+							</button>
+						)
+					})}
+				</div>
 				<p
 					className={cn(
 						'text-xs',
@@ -651,15 +1343,27 @@ export function StylePanel({ node }: { node: ElementNode }) {
 							: 'text-muted-foreground'
 					)}
 				>
-					{hint.text}
+					{state
+						? t('style.hintState', {
+								state:
+									options.find((o) => o.value === state)
+										?.label ?? state,
+							})
+						: hint.text}
 				</p>
+				{state && <SmoothHint node={node} />}
+				{state === 'group-hover' && <GroupParentHint node={node} />}
+				<ApplyToItems id={node.id} />
 			</div>
 			<Layout ctx={ctx} />
 			<Spacing ctx={ctx} />
 			<Size ctx={ctx} />
 			<Typography ctx={ctx} />
 			<Background ctx={ctx} />
+			<Gradient ctx={ctx} />
+			<Position ctx={ctx} />
 			<Effects ctx={ctx} />
+			<Motion ctx={ctx} />
 		</div>
 	)
 }

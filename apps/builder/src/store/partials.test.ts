@@ -15,6 +15,12 @@ import {
 	placePreset,
 } from '@/store/actions'
 import { useDocument } from '@/store/document'
+import {
+	addPage,
+	deletePage,
+	renamePage,
+	setMenuSync,
+} from '@/store/pageActions'
 import { useProject } from '@/store/project'
 
 vi.mock('@/api', () => ({
@@ -104,6 +110,25 @@ describe('shared sections', () => {
 		useDocument.getState().undo()
 		expect(links(doc().partials.header!)).toHaveLength(3)
 		expect(links(doc().partials.header!)[1]).toEqual(['#', 'About'])
+	})
+
+	it('keeps the menu in sync with pages in the same undo step', () => {
+		placePreset('header-simple')
+		setMenuSync(true)
+		expect(links(doc().partials.header!)).toEqual(PAGES)
+		expect(doc().site.layout?.menuSync).toBe(true)
+		renamePage('about', 'Команда')
+		expect(links(doc().partials.header!)[1]).toEqual([
+			'about.html',
+			'Команда',
+		])
+		addPage('Contacts')
+		expect(links(doc().partials.header!)).toHaveLength(4)
+		deletePage('blog')
+		expect(links(doc().partials.header!)).toHaveLength(3)
+		useDocument.getState().undo()
+		expect(links(doc().partials.header!)).toHaveLength(4)
+		expect(doc().pages.blog).toBeDefined()
 	})
 
 	it('fills the desktop and the mobile menu of a header', () => {

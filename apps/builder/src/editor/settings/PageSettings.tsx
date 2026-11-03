@@ -9,13 +9,16 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { AssetPicker } from '@/editor/properties/AssetPicker'
 import { Field } from '@/editor/properties/Field'
+import { CodeFields } from '@/editor/settings/CodeFields'
 import { assetUrl } from '@/editor/properties/assetUrl'
 import { useDocument } from '@/store/document'
 import {
 	HOME_SLUG,
 	renamePage,
+	setPageCode,
 	setPageFlags,
 	setPageSlug,
 	updatePageMeta,
@@ -133,6 +136,15 @@ function Form({ id }: { id: string }) {
 					onPick={(path) => updatePageMeta(id, { ogImage: path })}
 				/>
 			</div>
+			<label className='flex items-center gap-2 text-sm'>
+				<Switch
+					checked={!!page.meta.noindex}
+					onCheckedChange={(checked) =>
+						updatePageMeta(id, { noindex: checked })
+					}
+				/>
+				{t('seo.noindex')}
+			</label>
 			<div className='flex gap-6 text-sm'>
 				<label className='flex items-center gap-2'>
 					<input
@@ -155,6 +167,10 @@ function Form({ id }: { id: string }) {
 					{t('pageSettings.showFooter')}
 				</label>
 			</div>
+			<CodeFields
+				value={page.code}
+				onChange={(code) => setPageCode(id, code)}
+			/>
 		</div>
 	)
 }

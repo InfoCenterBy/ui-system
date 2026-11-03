@@ -10,7 +10,9 @@ import {
 import {
 	ancestorsOf,
 	findElement,
+	isElement,
 	sectionOf,
+	walk,
 	type ElementNode,
 } from '@ui-system/core'
 import { Button } from '@/components/ui/button'
@@ -30,13 +32,17 @@ import {
 } from '@/editor/properties/PartialLayout'
 import { CarouselProperties } from '@/editor/properties/CarouselProperties'
 import { ButtonProperties } from '@/editor/properties/ButtonProperties'
+import { FormProperties } from '@/editor/properties/FormProperties'
+import { MenuSyncField } from '@/editor/properties/MenuSyncField'
 import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { carouselOf, slidesOf } from '@/store/carousel'
 import { OptionsProperties } from '@/editor/properties/OptionsProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
+import { PopupSelect } from '@/editor/properties/PopupSelect'
 import { ClassField } from '@/editor/style/ClassField'
 import { StylePanel } from '@/editor/style/StylePanel'
 import { RepeatProperties } from '@/editor/properties/RepeatProperties'
+import { RepeatItems } from '@/editor/properties/RepeatItems'
 import { VariantSelect } from '@/editor/properties/VariantSelect'
 import { useRoots } from '@/editor/canvas/useRoots'
 import {
@@ -132,6 +138,7 @@ function PartialActions({ name }: { name: 'header' | 'footer' }) {
 					<ListIcon /> {t('props.fillMenu')}
 				</Button>
 			)}
+			{name === 'header' && <MenuSyncField />}
 			{name === 'header' ? (
 				<HeaderPositionField />
 			) : (
@@ -233,6 +240,18 @@ export function Properties() {
 	const image =
 		node.slot === 'image' || (free && node.tag.toLowerCase() === 'img')
 
+	// A locked section is selected as a whole, its only form is configured from there
+	const isForm = (n: ElementNode) => n.tag.toLowerCase() === 'form'
+	const inner: ElementNode[] = []
+	if (node.section) {
+		walk([node], (n) => {
+			if (isElement(n) && isForm(n)) inner.push(n)
+		})
+	}
+	const form = isForm(node)
+		? node
+		: (ancestors.findLast(isForm) ?? (inner.length === 1 ? inner[0] : null))
+
 	// Slot links already have the link panel
 	const buttonLike =
 		!node.slot && ['a', 'button'].includes(node.tag.toLowerCase())
@@ -270,7 +289,12 @@ export function Properties() {
 				)}
 				{image && <ImageProperties node={node} />}
 				{carousel && <CarouselProperties carousel={carousel} />}
-				{node.slot === 'link' && <LinkProperties node={node} />}
+				{node.slot === 'link' && (
+					<>
+						<LinkProperties node={node} />
+						<PopupSelect node={node} />
+					</>
+				)}
 				{(node.slot === 'text' || node.slot === 'rich') && (
 					<p className='text-muted-foreground text-sm'>
 						{t('props.textHint')}
@@ -283,6 +307,7 @@ export function Properties() {
 					/>
 				)}
 				{item && <RepeatProperties item={item} />}
+				<RepeatItems parent={node} />
 				{canDelete && (
 					<Button
 						size='sm'
@@ -294,6 +319,8 @@ export function Properties() {
 					</Button>
 				)}
 				{free && buttonLike && <ButtonProperties node={node} />}
+				{/* Locked sections still need a form address, instances take it from the master */}
+				{(free || !owner) && <FormProperties node={node} form={form} />}
 				{free && <OptionsProperties node={node} />}
 				{free && <ClassField node={node} />}
 				{canCreate && <CreateComponent key={node.id} node={node} />}

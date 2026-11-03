@@ -25,7 +25,7 @@ export function SiteSettingsDialog() {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button variant='ghost' size='sm'>
+				<Button variant='ghost' size='sm' data-action='site-settings'>
 					<SettingsIcon /> {t('settings.title')}
 				</Button>
 			</DialogTrigger>

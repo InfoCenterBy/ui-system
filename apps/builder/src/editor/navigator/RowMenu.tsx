@@ -19,6 +19,7 @@ import {
 	isSharedPart,
 	wrapNode,
 } from '@/store/actions'
+import { copySelected, pasteClip } from '@/store/clipboardActions'
 import { useDocument } from '@/store/document'
 import { useTranslation } from 'react-i18next'
 import { useProject } from '@/store/project'
@@ -101,6 +102,22 @@ export function RowMenu({ id, open, onOpenChange }: Props) {
 						<DropdownMenuSeparator />
 					</>
 				)}
+				<DropdownMenuItem
+					onSelect={() => {
+						useProject.getState().select(id)
+						copySelected()
+					}}
+				>
+					{t('speed.copy')}
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onSelect={() => {
+						useProject.getState().select(id)
+						void pasteClip()
+					}}
+				>
+					{t('speed.paste')}
+				</DropdownMenuItem>
 				<DropdownMenuItem
 					disabled={!free}
 					onSelect={() => duplicateSection(id)}

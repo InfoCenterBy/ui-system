@@ -1,12 +1,19 @@
 import { useState } from 'react'
+import { XIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AssetPicker } from '@/editor/properties/AssetPicker'
+import { assetUrl } from '@/editor/properties/assetUrl'
 import { Field, NativeSelect } from '@/editor/properties/Field'
+import { CodeFields } from '@/editor/settings/CodeFields'
 import { useDocument } from '@/store/document'
 import { updateSite } from '@/store/pageActions'
 import { useTranslation } from 'react-i18next'
 
 const LANGS = ['ru', 'en', 'be', 'uk', 'kk', 'de'] as const
 const OTHER = 'other'
+
+const validUrl = (value: string) => /^https?:\/\/[^\s/]+/i.test(value.trim())
 
 export function GeneralSettings() {
 	const { t } = useTranslation()
@@ -65,6 +72,58 @@ export function GeneralSettings() {
 					{t('settings.prefixHint')}
 				</span>
 			</Field>
+			<Field label={t('seo.siteUrl')}>
+				<Input
+					value={site.url ?? ''}
+					placeholder='https://example.com'
+					aria-invalid={!!site.url && !validUrl(site.url)}
+					onChange={(e) => updateSite({ url: e.target.value.trim() })}
+				/>
+				<span
+					className={
+						site.url && !validUrl(site.url)
+							? 'text-destructive text-xs'
+							: 'text-muted-foreground text-xs'
+					}
+				>
+					{site.url && !validUrl(site.url)
+						? t('seo.siteUrlInvalid')
+						: t('seo.siteUrlHint')}
+				</span>
+			</Field>
+			<div className='flex flex-col gap-1.5 text-sm'>
+				<span className='text-muted-foreground text-xs'>
+					{t('seo.favicon')}
+				</span>
+				{site.favicon && (
+					<div className='flex items-center gap-2'>
+						<img
+							src={assetUrl(site.favicon)}
+							alt=''
+							className='bg-muted size-8 rounded-md object-contain'
+						/>
+						<span className='min-w-0 flex-1 truncate text-xs'>
+							{site.favicon}
+						</span>
+						<Button
+							size='icon-sm'
+							variant='ghost'
+							aria-label={t('seo.clearFavicon')}
+							onClick={() => updateSite({ favicon: null })}
+						>
+							<XIcon />
+						</Button>
+					</div>
+				)}
+				<AssetPicker
+					value={site.favicon ?? ''}
+					onPick={(path) => updateSite({ favicon: path })}
+				/>
+			</div>
+			<CodeFields
+				value={site.code}
+				onChange={(code) => updateSite({ code })}
+			/>
 		</div>
 	)
 }

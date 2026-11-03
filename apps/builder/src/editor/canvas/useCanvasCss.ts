@@ -12,7 +12,8 @@ export function useCanvasCss(
 	theme: Site['theme'] | undefined
 ) {
 	const classKey = useMemo(
-		() => [...collectClasses(roots)].sort().join(' '),
+		// menu-active is added to the canvas links by useCurrentPageMark
+		() => [...collectClasses(roots), 'menu-active'].sort().join(' '),
 		[roots]
 	)
 	const themeKey = useMemo(() => JSON.stringify(theme ?? null), [theme])

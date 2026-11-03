@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { ChevronDownIcon, Redo2Icon, Undo2Icon } from 'lucide-react'
+import {
+	ChevronDownIcon,
+	ExternalLinkIcon,
+	EyeIcon,
+	Redo2Icon,
+	Undo2Icon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -20,6 +26,7 @@ import { useTranslation } from 'react-i18next'
 import { flushSave } from '@/store/autosave'
 import { useDocument, type SaveState } from '@/store/document'
 import { CANVAS_WIDTHS, useProject } from '@/store/project'
+import { useUi } from '@/store/ui'
 
 const SAVE_LABEL: Record<SaveState, Key> = {
 	saved: 'top.saved',
@@ -45,6 +52,23 @@ export function TopBar() {
 	const closeProject = useProject((s) => s.closeProject)
 	const page = pages.find((p) => p.id === currentPageId)
 	const [pageSettings, setPageSettings] = useState(false)
+	const preview = useUi((s) => s.preview)
+	const setPreview = useUi((s) => s.setPreview)
+
+	// The server renders the saved page, so pending edits are written first
+	async function openInBrowser() {
+		if (!page) return
+		const tab = window.open('', '_blank')
+		try {
+			await flushSave()
+			const url = `/api/preview/${page.slug}.html`
+			if (tab) tab.location.href = url
+			else window.open(url, '_blank')
+		} catch (e) {
+			tab?.close()
+			toast.error((e as Error).message)
+		}
+	}
 
 	async function close() {
 		try {
@@ -104,6 +128,29 @@ export function TopBar() {
 						{label === 'Phone' ? t('top.phone') : label} {width}
 					</Button>
 				))}
+			</div>
+
+			<div className='flex gap-1'>
+				<Button
+					size='sm'
+					variant={preview ? 'secondary' : 'ghost'}
+					aria-pressed={preview}
+					title={t('speed.previewTitle')}
+					onClick={() => setPreview(!preview)}
+				>
+					<EyeIcon />
+					{preview ? t('speed.previewExit') : t('speed.preview')}
+				</Button>
+				<Button
+					size='icon-sm'
+					variant='ghost'
+					aria-label={t('speed.openInBrowser')}
+					title={t('speed.openInBrowser')}
+					disabled={!page}
+					onClick={() => void openInBrowser()}
+				>
+					<ExternalLinkIcon />
+				</Button>
 			</div>
 
 			<div className='flex gap-1'>

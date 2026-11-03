@@ -14,6 +14,7 @@ import {
 	MAIN_CLASSES,
 	collectClasses,
 	isElement,
+	markCurrentPage,
 	resolveLayout,
 	serializeHtml,
 	walk,
@@ -122,7 +123,7 @@ export const siteScript = (scripts: string[]) =>
 	[...new Set(scripts)].map((code) => `;(() => {\n${code}\n})()\n`).join('\n')
 
 // Copies Cally with its MIT notice on top, as a classic script so file:// pages work too
-const writeCally = async (to: string) => {
+export const writeCally = async (to: string) => {
 	const entry = fileURLToPath(import.meta.resolve('cally'))
 	const license = await readFile(
 		path.join(path.dirname(entry), '..', 'LICENSE'),
@@ -141,6 +142,45 @@ const writeCally = async (to: string) => {
 	)
 }
 
+const ICON_TYPES: Record<string, string> = {
+	'.svg': 'image/svg+xml',
+	'.png': 'image/png',
+	'.ico': 'image/x-icon',
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.gif': 'image/gif',
+	'.webp': 'image/webp',
+}
+
+// Public site address without a trailing slash, empty when it is not http(s)
+export const siteBase = (url: string | undefined) => {
+	const value = (url ?? '').trim().replace(/\/+$/, '')
+	return /^https?:\/\/[^\s/]+/i.test(value) ? value : ''
+}
+
+// The home page is the site root, others are slug.html
+export const pageUrl = (base: string, slug: string) =>
+	slug === 'index' ? `${base}/` : `${base}/${slug}.html`
+
+export const robotsTxt = (base: string) =>
+	[
+		'User-agent: *',
+		'Allow: /',
+		...(base ? [`Sitemap: ${base}/sitemap.xml`] : []),
+		'',
+	].join('\n')
+
+export const sitemapXml = (base: string, slugs: string[]) =>
+	[
+		'<?xml version="1.0" encoding="UTF-8"?>',
+		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+		...slugs.map(
+			(slug) => `	<url><loc>${escapeText(pageUrl(base, slug))}</loc></url>`
+		),
+		'</urlset>',
+		'',
+	].join('\n')
+
 interface PageDocument {
 	site: Site
 	page: Page
@@ -149,6 +189,8 @@ interface PageDocument {
 	prefix: string
 	script: boolean
 	cally?: boolean
+	// Copied favicon, href relative to the site root
+	favicon?: string
 }
 
 // Local copy of the Cally web component, loaded only by pages with a calendar
@@ -162,22 +204,45 @@ export const pageDocument = ({
 	prefix,
 	script,
 	cally,
+	favicon,
 }: PageDocument) => {
-	const { title, description, ogImage } = page.meta
+	const { title, description, ogImage, noindex } = page.meta
+	const base = siteBase(site.url)
+	const canonical = base ? pageUrl(base, page.slug) : ''
+	// Social previews need an absolute address
+	const ogUrl = (file: string) => {
+		if (!ASSET.test(file)) return file
+		if (!base) return prefix + file
+		return prefix.startsWith('/') ? base + prefix + file : `${base}/${file}`
+	}
+	const iconType = favicon
+		? ICON_TYPES[path.extname(favicon).toLowerCase()]
+		: undefined
 	const head = [
 		'<meta charset="utf-8">',
 		'<meta name="viewport" content="width=device-width, initial-scale=1">',
 		`<title>${escapeText(title || page.name)}</title>`,
 		description &&
 			`<meta name="description" content="${escapeAttr(description)}">`,
+		noindex && '<meta name="robots" content="noindex">',
+		favicon &&
+			`<link rel="icon" href="${escapeAttr(prefix + favicon)}"${iconType ? ` type="${iconType}"` : ''}>`,
+		canonical && `<link rel="canonical" href="${escapeAttr(canonical)}">`,
+		'<meta property="og:type" content="website">',
+		canonical &&
+			`<meta property="og:url" content="${escapeAttr(canonical)}">`,
 		`<meta property="og:title" content="${escapeAttr(title || page.name)}">`,
 		description &&
 			`<meta property="og:description" content="${escapeAttr(description)}">`,
 		ogImage &&
-			`<meta property="og:image" content="${escapeAttr(ASSET.test(ogImage) ? prefix + ogImage : ogImage)}">`,
+			`<meta property="og:image" content="${escapeAttr(ogUrl(ogImage))}">`,
+		ogImage && '<meta name="twitter:card" content="summary_large_image">',
 		`<link rel="stylesheet" href="${prefix}assets/site.css">`,
 		script && `<script src="${prefix}assets/site.js" defer></script>`,
 		cally && `<script src="${prefix}${CALLY_FILE}" defer></script>`,
+		// Custom code is the user's own, so it stays raw
+		site.code?.head?.trim(),
+		page.code?.head?.trim(),
 	].filter(Boolean)
 	const indent = (text: string) =>
 		text
@@ -192,6 +257,9 @@ export const pageDocument = ({
 		'</head>',
 		bodyClass ? `<body class="${escapeAttr(bodyClass)}">` : '<body>',
 		indent(body),
+		...[site.code?.body, page.code?.body]
+			.map((code) => code?.trim())
+			.filter(Boolean),
 		'</body>',
 		'</html>',
 		'',
@@ -205,7 +273,7 @@ interface PageParts {
 }
 
 // Header position classes go on a copy, the stored partial stays as it is
-const pageParts = (project: Project, page: Page): PageParts => {
+export const pageParts = (project: Project, page: Page): PageParts => {
 	const { header, footer } = project.partials
 	const position = resolveLayout(project.site.layout).header
 	const parts = structuredClone({
@@ -220,6 +288,18 @@ const pageParts = (project: Project, page: Page): PageParts => {
 		if (position === 'autohide')
 			parts.header.attrs['data-header'] = position
 	}
+	markCurrentPage(
+		[
+			...(parts.header ? [parts.header] : []),
+			...parts.sections,
+			...(parts.footer ? [parts.footer] : []),
+		],
+		{
+			file: `${page.slug}.html`,
+			home: page.slug === 'index',
+			prefix: normalizePrefix(project.site.pathPrefix),
+		}
+	)
 	return parts
 }
 
@@ -230,7 +310,7 @@ const indentLines = (text: string) =>
 		.join('\n')
 
 // Header, main and footer in body order, main grows when the footer sticks
-const pageBody = (parts: PageParts, stickyFooter: boolean) => {
+export const pageBody = (parts: PageParts, stickyFooter: boolean) => {
 	const html = (list: ElementNode[]) => serializeHtml(list).trimEnd()
 	return [
 		parts.header && html([parts.header]),
@@ -328,9 +408,15 @@ export async function exportSite(
 	}
 
 	const { stickyFooter } = resolveLayout(site.layout)
+	const base = siteBase(site.url)
+	let favicon: string | undefined
+	if (site.favicon && ASSET.test(site.favicon)) {
+		if (await copyAsset(site.favicon)) favicon = site.favicon
+	}
 	const classes = new Set<string>()
 	const scripts: string[] = []
 	const exported: string[] = []
+	const indexable: string[] = []
 	let cally = false
 
 	for (const id of site.pages) {
@@ -397,10 +483,22 @@ export async function exportSite(
 			prefix,
 			script: pageScripts.length > 0,
 			cally: features.calendar,
+			favicon,
 		})
 		const name = `${page.slug}.html`
 		await writeFile(path.join(dist, name), html)
 		exported.push(name)
+		if (!page.meta.noindex) indexable.push(page.slug)
+		files++
+	}
+
+	await writeFile(path.join(dist, 'robots.txt'), robotsTxt(base))
+	files++
+	if (base) {
+		await writeFile(
+			path.join(dist, 'sitemap.xml'),
+			sitemapXml(base, indexable)
+		)
 		files++
 	}
 

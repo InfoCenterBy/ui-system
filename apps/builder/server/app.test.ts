@@ -633,3 +633,31 @@ describe('fonts', () => {
 		)
 	})
 })
+
+describe('preview', () => {
+	it('renders a page with relative asset urls and serves its files', async () => {
+		const { res } = await createProject()
+		const project = await res.json()
+		const about = { ...project.pages[0], id: 'about', slug: 'about' }
+		await send('PUT', '/api/project/pages/about', about)
+		await upload('pic.png', 'abc')
+
+		const page = await app.request('/api/preview/index.html')
+		expect(page.status).toBe(200)
+		expect(page.headers.get('Content-Type')).toContain('text/html')
+		expect(await page.text()).toContain('href="assets/site.css"')
+		expect((await app.request('/api/preview/about.html')).status).toBe(200)
+		expect((await app.request('/api/preview/nope.html')).status).toBe(404)
+
+		const css = await app.request('/api/preview/assets/site.css')
+		expect(css.headers.get('Content-Type')).toContain('text/css')
+		const pic = await app.request('/api/preview/assets/pic.png')
+		expect(await pic.text()).toBe('abc')
+		expect((await app.request('/api/preview/assets/x.png')).status).toBe(
+			404
+		)
+		expect(
+			(await app.request('/api/preview/pages/index.json')).status
+		).toBe(404)
+	})
+})

@@ -11,8 +11,6 @@ export const BREAKPOINTS = [
 
 export type Breakpoint = (typeof BREAKPOINTS)[number]['prefix']
 
-const BREAKPOINT_PREFIXES = new Set<string>(BREAKPOINTS.map((b) => b.prefix))
-
 // The breakpoint whose styles apply at a canvas width
 export const breakpointFor = (width: number): Breakpoint =>
 	BREAKPOINTS.findLast((b) => width >= b.min)?.prefix ?? ''
@@ -97,6 +95,40 @@ export const UTILITY_GROUPS = {
 	radius: /^rounded(-(none|xs|sm|md|lg|xl|2xl|3xl|4xl|full|box|field|selector|\[[^\]]+\]))?$/,
 	shadow: /^shadow(-(none|2xs|xs|sm|md|lg|xl|2xl|inner))?$/,
 	opacity: /^opacity-/,
+	'font-family': /^font-(sans|serif|mono|heading)$/,
+	'font-style': /^(italic|not-italic)$/,
+	'text-decoration': /^(underline|line-through|overline|no-underline)$/,
+	'letter-spacing': /^tracking-/,
+	'text-transform': /^(uppercase|lowercase|capitalize|normal-case)$/,
+	position: /^(static|relative|absolute|fixed|sticky)$/,
+	top: /^-?top-/,
+	right: /^-?right-/,
+	bottom: /^-?bottom-/,
+	left: /^-?left-/,
+	'z-index': /^-?z-/,
+	overflow: /^overflow-(visible|hidden|auto|scroll|clip)$/,
+	'overflow-x': /^overflow-x-/,
+	'overflow-y': /^overflow-y-/,
+	'aspect-ratio': /^aspect-/,
+	'object-fit': /^object-(contain|cover|fill|none|scale-down)$/,
+	'object-position': /^object-(?!contain$|cover$|fill$|none$|scale-down$)/,
+	'border-width': /^border(-\d+)?$/,
+	'border-style': /^border-(solid|dashed|dotted|double|hidden|none)$/,
+	'border-color': new RegExp(
+		`^border-(${COLOR_WORDS}|\\[(?:#|oklch|rgb|hsl|var)[^\\]]*\\])(/\\d+)?$`
+	),
+	'gradient-direction': /^bg-linear-to-(t|tr|r|br|b|bl|l|tl)$/,
+	'gradient-from': new RegExp(`^from-(${COLOR_WORDS})(/\\d+)?$`),
+	'gradient-via': new RegExp(`^via-(${COLOR_WORDS})(/\\d+)?$`),
+	'gradient-to': new RegExp(`^to-(${COLOR_WORDS})(/\\d+)?$`),
+	transition: /^transition(-(none|all|colors|opacity|shadow|transform))?$/,
+	duration: /^duration-/,
+	ease: /^ease-(linear|in|out|in-out|initial)$/,
+	delay: /^delay-/,
+	scale: /^-?scale-(\d+|\[[^\]]+\])$/,
+	'translate-x': /^-?translate-x-/,
+	'translate-y': /^-?translate-y-/,
+	rotate: /^-?rotate-/,
 } as const satisfies Record<string, RegExp>
 
 export type UtilityGroup = keyof typeof UTILITY_GROUPS
@@ -108,69 +140,89 @@ export const groupOf = (utility: string): UtilityGroup | null => {
 	return null
 }
 
-// Only plain classes and single-breakpoint classes take part, hover: and the like stay untouched
-const breakpointOf = (token: ClassToken): Breakpoint | null => {
-	if (token.variants.length === 0) return ''
-	if (
-		token.variants.length === 1 &&
-		BREAKPOINT_PREFIXES.has(token.variants[0])
-	) {
-		return token.variants[0] as Breakpoint
-	}
-	return null
-}
+// Pseudo-class variants the style panel can edit, after the breakpoint like md:hover:
+export const STATES = ['hover', 'focus', 'active', 'group-hover'] as const
+
+export type State = '' | (typeof STATES)[number]
+
+// Marks the parent whose hover drives the group-hover: classes inside it
+export const GROUP_CLASS = 'group'
+
+export const hasGroupClass = (classes: string) =>
+	splitClasses(classes).includes(GROUP_CLASS)
+
+// Variant chain in Tailwind order, breakpoint first
+const chainOf = (breakpoint: Breakpoint, state: State) =>
+	[breakpoint, state].filter(Boolean).join(':')
 
 const matches = (
 	token: ClassToken,
 	group: UtilityGroup,
-	breakpoint: Breakpoint
+	breakpoint: Breakpoint,
+	state: State
 ) =>
-	breakpointOf(token) === breakpoint &&
+	token.variants.join(':') === chainOf(breakpoint, state) &&
 	UTILITY_GROUPS[group].test(token.utility)
 
-// Utility set exactly at a breakpoint, like "p-4" for "md:p-4" at md
+// States that already have a class, at any breakpoint
+export const usedStates = (classes: string): State[] => {
+	const found = new Set<string>()
+	for (const raw of splitClasses(classes)) {
+		for (const variant of parseClass(raw).variants) found.add(variant)
+	}
+	return STATES.filter((state) => found.has(state))
+}
+
+// Utility set exactly at a breakpoint and state, like "p-4" for "md:p-4" at md
 export const getUtility = (
 	classes: string,
 	group: UtilityGroup,
-	breakpoint: Breakpoint
+	breakpoint: Breakpoint,
+	state: State = ''
 ) =>
 	splitClasses(classes)
 		.map(parseClass)
-		.findLast((token) => matches(token, group, breakpoint))?.utility ?? null
+		.findLast((token) => matches(token, group, breakpoint, state))
+		?.utility ?? null
 
-// Value in effect at a breakpoint and the breakpoint it comes from
+// Value in effect at a breakpoint and state with where it comes from.
+// A state falls back to the same group without the state
 export const resolveUtility = (
 	classes: string,
 	group: UtilityGroup,
-	breakpoint: Breakpoint
-) => {
+	breakpoint: Breakpoint,
+	state: State = ''
+): { utility: string; from: Breakpoint; state: State } | null => {
 	const order = BREAKPOINTS.map((b) => b.prefix)
 	for (let i = order.indexOf(breakpoint); i >= 0; i--) {
-		const utility = getUtility(classes, group, order[i])
-		if (utility !== null) return { utility, from: order[i] as Breakpoint }
+		const utility = getUtility(classes, group, order[i], state)
+		if (utility !== null) {
+			return { utility, from: order[i] as Breakpoint, state }
+		}
 	}
-	return null
+	return state ? resolveUtility(classes, group, breakpoint) : null
 }
 
-const withPrefix = (breakpoint: Breakpoint, utility: string) =>
-	breakpoint ? `${breakpoint}:${utility}` : utility
+const withPrefix = (breakpoint: Breakpoint, state: State, utility: string) =>
+	[chainOf(breakpoint, state), utility].filter(Boolean).join(':')
 
-// Replaces the group's class at one breakpoint, null removes it
+// Replaces the group's class at one breakpoint and state, null removes it
 export const setUtility = (
 	classes: string,
 	group: UtilityGroup,
 	breakpoint: Breakpoint,
-	utility: string | null
+	utility: string | null,
+	state: State = ''
 ) => {
 	const tokens = splitClasses(classes)
 	const at = tokens.findIndex((raw) =>
-		matches(parseClass(raw), group, breakpoint)
+		matches(parseClass(raw), group, breakpoint, state)
 	)
 	const kept = tokens.filter(
-		(raw) => !matches(parseClass(raw), group, breakpoint)
+		(raw) => !matches(parseClass(raw), group, breakpoint, state)
 	)
 	if (utility === null) return kept.join(' ')
-	const next = withPrefix(breakpoint, utility)
+	const next = withPrefix(breakpoint, state, utility)
 	if (at < 0) return [...kept, next].join(' ')
 	// The new class takes the place of the old one so diffs stay small
 	kept.splice(Math.min(at, kept.length), 0, next)

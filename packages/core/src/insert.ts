@@ -1,3 +1,4 @@
+import { assignFieldNames } from './forms'
 import { isElement, walk } from './tree'
 import type { ElementNode, TreeNode } from './types'
 
@@ -131,5 +132,7 @@ export const prepareInsert = (
 			children: node.children.map(copy),
 		}
 	}
-	return nodes.map(copy)
+	const result = nodes.map(copy)
+	assignFieldNames(result)
+	return result
 }

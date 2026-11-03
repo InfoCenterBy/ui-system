@@ -55,6 +55,14 @@ export interface PageMeta {
 	title: string
 	description: string
 	ogImage: string | null
+	// Hides the page from search engines and the sitemap
+	noindex?: boolean
+}
+
+// Custom code added only to the exported pages
+export interface CustomCode {
+	head: string
+	body: string
 }
 
 export interface Page {
@@ -66,6 +74,7 @@ export interface Page {
 	showHeader: boolean
 	showFooter: boolean
 	sections: ElementNode[]
+	code?: CustomCode
 }
 
 export interface FontChoice {
@@ -87,6 +96,8 @@ export type HeaderPosition = 'static' | 'sticky' | 'fixed' | 'autohide'
 export interface SiteLayout {
 	header?: HeaderPosition
 	stickyFooter?: boolean
+	// Header menus are refilled whenever pages change
+	menuSync?: boolean
 }
 
 export interface Site {
@@ -102,6 +113,11 @@ export interface Site {
 	pages: string[]
 	// Page shell, missing means a static header and a sticky footer
 	layout?: SiteLayout
+	// Public address like https://example.com, for canonical, sitemap and og:url
+	url?: string
+	// Project asset used as the favicon
+	favicon?: string | null
+	code?: CustomCode
 }
 
 export interface Partials {

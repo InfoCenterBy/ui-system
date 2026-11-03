@@ -1,6 +1,7 @@
 import {
 	cloneNode,
 	randomId,
+	type CustomCode,
 	type Page,
 	type PageMeta,
 	type Site,
@@ -8,6 +9,7 @@ import {
 import { t } from '@/i18n'
 import { useDocument } from '@/store/document'
 import type { Doc } from '@/store/history'
+import { fillMenuDraft } from '@/store/menuSync'
 import { useProject } from '@/store/project'
 
 export const HOME_SLUG = 'index'
@@ -82,6 +84,18 @@ const freeName = (doc: Doc, text: string, ignoreId?: string) => {
 
 const doc = () => useDocument.getState().doc
 
+// Menus follow the pages in the same undo step when the site asks for it
+const syncMenu = (d: Doc) => {
+	if (d.site.layout?.menuSync) fillMenuDraft(d)
+}
+
+export function setMenuSync(on: boolean) {
+	useDocument.getState().edit('Keep menu in sync', (d) => {
+		d.site.layout = { ...d.site.layout, menuSync: on }
+		if (on) fillMenuDraft(d)
+	})
+}
+
 export function addPage(name: string): string | null {
 	const current = doc()
 	const title = name.trim()
@@ -98,6 +112,7 @@ export function addPage(name: string): string | null {
 			sections: [],
 		}
 		d.site.pages.push(id)
+		syncMenu(d)
 	})
 	useProject.getState().setCurrentPage(id)
 	return id
@@ -111,6 +126,7 @@ export function renamePage(id: string, name: string) {
 		(d) => {
 			const page = d.pages[id]
 			if (page) page.name = title
+			syncMenu(d)
 		},
 		{ mergeKey: `page:${id}:name` }
 	)
@@ -131,6 +147,7 @@ export function setPageSlug(id: string, slug: string): string | null {
 	useDocument.getState().edit('Change page file name', (d) => {
 		const target = d.pages[id]
 		if (target) target.slug = slug
+		syncMenu(d)
 	})
 	return null
 }
@@ -144,6 +161,17 @@ export function updatePageMeta(id: string, meta: Partial<PageMeta>) {
 			if (page) Object.assign(page.meta, meta)
 		},
 		{ mergeKey: `page:${id}:meta:${keys}` }
+	)
+}
+
+export function setPageCode(id: string, code: CustomCode) {
+	useDocument.getState().edit(
+		'Edit page code',
+		(d) => {
+			const page = d.pages[id]
+			if (page) page.code = code
+		},
+		{ mergeKey: `page:${id}:code` }
 	)
 }
 
@@ -177,6 +205,7 @@ export function duplicatePage(id: string): string | null {
 			sections: from.sections.map((s) => cloneNode(s, randomId)),
 		}
 		d.site.pages.splice(d.site.pages.indexOf(id) + 1, 0, newId)
+		syncMenu(d)
 	})
 	useProject.getState().setCurrentPage(newId)
 	return newId
@@ -190,6 +219,7 @@ export function deletePage(id: string): boolean {
 	useDocument.getState().edit('Delete page', (d) => {
 		delete d.pages[id]
 		d.site.pages = d.site.pages.filter((p) => p !== id)
+		syncMenu(d)
 	})
 	const project = useProject.getState()
 	if (project.currentPageId === id) {
@@ -207,6 +237,7 @@ export function movePage(id: string, toIndex: number) {
 		const to = Math.max(0, Math.min(list.length - 1, toIndex))
 		list.splice(from, 1)
 		list.splice(to, 0, id)
+		syncMenu(d)
 	})
 }
 
@@ -222,11 +253,23 @@ export function setHomePage(id: string) {
 		const previous = old && d.pages[old.id]
 		if (previous && oldSlug) previous.slug = oldSlug
 		target.slug = HOME_SLUG
+		syncMenu(d)
 	})
 }
 
 export function updateSite(
-	partial: Partial<Pick<Site, 'name' | 'lang' | 'pathPrefix' | 'layout'>>
+	partial: Partial<
+		Pick<
+			Site,
+			| 'name'
+			| 'lang'
+			| 'pathPrefix'
+			| 'layout'
+			| 'url'
+			| 'favicon'
+			| 'code'
+		>
+	>
 ) {
 	const keys = Object.keys(partial).sort().join(',')
 	useDocument.getState().edit(

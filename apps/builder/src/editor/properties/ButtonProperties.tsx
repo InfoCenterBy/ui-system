@@ -8,6 +8,7 @@ import {
 	plainText,
 } from '@/editor/properties/linkable'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
+import { PopupSelect } from '@/editor/properties/PopupSelect'
 import { convertToLink, setSlotContent } from '@/store/actions'
 import { useTranslation } from 'react-i18next'
 
@@ -35,6 +36,9 @@ export function ButtonProperties({ node }: { node: ElementNode }) {
 		<div className='flex flex-col gap-3'>
 			{text}
 			{isLink && <LinkProperties node={node} showText={false} />}
+			{(isLink || node.attrs.type !== 'submit') && (
+				<PopupSelect node={node} />
+			)}
 			{!isLink && canBecomeLink(node) && (
 				<div className='flex flex-col gap-1.5'>
 					<Button

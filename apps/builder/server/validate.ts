@@ -18,6 +18,13 @@ function fail(what: string): never {
 	throw new HttpError(400, `Invalid ${what}`)
 }
 
+function assertCode(v: unknown, what: string) {
+	if (v === undefined) return
+	if (!isObj(v) || typeof v.head !== 'string' || typeof v.body !== 'string') {
+		fail(what)
+	}
+}
+
 export function assertSite(v: unknown): asserts v is Site {
 	if (!isObj(v) || v.version !== 1) fail('site')
 	for (const key of ['name', 'lang', 'pathPrefix']) {
@@ -29,10 +36,19 @@ export function assertSite(v: unknown): asserts v is Site {
 	if (!Array.isArray(v.pages) || !v.pages.every(isSafeId)) {
 		fail('site.pages')
 	}
+	if (v.url !== undefined && typeof v.url !== 'string') fail('site.url')
+	if (
+		v.favicon !== undefined &&
+		v.favicon !== null &&
+		typeof v.favicon !== 'string'
+	) {
+		fail('site.favicon')
+	}
+	assertCode(v.code, 'site.code')
 	if (v.layout !== undefined) {
 		const { layout } = v
 		if (!isObj(layout)) fail('site.layout')
-		const { header, stickyFooter } = layout
+		const { header, stickyFooter, menuSync } = layout
 		if (
 			header !== undefined &&
 			!HEADER_POSITIONS.includes(header as never)
@@ -41,6 +57,9 @@ export function assertSite(v: unknown): asserts v is Site {
 		}
 		if (stickyFooter !== undefined && typeof stickyFooter !== 'boolean') {
 			fail('site.layout.stickyFooter')
+		}
+		if (menuSync !== undefined && typeof menuSync !== 'boolean') {
+			fail('site.layout.menuSync')
 		}
 	}
 }
@@ -59,6 +78,10 @@ export function assertPage(v: unknown): asserts v is Page {
 		if (typeof v[key] !== 'string') fail(`page.${key}`)
 	}
 	if (!isObj(v.meta) || typeof v.meta.title !== 'string') fail('page.meta')
+	if (v.meta.noindex !== undefined && typeof v.meta.noindex !== 'boolean') {
+		fail('page.meta.noindex')
+	}
+	assertCode(v.code, 'page.code')
 	if (typeof v.showHeader !== 'boolean') fail('page.showHeader')
 	if (typeof v.showFooter !== 'boolean') fail('page.showFooter')
 	if (!Array.isArray(v.sections)) fail('page.sections')

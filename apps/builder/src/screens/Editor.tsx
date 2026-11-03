@@ -10,11 +10,27 @@ import { LeftPanel } from '@/editor/LeftPanel'
 import { Properties } from '@/editor/Properties'
 import { TopBar } from '@/editor/TopBar'
 import { useShortcuts } from '@/editor/useShortcuts'
+import { CommandPalette } from '@/editor/CommandPalette'
 import { startAutosave } from '@/store/autosave'
+import { useUi } from '@/store/ui'
 
 export function Editor() {
 	useShortcuts()
+	const preview = useUi((s) => s.preview)
 	useEffect(() => startAutosave(), [])
+	// Leaving the editor must not leave preview on for the next project
+	useEffect(() => () => useUi.getState().setPreview(false), [])
+	if (preview) {
+		return (
+			<div className='flex h-svh flex-col'>
+				<TopBar />
+				<div className='min-h-0 flex-1'>
+					<Canvas />
+				</div>
+				<CommandPalette />
+			</div>
+		)
+	}
 	return (
 		<div className='flex h-svh flex-col'>
 			<TopBar />
@@ -35,6 +51,7 @@ export function Editor() {
 					<Properties />
 				</ResizablePanel>
 			</ResizablePanelGroup>
+			<CommandPalette />
 		</div>
 	)
 }

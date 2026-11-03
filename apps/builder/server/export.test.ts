@@ -117,6 +117,35 @@ async function setUp(prefix = '') {
 	return dir
 }
 
+describe('export current page', () => {
+	it('marks links to the page itself', async () => {
+		const dir = await setUp()
+		await send(
+			'PUT',
+			'/api/project/partials/header',
+			section(
+				'header',
+				'<header><ul class="menu"><li><a href="index.html" data-edit="link">Home</a></li><li><a href="about.html" data-edit="link">About</a></li></ul></header>'
+			)
+		)
+		await send('POST', '/api/project/export')
+		const about = await readFile(
+			path.join(dir, 'dist', 'about.html'),
+			'utf8'
+		)
+		expect(about).toMatch(
+			/<a[^>]*href="about.html"[^>]*aria-current="page"/
+		)
+		expect(about).toMatch(/class="[^"]*menu-active[^"]*"/)
+		expect(about).not.toMatch(/href="index.html"[^>]*aria-current/)
+		const index = await readFile(
+			path.join(dir, 'dist', 'index.html'),
+			'utf8'
+		)
+		expect(index).toMatch(/href="index.html"[^>]*aria-current="page"/)
+	})
+})
+
 describe('export', () => {
 	it('writes pages, css, scripts and optimized images', async () => {
 		const dir = await setUp()
@@ -418,5 +447,129 @@ describe('page shell', () => {
 		}
 		const ok = await send('PUT', '/api/project/site', project.site)
 		expect(ok.status).toBe(200)
+	})
+})
+
+describe('seo and custom code', () => {
+	const putSite = async (patch: Partial<Site>) => {
+		const project = await (await send('GET', '/api/project')).json()
+		const res = await send('PUT', '/api/project/site', {
+			...project.site,
+			...patch,
+		})
+		expect(res.status).toBe(200)
+	}
+	const read = (dir: string, file: string) =>
+		readFile(path.join(dir, 'dist', file), 'utf8')
+
+	it('writes robots.txt without a sitemap when there is no url', async () => {
+		const dir = await setUp()
+		await send('POST', '/api/project/export')
+		expect(await read(dir, 'robots.txt')).toBe('User-agent: *\nAllow: /\n')
+		const index = await read(dir, 'index.html')
+		expect(index).not.toContain('canonical')
+		expect(index).not.toContain('og:url')
+		await expect(read(dir, 'sitemap.xml')).rejects.toThrow()
+	})
+
+	it('adds canonical, og:url, sitemap and robots for a site url', async () => {
+		const dir = await setUp()
+		await putSite({ url: 'https://example.com/' })
+		await send('POST', '/api/project/export')
+		const index = await read(dir, 'index.html')
+		expect(index).toContain(
+			'<link rel="canonical" href="https://example.com/">'
+		)
+		expect(index).toContain(
+			'<meta property="og:url" content="https://example.com/">'
+		)
+		expect(index).toContain('<meta property="og:type" content="website">')
+		expect(index).toContain(
+			'<meta property="og:image" content="https://example.com/assets/photo.png">'
+		)
+		expect(index).toContain(
+			'<meta name="twitter:card" content="summary_large_image">'
+		)
+		const about = await read(dir, 'about.html')
+		expect(about).toContain(
+			'<link rel="canonical" href="https://example.com/about.html">'
+		)
+		expect(about).not.toContain('twitter:card')
+		expect(await read(dir, 'robots.txt')).toBe(
+			'User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml\n'
+		)
+		const sitemap = await read(dir, 'sitemap.xml')
+		expect(sitemap).toContain('<loc>https://example.com/</loc>')
+		expect(sitemap).toContain('<loc>https://example.com/about.html</loc>')
+	})
+
+	it('hides noindex pages from the sitemap and adds the robots meta', async () => {
+		const dir = await setUp()
+		await putSite({ url: 'https://example.com' })
+		const project = await (await send('GET', '/api/project')).json()
+		const about = project.pages.find((p: Page) => p.id === 'about')
+		about.meta.noindex = true
+		await send('PUT', '/api/project/pages/about', about)
+		await send('POST', '/api/project/export')
+		expect(await read(dir, 'about.html')).toContain(
+			'<meta name="robots" content="noindex">'
+		)
+		expect(await read(dir, 'index.html')).not.toContain('noindex')
+		const sitemap = await read(dir, 'sitemap.xml')
+		expect(sitemap).not.toContain('about.html')
+	})
+
+	it('copies the favicon and keeps the prefix', async () => {
+		const dir = await setUp('/static/')
+		await putSite({ favicon: 'assets/logo.svg' })
+		await send('POST', '/api/project/export')
+		expect(await read(dir, 'index.html')).toContain(
+			'<link rel="icon" href="/static/assets/logo.svg" type="image/svg+xml">'
+		)
+		expect(await read(dir, 'assets/logo.svg')).toBe('<svg/>')
+	})
+
+	it('adds site then page custom code unescaped', async () => {
+		const dir = await setUp()
+		await putSite({
+			code: {
+				head: '<meta name="a" content="1">',
+				body: '<script>site()</script>',
+			},
+		})
+		const project = await (await send('GET', '/api/project')).json()
+		const home = project.pages.find((p: Page) => p.id === 'home')
+		home.code = {
+			head: '<meta name="b" content="2">',
+			body: '<script>page()</script>',
+		}
+		await send('PUT', '/api/project/pages/home', home)
+		await send('POST', '/api/project/export')
+		const index = await read(dir, 'index.html')
+		expect(index).toMatch(
+			/<link rel="stylesheet"[^\n]*\n(\t<script[^\n]*\n)?\t?<meta name="a" content="1">\n\t?<meta name="b" content="2">\n<\/head>/
+		)
+		expect(index).toMatch(
+			/<script>site\(\)<\/script>\n<script>page\(\)<\/script>\n<\/body>/
+		)
+		const about = await read(dir, 'about.html')
+		expect(about).toContain('<script>site()</script>')
+		expect(about).not.toContain('page()')
+	})
+
+	it('rejects malformed seo fields', async () => {
+		await setUp()
+		const project = await (await send('GET', '/api/project')).json()
+		for (const patch of [
+			{ url: 5 },
+			{ favicon: 3 },
+			{ code: { head: 1 } },
+		]) {
+			const res = await send('PUT', '/api/project/site', {
+				...project.site,
+				...patch,
+			})
+			expect(res.status).toBe(400)
+		}
 	})
 })

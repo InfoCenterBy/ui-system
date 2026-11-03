@@ -62,8 +62,30 @@ if (header) {
 	)
 }`
 
+// A link to #id opens the dialog or popover with that id, also when the page loads with that hash
+const POPUP_LINKS = `const openPopup = (id) => {
+	const target = id && document.getElementById(id)
+	if (!target) return false
+	try {
+		if (target.matches('dialog')) {
+			if (!target.open) target.showModal()
+		} else if (target.hasAttribute('popover')) target.showPopover()
+		else return false
+	} catch (error) {
+		return false
+	}
+	return true
+}
+document.addEventListener('click', (event) => {
+	const link = event.target.closest && event.target.closest('a[href^="#"]')
+	const href = link && link.getAttribute('href')
+	if (href && href.length > 1 && openPopup(decodeURIComponent(href.slice(1)))) event.preventDefault()
+})
+if (location.hash.length > 1) openPopup(decodeURIComponent(location.hash.slice(1)))`
+
 export interface PageFeatures {
 	commands: boolean
+	popupLinks: boolean
 	countdown: boolean
 	calendar: boolean
 	autohide: boolean
@@ -73,12 +95,23 @@ export interface PageFeatures {
 export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
 	const features = {
 		commands: false,
+		popupLinks: false,
 		countdown: false,
 		calendar: false,
 		autohide: false,
 	}
+	const popups = new Set<string>()
+	const hashes: string[] = []
 	walk(roots, (node) => {
 		if (!isElement(node)) return
+		const id = node.attrs.id
+		const dialog =
+			node.tag.toLowerCase() === 'dialog' &&
+			node.classes.split(/\s+/).includes('modal')
+		if (id && (dialog || 'popover' in node.attrs)) popups.add(id)
+		const href = node.attrs.href
+		if (node.tag.toLowerCase() === 'a' && href?.startsWith('#'))
+			hashes.push(href.slice(1))
 		if (node.attrs.commandfor !== undefined) features.commands = true
 		if (node.attrs['data-countdown-to'] !== undefined)
 			features.countdown = true
@@ -86,12 +119,14 @@ export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
 		if (node.tag.toLowerCase().startsWith('calendar-'))
 			features.calendar = true
 	})
+	features.popupLinks = hashes.some((id) => popups.has(id))
 	return features
 }
 
 // Code for site.js, only the parts the page uses
 export const featureScripts = (features: PageFeatures) => [
 	...(features.commands ? [COMMANDS] : []),
+	...(features.popupLinks ? [POPUP_LINKS] : []),
 	...(features.countdown ? [COUNTDOWN] : []),
 	...(features.autohide ? [AUTOHIDE] : []),
 ]

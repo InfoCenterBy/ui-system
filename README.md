@@ -96,6 +96,16 @@ Color math, theme logic and search are covered by tests. Run them with `pnpm tes
 - Export writes `dist/`: one HTML file per page, `assets/site.css` with only the classes in use, `assets/site.js` when a section has inline scripts, images as WebP in several widths with `srcset`, fonts and other files. The canvas and the export CSS come from the same Tailwind and daisyUI build on the server, so the export looks like the canvas.
 - For Bitrix set the asset path prefix to the template folder, for example `/local/templates/site/`, and copy `dist/assets` there.
 
+## Browser testing with Playwright MCP
+
+Claude Code checks the builder in a real browser through the Playwright MCP server. It is set up in `.mcp.json` at the repo root, so a fresh clone needs only these steps:
+
+1. Install Google Chrome. The server drives the installed Chrome (`--browser chrome`), it does not download its own.
+2. Run `pnpm install`. The server itself starts through `pnpm dlx @playwright/mcp@0.0.83` on first use.
+3. Open the repo in Claude Code and approve the `playwright` project server when asked, or enable it later with `/mcp`.
+
+The browser runs headless and isolated with a 1600×1000 viewport. Screenshots and logs go to `.playwright-mcp/`, which git ignores. Test on a copy of the builder so the running one is left alone: `BUILDER_PORT=5190 pnpm builder` serves the UI on 5190 and the API on 5191.
+
 ## Code style
 
 - Formatting is defined in `.prettierrc.json` and `.editorconfig`: tabs, single quotes, no semicolons, 80 columns, LF line endings. Tailwind classes are sorted by `prettier-plugin-tailwindcss`.

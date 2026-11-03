@@ -18,9 +18,12 @@ import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
 import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
 import { useRevealOpen } from '@/editor/canvas/useRevealOpen'
 import { useRoots } from '@/editor/canvas/useRoots'
+import { useCurrentPageMark } from '@/editor/canvas/useCurrentPageMark'
 import { useTranslation } from 'react-i18next'
 import { useDocument } from '@/store/document'
 import { useCurrentPage, useProject } from '@/store/project'
+import { useUi } from '@/store/ui'
+import { previewLinkTarget } from '@/editor/canvas/previewLinks'
 
 const PADDING = 24
 
@@ -51,8 +54,12 @@ export function Canvas() {
 	const page = useCurrentPage()
 	const editingComponent = useProject((s) => s.editingComponentId)
 	const roots = useRoots()
-	const doc = useCanvas((s) => s.doc)
+	const preview = useUi((s) => s.preview)
+	const storeDoc = useCanvas((s) => s.doc)
 	const setDoc = useCanvas((s) => s.setDoc)
+	// A remount (preview on or off) must not draw into the previous frame's document
+	const [frameDoc, setFrameDoc] = useState<Document | null>(null)
+	const doc = storeDoc === frameDoc ? storeDoc : null
 	const editingId = useCanvas((s) => s.editingId)
 	const containerRef = useRef<HTMLDivElement>(null)
 	const frameRef = useRef<HTMLIFrameElement>(null)
@@ -90,10 +97,11 @@ export function Canvas() {
 		)
 	}, [doc, roots, siteLayout, page, header, footer, editingComponent])
 
+	useCurrentPageMark(doc, roots)
 	useCanvasAutohide()
 	useRevealOpen(doc, roots)
 	useCanvasCss(doc, roots, theme)
-	useInlineEditing(doc, rootsRef)
+	useInlineEditing(preview ? null : doc, rootsRef)
 
 	// Pointer and form events stay inside the canvas
 	useEffect(() => {
@@ -119,6 +127,35 @@ export function Canvas() {
 			select(target(e))
 		}
 		const onSubmit = (e: Event) => e.preventDefault()
+		if (preview) {
+			// Visitor view: only links to other pages and sites need care
+			const onLink = (e: MouseEvent) => {
+				const link = (e.target as Element).closest?.('a[href]')
+				const href = link?.getAttribute('href')
+				if (!link || !href || e.defaultPrevented) return
+				// The export opens linked popups with site.js, the canvas has none
+				const popup = href.startsWith('#')
+					? doc.getElementById(href.slice(1))
+					: null
+				if (popup?.tagName === 'DIALOG') {
+					e.preventDefault()
+					;(popup as HTMLDialogElement).showModal()
+					return
+				}
+				const pages = useDocument.getState().doc?.pages ?? {}
+				const go = previewLinkTarget(href, Object.values(pages))
+				if (go.kind === 'blocked') e.preventDefault()
+				else if (go.kind === 'page') {
+					e.preventDefault()
+					useProject.getState().setCurrentPage(go.id)
+				} else if (go.kind === 'external') {
+					e.preventDefault()
+					window.open(href, '_blank', 'noopener')
+				}
+			}
+			doc.addEventListener('click', onLink)
+			return () => doc.removeEventListener('click', onLink)
+		}
 		doc.addEventListener('mousemove', onMove)
 		doc.documentElement.addEventListener('mouseleave', onLeave)
 		doc.addEventListener('click', onClick, true)
@@ -129,7 +166,7 @@ export function Canvas() {
 			doc.removeEventListener('click', onClick, true)
 			doc.removeEventListener('submit', onSubmit, true)
 		}
-	}, [doc])
+	}, [doc, preview])
 
 	const available = Math.max(size.width - PADDING * 2, 100)
 	const scale = Math.min(1, available / width)
@@ -161,13 +198,19 @@ export function Canvas() {
 					title={t('canvas.title')}
 					srcDoc={srcdoc}
 					className='block size-full border-0 bg-white'
-					onLoad={() =>
-						setDoc(frameRef.current?.contentDocument ?? null)
-					}
+					onLoad={() => {
+						const loaded = frameRef.current?.contentDocument ?? null
+						setFrameDoc(loaded)
+						setDoc(loaded)
+					}}
 				/>
-				<Overlay scale={scale} />
-				<DropIndicator drop={drop} scale={scale} />
-				<InlineToolbar scale={scale} />
+				{!preview && (
+					<>
+						<Overlay scale={scale} />
+						<DropIndicator drop={drop} scale={scale} />
+						<InlineToolbar scale={scale} />
+					</>
+				)}
 			</div>
 		</div>
 	)

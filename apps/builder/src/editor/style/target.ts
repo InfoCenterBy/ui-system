@@ -3,15 +3,23 @@ import {
 	BREAKPOINTS,
 	resolveUtility,
 	type Breakpoint,
+	type State,
 	type UtilityGroup,
 } from '@ui-system/core'
 import { t } from '@/i18n'
 
-// Breakpoint the style panel writes to, '' is every screen. UI state only, never saved
+// Breakpoint and state the style panel writes to, '' is every screen / no state. UI state only, never saved
 export const useStyleTarget = create<{
 	target: Breakpoint
 	setTarget: (target: Breakpoint) => void
-}>((set) => ({ target: '', setTarget: (target) => set({ target }) }))
+	state: State
+	setState: (state: State) => void
+}>((set) => ({
+	target: '',
+	setTarget: (target) => set({ target }),
+	state: '',
+	setState: (state) => set({ state }),
+}))
 
 const order = BREAKPOINTS.map((b) => b.prefix as Breakpoint)
 
@@ -45,11 +53,14 @@ export const overriddenAt = (
 	classes: string,
 	group: UtilityGroup,
 	target: Breakpoint,
-	canvasBp: Breakpoint
+	canvasBp: Breakpoint,
+	state: State = ''
 ): Breakpoint | null => {
 	if (order.indexOf(canvasBp) <= order.indexOf(target)) return null
-	const winner = resolveUtility(classes, group, canvasBp)
-	if (!winner || order.indexOf(winner.from) <= order.indexOf(target)) {
+	const winner = resolveUtility(classes, group, canvasBp, state)
+	// A state class beats a plain one, so only another state class can override
+	if (!winner || winner.state !== state) return null
+	if (order.indexOf(winner.from) <= order.indexOf(target)) {
 		return null
 	}
 	return winner.from

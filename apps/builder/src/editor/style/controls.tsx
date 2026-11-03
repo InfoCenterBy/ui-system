@@ -7,6 +7,7 @@ import {
 	resolveUtility,
 	setUtility,
 	type Breakpoint,
+	type State,
 	type UtilityGroup,
 } from '@ui-system/core'
 import { t } from '@/i18n'
@@ -49,6 +50,8 @@ export interface StyleContext {
 	bp: Breakpoint
 	// Breakpoint of the canvas width, only used to spot overrides
 	canvasBp: Breakpoint
+	// Pseudo-class written to, '' is none
+	state: State
 }
 
 const labelOfBreakpoint = (bp: Breakpoint) =>
@@ -61,6 +64,32 @@ export interface RowState {
 	value: string | null
 	inherited: boolean
 	set: (utility: string | null) => void
+}
+
+type Source = 'set' | 'inherited' | 'overridden' | 'none'
+
+// Small dot: where the shown value comes from
+function SourceDot({ source }: { source: Source }) {
+	if (source === 'none') return <span className='size-1.5 shrink-0' />
+	const text = {
+		set: t('style.sourceSet'),
+		inherited: t('style.sourceInherited'),
+		overridden: t('style.sourceOverridden'),
+	}[source]
+	return (
+		<span
+			role='img'
+			aria-label={text}
+			title={text}
+			className={cn(
+				'size-1.5 shrink-0 rounded-full border',
+				source === 'set' && 'border-primary bg-primary',
+				source === 'inherited' &&
+					'border-muted-foreground/60 bg-transparent',
+				source === 'overridden' && 'border-amber-500 bg-amber-500'
+			)}
+		/>
+	)
 }
 
 // One utility group at the active breakpoint with its label, source hint and reset
@@ -84,17 +113,31 @@ export function StyleRow({
 	note?: ReactNode
 	children: (state: RowState) => ReactNode
 }) {
-	const own = getUtility(ctx.classes, group, ctx.bp)
-	const resolved = resolveUtility(ctx.classes, group, ctx.bp)
+	const own = getUtility(ctx.classes, group, ctx.bp, ctx.state)
+	const resolved = resolveUtility(ctx.classes, group, ctx.bp, ctx.state)
 	const inherited = own === null && resolved !== null
-	const overrideFrom = overriddenAt(ctx.classes, group, ctx.bp, ctx.canvasBp)
+	const overrideFrom = overriddenAt(
+		ctx.classes,
+		group,
+		ctx.bp,
+		ctx.canvasBp,
+		ctx.state
+	)
+	// Companion writes only know plain classes, a state uses the plain write
+	const write = (utility: string | null, at: Breakpoint) =>
+		apply && !ctx.state
+			? apply(utility, at)
+			: setUtility(ctx.classes, group, at, utility, ctx.state)
 	const set = (utility: string | null) =>
-		setClasses(
-			ctx.id,
-			apply
-				? apply(utility, ctx.bp)
-				: setUtility(ctx.classes, group, ctx.bp, utility)
-		)
+		setClasses(ctx.id, write(utility, ctx.bp))
+	const source =
+		overrideFrom !== null
+			? 'overridden'
+			: own !== null
+				? 'set'
+				: inherited
+					? 'inherited'
+					: 'none'
 	return (
 		<div
 			className={cn(
@@ -105,14 +148,17 @@ export function StyleRow({
 			)}
 		>
 			<div className='flex min-w-0 flex-col leading-tight'>
-				<span className='text-muted-foreground truncate text-xs'>
-					{label}
+				<span className='text-muted-foreground flex items-center gap-1 text-xs'>
+					<SourceDot source={source} />
+					<span className='truncate'>{label}</span>
 				</span>
 				{inherited && resolved && (
-					<span className='text-muted-foreground/70 truncate text-[10px]'>
-						{t('style.inheritedFrom', {
-							bp: labelOfBreakpoint(resolved.from),
-						})}
+					<span className='text-muted-foreground/70 truncate pl-2.5 text-[10px]'>
+						{ctx.state && resolved.state === ''
+							? t('style.inheritedBase')
+							: t('style.inheritedFrom', {
+									bp: labelOfBreakpoint(resolved.from),
+								})}
 					</span>
 				)}
 			</div>
@@ -158,17 +204,7 @@ export function StyleRow({
 						type='button'
 						className='text-primary underline'
 						onClick={() =>
-							setClasses(
-								ctx.id,
-								apply
-									? apply(null, overrideFrom)
-									: setUtility(
-											ctx.classes,
-											group,
-											overrideFrom,
-											null
-										)
-							)
+							setClasses(ctx.id, write(null, overrideFrom))
 						}
 					>
 						{t('style.resetOverride')}

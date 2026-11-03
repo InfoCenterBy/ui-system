@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import { DownloadIcon, LoaderCircleIcon } from 'lucide-react'
+import { DownloadIcon, ListChecksIcon, LoaderCircleIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
+import { AuditDialog } from '@/editor/AuditDialog'
 import { flushSave } from '@/store/autosave'
+import {
+	auditDocument,
+	hasBlockingIssues,
+	type AuditIssue,
+} from '@/store/audit'
+import { useDocument } from '@/store/document'
 
 const kilobytes = (bytes: number) =>
 	t('export.size', { n: Math.round(bytes / 1024) })
@@ -12,6 +19,27 @@ const kilobytes = (bytes: number) =>
 // Saves pending edits, writes dist/ and offers to open it
 export function ExportButton() {
 	const [busy, setBusy] = useState(false)
+	const [issues, setIssues] = useState<AuditIssue[] | null>(null)
+	const [blocking, setBlocking] = useState(false)
+
+	const audit = () => {
+		const doc = useDocument.getState().doc
+		return doc ? auditDocument(doc) : []
+	}
+
+	// Export waits for a look at the issues, info alone does not stop it
+	function start() {
+		const found = audit()
+		if (hasBlockingIssues(found)) {
+			setBlocking(true)
+			setIssues(found)
+		} else void run()
+	}
+
+	function check() {
+		setBlocking(false)
+		setIssues(audit())
+	}
 
 	async function run() {
 		setBusy(true)
@@ -57,13 +85,42 @@ export function ExportButton() {
 	}
 
 	return (
-		<Button size='sm' disabled={busy} onClick={() => void run()}>
-			{busy ? (
-				<LoaderCircleIcon className='animate-spin' />
-			) : (
-				<DownloadIcon />
-			)}
-			{t('export.button')}
-		</Button>
+		<>
+			<Button
+				size='icon-sm'
+				variant='outline'
+				aria-label={t('audit.button')}
+				title={t('audit.buttonTitle')}
+				onClick={check}
+			>
+				<ListChecksIcon />
+			</Button>
+			<Button
+				size='sm'
+				data-action='export'
+				disabled={busy}
+				onClick={start}
+			>
+				{busy ? (
+					<LoaderCircleIcon className='animate-spin' />
+				) : (
+					<DownloadIcon />
+				)}
+				{t('export.button')}
+			</Button>
+			<AuditDialog
+				open={issues !== null}
+				issues={issues ?? []}
+				onOpenChange={(open) => !open && setIssues(null)}
+				onExport={
+					blocking
+						? () => {
+								setIssues(null)
+								void run()
+							}
+						: undefined
+				}
+			/>
+		</>
 	)
 }

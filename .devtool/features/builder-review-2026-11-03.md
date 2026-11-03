@@ -1,6 +1,6 @@
 ---
 id: "builder-review-2026-11-03"
-status: "backlog"
+status: "in-progress"
 priority: "high"
 assignee: null
 dueDate: null
