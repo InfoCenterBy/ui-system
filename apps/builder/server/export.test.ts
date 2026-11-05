@@ -573,3 +573,53 @@ describe('seo and custom code', () => {
 		}
 	})
 })
+
+describe('scroll reveals', () => {
+	const exportAll = async (sections: string[]) => {
+		const dir = await setUp()
+		const project = await (await send('GET', '/api/project')).json()
+		await send('PUT', '/api/project/pages/home', {
+			...project.pages[0],
+			sections: sections.map((html, i) => section(`s${i}`, html)),
+		})
+		await send('POST', '/api/project/export')
+		const read = (file: string) =>
+			readFile(path.join(dir, 'dist', file), 'utf8').catch(() => '')
+		return {
+			html: await read('index.html'),
+			css: await read('assets/site.css'),
+			js: await read('assets/site.js'),
+		}
+	}
+
+	it('adds no reveal CSS or script to plain pages', async () => {
+		const plain = await exportAll(['<section class="p-4">Plain</section>'])
+		expect(plain.css).not.toContain('reveal-js')
+		expect(plain.js).not.toContain('IntersectionObserver')
+		expect(plain.html).not.toContain('reveal-js')
+	})
+
+	it('adds the reveal CSS and script when a page uses them', async () => {
+		const used = await exportAll([
+			'<section class="p-4" data-reveal="from-bottom" data-reveal-delay="200">Hi</section>',
+		])
+		expect(used.html).toContain('data-reveal="from-bottom"')
+		expect(used.html).toContain('data-reveal-delay="200"')
+		expect(used.css).toContain('.reveal-js [data-reveal]:not(.is-revealed)')
+		expect(used.css).toContain('prefers-reduced-motion:no-preference')
+		expect(used.js).toContain('IntersectionObserver')
+		expect(used.js).toContain("classList.add('reveal-js', 'reveal-on')")
+		// The page is marked in <head>, before site.js, so nothing flashes on load
+		const head = used.html.slice(0, used.html.indexOf('</head>'))
+		expect(head).toContain("r.classList.add('reveal-js')")
+		expect(head.indexOf('reveal-js')).toBeLessThan(head.indexOf('site.js'))
+	})
+
+	it('counts a staggered container as a use', async () => {
+		const out = await exportAll([
+			'<section class="p-4"><ul data-reveal-stagger="100" data-reveal-items="fade"><li>a</li></ul></section>',
+		])
+		expect(out.html).toContain('data-reveal-stagger="100"')
+		expect(out.js).toContain('data-reveal-stagger')
+	})
+})

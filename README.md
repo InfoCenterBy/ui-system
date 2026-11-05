@@ -41,6 +41,7 @@ This is a pnpm workspace.
 | `pnpm lint`         | Run ESLint                                  |
 | `pnpm typecheck`    | Run TypeScript checks in every package      |
 | `pnpm test`         | Run unit tests with Vitest in every package |
+| `pnpm e2e`          | Run the builder browser tests (Playwright)  |
 | `pnpm format`       | Format the whole repo with Prettier         |
 | `pnpm format:check` | Check formatting without writing            |
 
@@ -92,7 +93,7 @@ Color math, theme logic and search are covered by tests. Run them with `pnpm tes
 - A project is a folder: `site.json` (name, language, theme, fonts, page order), `pages/*.json`, `partials/header.json` and `footer.json`, `assets/` for uploads and `dist/` for the export. Keep it in git if you like, the JSON is stable and readable.
 - Pages are built from section presets (`packages/blocks/src/sections`). Presets are plain HTML: `data-edit="text|rich|image|link"` marks editable places, `data-repeat` marks items that can be added, removed and reordered. Header and footer presets become shared parts of every page.
 - Double-click text on the canvas to edit it. Images, links, repeat items and section variants are edited in the right panel. Ctrl+Z and Ctrl+Y undo and redo, edits are saved automatically.
-- Site settings hold the language, the asset path prefix, the daisyUI theme and fonts. Fonts come from Google Fonts or local files and are stored in the project, the exported site never calls Google.
+- Site settings hold the language, the asset path prefix, the daisyUI theme and fonts. Fonts come from Google Fonts or local files and are stored in the project, the exported site never calls Google. The Tokens tab adds your own colors, spacing, radii, font sizes and max widths (`bg-brand`, `py-section`, `rounded-card`, `text-lead`, `max-w-content`): they go into Tailwind `@theme`, a color can point to a theme color, and renaming a token updates the classes that use it.
 - Export writes `dist/`: one HTML file per page, `assets/site.css` with only the classes in use, `assets/site.js` when a section has inline scripts, images as WebP in several widths with `srcset`, fonts and other files. The canvas and the export CSS come from the same Tailwind and daisyUI build on the server, so the export looks like the canvas.
 - For Bitrix set the asset path prefix to the template folder, for example `/local/templates/site/`, and copy `dist/assets` there.
 
@@ -105,6 +106,10 @@ Claude Code checks the builder in a real browser through the Playwright MCP serv
 3. Open the repo in Claude Code and approve the `playwright` project server when asked, or enable it later with `/mcp`.
 
 The browser runs headless and isolated with a 1600×1000 viewport. Screenshots and logs go to `.playwright-mcp/`, which git ignores. Test on a copy of the builder so the running one is left alone: `BUILDER_PORT=5190 pnpm builder` serves the UI on 5190 and the API on 5191.
+
+### E2E tests
+
+`pnpm e2e` runs the Playwright tests in `apps/builder/e2e` with the installed Google Chrome (nothing to download). The config starts its own builder on ports 5196 and 5197, each test makes a project in a temporary folder through the API, and the recent list goes to a temp file (`BUILDER_RECENT_FILE`), so your `~/.ui-builder` and the builder on 5180 stay untouched. Set `E2E_REUSE=1` to attach to servers already running on those ports. Vitest skips `e2e/`.
 
 ## Code style
 

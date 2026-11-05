@@ -38,11 +38,14 @@ import { ImageProperties } from '@/editor/properties/ImageProperties'
 import { carouselOf, slidesOf } from '@/store/carousel'
 import { OptionsProperties } from '@/editor/properties/OptionsProperties'
 import { LinkProperties } from '@/editor/properties/LinkProperties'
-import { PopupSelect } from '@/editor/properties/PopupSelect'
+import { PopupIdField, PopupSelect } from '@/editor/properties/PopupSelect'
+import { popupKind } from '@/editor/properties/popups'
 import { ClassField } from '@/editor/style/ClassField'
 import { StylePanel } from '@/editor/style/StylePanel'
 import { RepeatProperties } from '@/editor/properties/RepeatProperties'
 import { RepeatItems } from '@/editor/properties/RepeatItems'
+import { RevealProperties } from '@/editor/properties/RevealProperties'
+import { PropControls } from '@/editor/components/PropControls'
 import { VariantSelect } from '@/editor/properties/VariantSelect'
 import { useRoots } from '@/editor/canvas/useRoots'
 import {
@@ -159,6 +162,18 @@ function PartialActions({ name }: { name: 'header' | 'footer' }) {
 	)
 }
 
+// Keeps the sticky style bar right under the sticky element header
+function trackHeaderHeight(el: HTMLDivElement | null) {
+	if (!el) return
+	const set = () =>
+		el.parentElement?.style.setProperty(
+			'--props-head',
+			`${el.offsetHeight}px`
+		)
+	set()
+	new ResizeObserver(set).observe(el)
+}
+
 export function Properties() {
 	const { t } = useTranslation()
 	const selectedId = useProject((s) => s.selectedId)
@@ -258,7 +273,10 @@ export function Properties() {
 
 	return (
 		<aside className='flex h-full flex-col overflow-y-auto'>
-			<div className='flex flex-col gap-0.5 border-b px-3 py-2'>
+			<div
+				ref={trackHeaderHeight}
+				className='bg-background sticky top-0 z-20 flex flex-col gap-0.5 border-b px-3 py-2'
+			>
 				{(owner ?? section) && (owner ?? section)?.id !== node.id && (
 					<button
 						type='button'
@@ -272,6 +290,7 @@ export function Properties() {
 			</div>
 			<div className='flex flex-col gap-4 p-3'>
 				{node.instance && <InstanceProperties instance={node} />}
+				{editing && <PropControls node={node} />}
 				{node.section && !editing && !node.instance && (
 					<LockToggle section={node} />
 				)}
@@ -322,7 +341,17 @@ export function Properties() {
 				{/* Locked sections still need a form address, instances take it from the master */}
 				{(free || !owner) && <FormProperties node={node} form={form} />}
 				{free && <OptionsProperties node={node} />}
+				{free && popupKind(node) && (
+					<PopupIdField
+						key={`${node.id}:${node.attrs.id ?? ''}`}
+						node={node}
+					/>
+				)}
 				{free && <ClassField node={node} />}
+				{/* A locked section can still appear on scroll as a whole */}
+				{(free || node.section) && !node.instance && (
+					<RevealProperties key={`reveal-${node.id}`} node={node} />
+				)}
 				{canCreate && <CreateComponent key={node.id} node={node} />}
 			</div>
 			{free && <StylePanel node={node} />}

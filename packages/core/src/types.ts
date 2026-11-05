@@ -1,3 +1,5 @@
+import type { DesignToken } from './tokens'
+
 export type NodeId = string
 
 // What an editable place accepts, set with data-edit in section HTML
@@ -33,6 +35,34 @@ export interface TextNode {
 
 export interface InstanceInfo {
 	component: string
+	// Chosen variant of the component, the base look when missing
+	variant?: string
+	// Master ids of nodes hidden through visibility properties
+	hidden?: NodeId[]
+}
+
+// Class tokens a variant adds to and removes from a master node
+export interface ClassDiff {
+	add: string[]
+	remove: string[]
+}
+
+export interface ComponentVariant {
+	id: string
+	name: string
+	// Differences from the base look by master node id
+	diffs: Record<NodeId, ClassDiff>
+}
+
+export type PropKind = 'text' | 'image' | 'link' | 'visibility'
+
+// A master slot exposed as a labelled field of every instance
+export interface ComponentProp {
+	id: string
+	label: string
+	kind: PropKind
+	// Master node id
+	node: NodeId
 }
 
 export interface Component {
@@ -40,6 +70,8 @@ export interface Component {
 	name: string
 	// Master tree, plain nodes without instance or ref markers
 	root: ElementNode
+	variants?: ComponentVariant[]
+	props?: ComponentProp[]
 }
 
 export type TreeNode = ElementNode | TextNode
@@ -109,6 +141,8 @@ export interface Site {
 	// daisyUI theme variables from the theme generator
 	theme: { name: string; vars: Record<string, string> }
 	fonts: { heading: FontChoice | null; body: FontChoice | null }
+	// Design tokens that become Tailwind theme values
+	tokens?: DesignToken[]
 	// Page ids in navigation order
 	pages: string[]
 	// Page shell, missing means a static header and a sticky footer

@@ -3,6 +3,7 @@ import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { findElement, locate } from '@ui-system/core'
 import { useCanvas } from '@/editor/canvas/canvasStore'
 import { elementFor } from '@/editor/canvas/frame'
+import { GridOverlay } from '@/editor/canvas/GridOverlay'
 import { labelOf, scopeOf } from '@/editor/canvas/nodes'
 import { nodeDrag } from '@/editor/navigator/dragHelpers'
 import { useRoots } from '@/editor/canvas/useRoots'
@@ -34,6 +35,12 @@ function useFrameTick(doc: Document | null) {
 			subtree: true,
 			childList: true,
 			attributes: true,
+			characterData: true,
+		})
+		// New canvas CSS lands in head after a class change and moves things without a body mutation
+		mutations.observe(doc.head, {
+			subtree: true,
+			childList: true,
 			characterData: true,
 		})
 		// Images change size when they finish loading or get a new source
@@ -167,6 +174,7 @@ export function Overlay({ scale }: { scale: number }) {
 
 	return (
 		<div className='pointer-events-none absolute inset-0 overflow-hidden'>
+			<GridOverlay scale={scale} selectedId={selectedId} />
 			{hovered && (
 				<Frame
 					box={hovered}

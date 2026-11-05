@@ -11,6 +11,7 @@ import { Properties } from '@/editor/Properties'
 import { TopBar } from '@/editor/TopBar'
 import { useShortcuts } from '@/editor/useShortcuts'
 import { CommandPalette } from '@/editor/CommandPalette'
+import { RevealOverview } from '@/editor/RevealOverview'
 import { startAutosave } from '@/store/autosave'
 import { useUi } from '@/store/ui'
 
@@ -52,6 +53,7 @@ export function Editor() {
 				</ResizablePanel>
 			</ResizablePanelGroup>
 			<CommandPalette />
+			<RevealOverview />
 		</div>
 	)
 }

@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+	Fragment,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react'
 import { PipetteIcon, RotateCcwIcon } from 'lucide-react'
 import { cn } from 'cn'
 import {
@@ -6,6 +13,7 @@ import {
 	getUtility,
 	resolveUtility,
 	setUtility,
+	tokenNamesFor,
 	type Breakpoint,
 	type State,
 	type UtilityGroup,
@@ -23,6 +31,7 @@ import type { ClassIndex } from '@ui-system/theme/classes'
 import { overriddenAt } from '@/editor/style/target'
 import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
 import { useClassIndex } from '@/editor/style/useClassIndex'
+import { useSiteTokens, useTokenColors } from '@/editor/style/useSiteTokens'
 import {
 	COLOR_TOKENS,
 	OPACITY_STEPS,
@@ -304,7 +313,7 @@ export function Choose({
 export function ValueInput({
 	state,
 	prefix,
-	options,
+	options: baseOptions,
 	negative = false,
 }: {
 	state: RowState
@@ -312,6 +321,12 @@ export function ValueInput({
 	options: readonly string[]
 	negative?: boolean
 }) {
+	const tokens = useSiteTokens()
+	// Site tokens that fit the utility join the list
+	const options = useMemo(
+		() => [...baseOptions, ...tokenNamesFor(tokens, prefix)],
+		[baseOptions, tokens, prefix]
+	)
 	const raw = state.value ? stripPrefix(state.value, prefix) : null
 	// Arbitrary values read as typed, 18px instead of [18px]
 	const current = raw?.replace(/^(-?)\[(.*)\]$/, '$1$2') ?? null
@@ -483,17 +498,19 @@ export function ValueInput({
 
 function Swatch({
 	token,
+	color: given,
 	selected,
 	dim,
 	onClick,
 }: {
 	token: string
+	color?: string
 	selected: boolean
 	dim: boolean
 	onClick: () => void
 }) {
 	const vars = useSiteThemeVars()
-	const color = vars[`--color-${token}`]
+	const color = given ?? vars[`--color-${token}`]
 	// The hint must not cover neighbour swatches: it ignores the pointer and closes once it leaves the swatch
 	return (
 		<Tooltip delayDuration={150} disableHoverableContent>
@@ -621,7 +638,11 @@ export function ColorSwatches({
 			? index?.colorOf(state.value)
 			: null
 	const customCss = rawCss ? resolveVars(rawCss, themeVars) : null
-	const token = current && isColorToken(current.token) ? current : null
+	const siteColors = useTokenColors()
+	const token =
+		current && (isColorToken(current.token) || current.token in siteColors)
+			? current
+			: null
 	return (
 		<div className='flex flex-col gap-1.5'>
 			<div className='flex flex-wrap gap-1.5'>
@@ -643,6 +664,28 @@ export function ColorSwatches({
 							)
 						}
 					/>
+				))}
+				{Object.entries(siteColors).map(([name, color], i) => (
+					<Fragment key={name}>
+						{i === 0 && <span className='bg-border mx-0.5 w-px' />}
+						<Swatch
+							token={name}
+							color={color}
+							selected={token?.token === name}
+							dim={state.inherited}
+							onClick={() =>
+								state.set(
+									token?.token === name && !state.inherited
+										? null
+										: colorUtility(
+												prefix,
+												name,
+												token?.opacity ?? null
+											)
+								)
+							}
+						/>
+					</Fragment>
 				))}
 			</div>
 			<div className='flex items-center gap-2'>

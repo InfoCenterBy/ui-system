@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compile } from '@tailwindcss/node'
+import { tokensCss, type DesignToken } from '@ui-system/core'
 import { HttpError } from './errors'
 import { fontCss, type SiteFonts } from './fontCss'
 
@@ -18,11 +19,11 @@ const BASE = path.dirname(fileURLToPath(import.meta.url))
 const THEME_NAME = /^[a-z][a-z0-9-]*$/
 const VAR_NAME = /^--[a-z0-9-]+$/i
 
-const source = (theme: string) =>
-	`@import "tailwindcss";\n@plugin "daisyui" { themes: ${theme} --default; }\n`
+const source = (theme: string, tokens: readonly DesignToken[]) =>
+	`@import "tailwindcss";\n@plugin "daisyui" { themes: ${theme} --default; }\n${tokensCss(tokens)}`
 
-const createCompiler = (theme: string) =>
-	compile(source(theme), { base: BASE, onDependency: () => {} })
+const createCompiler = (theme: string, tokens: readonly DesignToken[]) =>
+	compile(source(theme, tokens), { base: BASE, onDependency: () => {} })
 
 // Theme generator values go on top of the preset they started from
 const themeOverrides = (vars: Record<string, string>) => {
@@ -38,20 +39,28 @@ const checkTheme = (theme: SiteTheme) => {
 	}
 }
 
-// The canvas reuses one compiler per theme, it only ever adds classes
+const MAX_COMPILERS = 6
+
+// The canvas reuses one compiler per theme and token set, it only ever adds classes
 export class CssBuilder {
 	private compilers = new Map<string, Promise<Compiler>>()
 
 	async build(
 		classes: Iterable<string>,
 		theme: SiteTheme,
-		fonts?: SiteFonts
+		fonts?: SiteFonts,
+		tokens: readonly DesignToken[] = []
 	) {
 		checkTheme(theme)
-		let compiler = this.compilers.get(theme.name)
+		const key = `${theme.name}\n${tokensCss(tokens)}`
+		let compiler = this.compilers.get(key)
 		if (!compiler) {
-			compiler = createCompiler(theme.name)
-			this.compilers.set(theme.name, compiler)
+			// Token edits make many keys, the oldest compiler goes
+			if (this.compilers.size >= MAX_COMPILERS) {
+				this.compilers.delete(this.compilers.keys().next().value!)
+			}
+			compiler = createCompiler(theme.name, tokens)
+			this.compilers.set(key, compiler)
 		}
 		const css = (await compiler).build([...classes])
 		return css + themeOverrides(theme.vars) + fontCss(fonts, '')
@@ -63,10 +72,11 @@ export const buildExportCss = async (
 	classes: Iterable<string>,
 	theme: SiteTheme,
 	fonts?: SiteFonts,
-	prefix = ''
+	prefix = '',
+	tokens: readonly DesignToken[] = []
 ) => {
 	checkTheme(theme)
-	const compiler = await createCompiler(theme.name)
+	const compiler = await createCompiler(theme.name, tokens)
 	return (
 		compiler.build([...classes]) +
 		themeOverrides(theme.vars) +

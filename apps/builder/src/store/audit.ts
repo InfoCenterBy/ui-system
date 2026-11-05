@@ -65,8 +65,11 @@ const checkMarkup = (
 		} else if (tag === 'img') {
 			const alt = (attrs.alt ?? '').trim()
 			const src = (attrs.src ?? '').trim()
-			if (alt === '') push('img.noAlt', node.id)
-			else if (GENERIC_ALT.has(alt.toLowerCase())) {
+			// An empty alt with role presentation is a deliberate decorative image
+			const decorative = attrs.alt === '' && attrs.role === 'presentation'
+			if (alt === '') {
+				if (!decorative) push('img.noAlt', node.id)
+			} else if (GENERIC_ALT.has(alt.toLowerCase())) {
 				push('img.demoAlt', node.id, { alt })
 			}
 			if (src === PLACEHOLDER_SRC) push('img.placeholder', node.id)

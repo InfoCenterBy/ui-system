@@ -3,6 +3,7 @@ import {
 	MAIN_CLASSES,
 	collectClasses,
 	resolveLayout,
+	revealCss,
 	type ElementNode,
 	type Page,
 } from '@ui-system/core'
@@ -49,6 +50,7 @@ export const previewHtml = (project: Project, slug: string) => {
 		prefix: '',
 		script: scripts.length > 0,
 		cally: features.calendar,
+		reveal: features.reveal,
 		favicon:
 			site.favicon && ASSET.test(site.favicon) ? site.favicon : undefined,
 	})
@@ -58,6 +60,7 @@ export const previewHtml = (project: Project, slug: string) => {
 export const previewSiteAssets = (project: Project) => {
 	const classes = new Set<string>()
 	const scripts: string[] = []
+	let reveal = false
 	if (resolveLayout(project.site.layout).stickyFooter) {
 		for (const name of `${BODY_CLASSES} ${MAIN_CLASSES}`.split(' ')) {
 			classes.add(name)
@@ -69,8 +72,13 @@ export const previewSiteAssets = (project: Project) => {
 		const prepared = prepare(project, page)
 		collectClasses(prepared.roots, classes)
 		scripts.push(...prepared.scripts)
+		reveal ||= prepared.features.reveal
 	}
-	return { classes, script: siteScript(scripts) }
+	return {
+		classes,
+		script: siteScript(scripts),
+		extraCss: reveal ? revealCss() : '',
+	}
 }
 
 export { CALLY_FILE }

@@ -8,9 +8,11 @@ import { useTranslation } from 'react-i18next'
 interface Props {
 	value: string
 	onPick: (path: string) => void
+	// Called after a new file is uploaded and picked
+	onUploaded?: (path: string, file: File) => void
 }
 
-export function AssetPicker({ value, onPick }: Props) {
+export function AssetPicker({ value, onPick, onUploaded }: Props) {
 	const { t } = useTranslation()
 	const [images, setImages] = useState<Asset[]>([])
 	const [error, setError] = useState<string | null>(null)
@@ -39,6 +41,7 @@ export function AssetPicker({ value, onPick }: Props) {
 			const { path } = await api.upload(file)
 			await load()
 			onPick(path)
+			onUploaded?.(path, file)
 		} catch (e) {
 			setError(e instanceof Error ? e.message : t('assets.uploadFailed'))
 		} finally {

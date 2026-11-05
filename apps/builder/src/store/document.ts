@@ -41,10 +41,15 @@ interface DocumentState {
 // Rebuilds the instances of every component whose master changed. Runs on the
 // state after the recipe, with the previous master to tell overrides apart
 const syncPass = (before: Doc, after: Doc) => {
-	const changed = Object.values(after.components).filter(
-		(c) =>
-			before.components[c.id] && before.components[c.id].root !== c.root
-	)
+	const changed = Object.values(after.components).filter((c) => {
+		const old = before.components[c.id]
+		return (
+			old &&
+			(old.root !== c.root ||
+				old.variants !== c.variants ||
+				old.props !== c.props)
+		)
+	})
 	if (changed.length === 0) return null
 	return produceWithPatches(after, (draft) => {
 		const lists: ElementNode[][] = [

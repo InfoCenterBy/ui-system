@@ -83,6 +83,14 @@ function PaletteBody() {
 				() => useUi.getState().setPreview(true),
 			],
 			[
+				'reveals',
+				t('reveal.overviewTitle'),
+				() => {
+					useUi.getState().setPreview(false)
+					useUi.getState().setReveals(true)
+				},
+			],
+			[
 				'settings',
 				t('settings.title'),
 				() => clickAction('site-settings'),

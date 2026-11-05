@@ -18,7 +18,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { labelOf } from '@/editor/canvas/nodes'
+import { labelOf, sectionHint } from '@/editor/canvas/nodes'
 import { asElement, asLayer, layerDrag } from '@/editor/dnd'
 import { AddMenu } from '@/editor/navigator/AddMenu'
 import {
@@ -81,10 +81,12 @@ function SectionRow({
 	node,
 	index,
 	count,
+	siblings,
 }: {
 	node: ElementNode
 	index: number
 	count: number
+	siblings: ElementNode[]
 }) {
 	const { t } = useTranslation()
 	const ref = useRef<HTMLDivElement>(null)
@@ -96,6 +98,7 @@ function SectionRow({
 	const toggle = useNav((s) => s.toggle)
 	const { choose, onEnter, onLeave } = useRowActions(node.id)
 	const id = node.id
+	const hint = sectionHint(node, siblings)
 	const isInstance = Boolean(node.instance)
 	const locked = !isInstance && (node.section?.locked ?? false)
 	const expandable =
@@ -224,6 +227,11 @@ function SectionRow({
 				onClick={choose}
 			>
 				{labelOf(node)}
+				{hint && (
+					<span className='text-muted-foreground ml-1.5 text-xs'>
+						{hint}
+					</span>
+				)}
 			</button>
 			{locked && (
 				<Tooltip>
@@ -381,6 +389,7 @@ export function LayersPanel() {
 						node={node}
 						index={i}
 						count={sections?.length ?? 0}
+						siblings={sections ?? []}
 					/>
 					{flattenVisible([node], open)
 						.slice(1)

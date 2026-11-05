@@ -6,7 +6,13 @@ import {
 	flattenComponent,
 	flattenVisible,
 } from '@/editor/navigator/structure'
-import { inlineKindOf, pickTarget, scopeOf } from './nodes'
+import {
+	headingOf,
+	inlineKindOf,
+	pickTarget,
+	scopeOf,
+	sectionHint,
+} from './nodes'
 
 const el = (
 	id: string,
@@ -182,5 +188,40 @@ describe('navigator rows with instances', () => {
 			['m', 0],
 			['mi', 1],
 		])
+	})
+})
+
+describe('sectionHint', () => {
+	const section = (id: string, preset: string, title = '') =>
+		el(
+			id,
+			'section',
+			title
+				? [
+						el(`${id}h`, 'h2', [
+							{ id: `${id}t`, type: 'text', text: title },
+						]),
+					]
+				: [],
+			{ section: { preset, locked: true } }
+		)
+	it('names the preset group', () => {
+		const a = section('a', 'features-cards')
+		const b = section('b', 'pricing-cards')
+		expect(sectionHint(a, [a, b])).toBe('Features')
+		expect(sectionHint(b, [a, b])).toBe('Pricing')
+	})
+	it('uses the heading when a preset repeats', () => {
+		const a = section('a', 'features-cards', 'Why us')
+		const b = section('b', 'features-cards', 'How it works')
+		expect(sectionHint(a, [a, b])).toBe('Why us')
+		expect(headingOf(b)).toBe('How it works')
+	})
+	it('numbers copies with the same heading', () => {
+		const a = section('a', 'features-cards', 'Why us')
+		const b = section('b', 'features-cards', 'Why us')
+		const c = section('c', 'pricing-cards')
+		expect(sectionHint(a, [a, b, c])).toBe('#1 Why us')
+		expect(sectionHint(b, [a, b, c])).toBe('#2 Why us')
 	})
 })

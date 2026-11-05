@@ -17,6 +17,7 @@ import { useCanvasCss } from '@/editor/canvas/useCanvasCss'
 import { useCanvasDrop } from '@/editor/canvas/useCanvasDrop'
 import { useInlineEditing } from '@/editor/canvas/useInlineEditing'
 import { useRevealOpen } from '@/editor/canvas/useRevealOpen'
+import { useRevealPreview } from '@/editor/canvas/revealPlay'
 import { useRoots } from '@/editor/canvas/useRoots'
 import { useCurrentPageMark } from '@/editor/canvas/useCurrentPageMark'
 import { useTranslation } from 'react-i18next'
@@ -100,6 +101,7 @@ export function Canvas() {
 	useCurrentPageMark(doc, roots)
 	useCanvasAutohide()
 	useRevealOpen(doc, roots)
+	useRevealPreview(doc, roots, preview)
 	useCanvasCss(doc, roots, theme)
 	useInlineEditing(preview ? null : doc, rootsRef)
 

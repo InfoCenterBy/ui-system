@@ -1,4 +1,11 @@
-import { isElement, walk, type TreeNode } from '@ui-system/core'
+import {
+	REVEAL_SCRIPT,
+	isElement,
+	readReveal,
+	readStagger,
+	walk,
+	type TreeNode,
+} from '@ui-system/core'
 
 // Opens dialogs and popovers through commandfor in browsers without the Invoker Commands API
 const COMMANDS = `if (!('command' in HTMLButtonElement.prototype)) {
@@ -89,6 +96,8 @@ export interface PageFeatures {
 	countdown: boolean
 	calendar: boolean
 	autohide: boolean
+	// Appear-on-scroll animations, they also need the reveal CSS
+	reveal: boolean
 }
 
 // What a page needs beyond HTML and CSS
@@ -99,6 +108,7 @@ export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
 		countdown: false,
 		calendar: false,
 		autohide: false,
+		reveal: false,
 	}
 	const popups = new Set<string>()
 	const hashes: string[] = []
@@ -116,6 +126,8 @@ export const detectFeatures = (roots: TreeNode[]): PageFeatures => {
 		if (node.attrs['data-countdown-to'] !== undefined)
 			features.countdown = true
 		if (node.attrs['data-header'] === 'autohide') features.autohide = true
+		if (readReveal(node.attrs) || readStagger(node.attrs))
+			features.reveal = true
 		if (node.tag.toLowerCase().startsWith('calendar-'))
 			features.calendar = true
 	})
@@ -129,4 +141,5 @@ export const featureScripts = (features: PageFeatures) => [
 	...(features.popupLinks ? [POPUP_LINKS] : []),
 	...(features.countdown ? [COUNTDOWN] : []),
 	...(features.autohide ? [AUTOHIDE] : []),
+	...(features.reveal ? [REVEAL_SCRIPT] : []),
 ]

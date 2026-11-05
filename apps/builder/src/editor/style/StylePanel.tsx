@@ -5,6 +5,8 @@ import {
 	AlignLeftIcon,
 	AlignRightIcon,
 	ChevronDownIcon,
+	ChevronsDownUpIcon,
+	ChevronsUpDownIcon,
 	ChevronRightIcon,
 	CopyIcon,
 	ItalicIcon,
@@ -13,22 +15,19 @@ import {
 } from 'lucide-react'
 import {
 	BREAKPOINTS,
-	DEVICES,
 	GROUP_CLASS,
 	ancestorsOf,
 	hasGroupClass,
 	parseClass,
 	splitClasses,
 	breakpointFor,
-	readVisibility,
 	repeatPath,
-	setVisibility,
 	usedStates,
 	type Breakpoint,
-	type Device,
 	type State,
 	resolveUtility,
 	setUtility,
+	tokenNamesFor,
 	type ElementNode,
 	type UtilityGroup,
 } from '@ui-system/core'
@@ -50,7 +49,12 @@ import {
 	type Choice,
 	type StyleContext,
 } from '@/editor/style/controls'
+import { useSiteTokens } from '@/editor/style/useSiteTokens'
 import { FRACTIONS, SPACING_STEPS } from '@/editor/style/values'
+import { GridSection } from '@/editor/style/GridSection'
+import { ColumnSection } from '@/editor/style/ColumnSection'
+import { ScreenTable } from '@/editor/style/ScreenTable'
+import { utilityCell } from '@/editor/style/screens'
 import { t } from '@/i18n'
 
 const choices = (prefix: string, names: string[]): Choice[] =>
@@ -186,8 +190,10 @@ const saveOpen = (id: string, open: boolean) => {
 	}
 }
 
+const OPEN_ALL_EVENT = 'builder:style-open-all'
+
 // Collapsible group, the open state is remembered per group
-function Section({
+export function Section({
 	id,
 	title,
 	children,
@@ -199,6 +205,16 @@ function Section({
 	open?: boolean
 }) {
 	const [open, setOpen] = useState(() => readOpen()[id] ?? initial)
+	// The collapse and expand all button reaches every group by this event
+	useEffect(() => {
+		const onAll = (e: Event) => {
+			const next = (e as CustomEvent<boolean>).detail
+			setOpen(next)
+			saveOpen(id, next)
+		}
+		window.addEventListener(OPEN_ALL_EVENT, onAll)
+		return () => window.removeEventListener(OPEN_ALL_EVENT, onAll)
+	}, [id])
 	const Icon = open ? ChevronDownIcon : ChevronRightIcon
 	return (
 		<section className='border-t'>
@@ -367,48 +383,43 @@ function AlignRow({
 	)
 }
 
-const deviceLabel = (device: Device) =>
-	({
-		phone: t('style.devicePhone'),
-		tablet: t('style.deviceTablet'),
-		desktop: t('style.deviceDesktop'),
-	})[device]
+const DISPLAYS = [
+	'block',
+	'flex',
+	'grid',
+	'inline',
+	'inline-block',
+	'inline-flex',
+	'hidden',
+]
 
-// Hides or shows the element per device with display classes at base, md and lg
-function VisibilityRow({ ctx }: { ctx: StyleContext }) {
+// Display at every screen at once, hidden on one screen is how per-screen visibility is set
+function DisplayScreens({ ctx }: { ctx: StyleContext }) {
 	if (ctx.state) return null
-	const visible = readVisibility(ctx.classes)
 	return (
-		<div className='grid grid-cols-[6.25rem_1fr_1.25rem] items-center gap-x-2'>
-			<span className='text-muted-foreground truncate text-xs'>
-				{t('style.visibleOn')}
+		<div className='flex flex-col gap-1'>
+			<span className='text-muted-foreground text-xs'>
+				{t('style.displayScreens')}
 			</span>
-			<div className='border-input flex overflow-hidden rounded-lg border'>
-				{DEVICES.map(({ device }) => (
-					<button
-						key={device}
-						type='button'
-						aria-pressed={visible[device]}
-						className={cn(
-							'h-7 min-w-0 flex-1 truncate px-1 text-xs not-first:border-l',
-							visible[device]
-								? 'text-primary-foreground bg-primary'
-								: 'hover:bg-muted text-muted-foreground line-through'
-						)}
-						onClick={() =>
+			<ScreenTable
+				name={t('style.displayScreens')}
+				active={ctx.canvasBp}
+				rows={[
+					{
+						options: DISPLAYS.map((value) => ({
+							value,
+							label:
+								value === 'hidden' ? t('style.hidden') : value,
+						})),
+						cell: (bp) => utilityCell(ctx.classes, 'display', bp),
+						onChange: (bp, value) =>
 							setClasses(
 								ctx.id,
-								setVisibility(ctx.classes, {
-									...visible,
-									[device]: !visible[device],
-								})
-							)
-						}
-					>
-						{deviceLabel(device)}
-					</button>
-				))}
-			</div>
+								setUtility(ctx.classes, 'display', bp, value)
+							),
+					},
+				]}
+			/>
 		</div>
 	)
 }
@@ -419,7 +430,7 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 	const isGrid = display === 'grid' || display === 'inline-grid'
 	return (
 		<Section id='layout' title={t('style.layout')}>
-			<VisibilityRow ctx={ctx} />
+			<DisplayScreens ctx={ctx} />
 			<StyleRow
 				ctx={ctx}
 				group='display'
@@ -481,45 +492,7 @@ function Layout({ ctx }: { ctx: StyleContext }) {
 			)}
 			{isGrid && (
 				<>
-					<StyleRow
-						ctx={ctx}
-						group='grid-cols'
-						label={t('style.columns')}
-					>
-						{(state) => (
-							<Choose
-								state={state}
-								options={choices('grid-cols', [
-									'1',
-									'2',
-									'3',
-									'4',
-									'5',
-									'6',
-									'12',
-								])}
-							/>
-						)}
-					</StyleRow>
 					<JustifyRow ctx={ctx} />
-					<StyleRow
-						ctx={ctx}
-						group='justify-items'
-						label={t('style.itemsX')}
-					>
-						{(state) => (
-							<Choose
-								state={state}
-								options={choices('justify-items', [
-									'start',
-									'center',
-									'end',
-									'stretch',
-								])}
-							/>
-						)}
-					</StyleRow>
-					<AlignRow ctx={ctx} label={t('style.itemsY')} />
 					<StyleRow
 						ctx={ctx}
 						group='place-items'
@@ -923,6 +896,7 @@ function Gradient({ ctx }: { ctx: StyleContext }) {
 }
 
 function Effects({ ctx }: { ctx: StyleContext }) {
+	const tokens = useSiteTokens()
 	return (
 		<Section id='effects' title={t('style.effects')} open={false}>
 			<StyleRow
@@ -962,7 +936,13 @@ function Effects({ ctx }: { ctx: StyleContext }) {
 			</StyleRow>
 			<StyleRow ctx={ctx} group='radius' label={t('style.radius')}>
 				{(state) => (
-					<Choose state={state} options={choices('rounded', RADII)} />
+					<Choose
+						state={state}
+						options={choices('rounded', [
+							...RADII,
+							...tokenNamesFor(tokens, 'rounded'),
+						])}
+					/>
 				)}
 			</StyleRow>
 			<StyleRow ctx={ctx} group='shadow' label={t('style.shadow')}>
@@ -1265,6 +1245,7 @@ function ApplyToItems({ id }: { id: string }) {
 
 // Style controls write classes at the chosen target, All screens by default
 export function StylePanel({ node }: { node: ElementNode }) {
+	const [allOpen, setAllOpen] = useState(true)
 	const width = useProject((s) => s.canvasWidth)
 	const { target, setTarget, state, setState } = useStyleTarget()
 	const canvasBp = breakpointFor(width)
@@ -1280,11 +1261,41 @@ export function StylePanel({ node }: { node: ElementNode }) {
 	}
 	return (
 		<div className='flex flex-col'>
-			<div className='bg-background sticky top-0 z-10 flex flex-col gap-1.5 border-b px-3 py-2'>
+			<div className='bg-background sticky top-[var(--props-head,0px)] z-10 flex flex-col gap-1.5 border-b px-3 py-2'>
 				<div className='flex items-center justify-between gap-2'>
-					<span className='text-xs font-medium'>
-						{t('style.title')}
-					</span>
+					<div className='flex items-center gap-1'>
+						<span className='text-xs font-medium'>
+							{t('style.title')}
+						</span>
+						<button
+							type='button'
+							className='text-muted-foreground hover:text-foreground rounded p-1'
+							title={
+								allOpen
+									? t('style.collapseAll')
+									: t('style.expandAll')
+							}
+							aria-label={
+								allOpen
+									? t('style.collapseAll')
+									: t('style.expandAll')
+							}
+							onClick={() => {
+								setAllOpen(!allOpen)
+								window.dispatchEvent(
+									new CustomEvent(OPEN_ALL_EVENT, {
+										detail: !allOpen,
+									})
+								)
+							}}
+						>
+							{allOpen ? (
+								<ChevronsDownUpIcon className='size-3.5' />
+							) : (
+								<ChevronsUpDownIcon className='size-3.5' />
+							)}
+						</button>
+					</div>
 					<label className='flex items-center gap-1.5 text-xs'>
 						<span className='text-muted-foreground'>
 							{t('style.appliesTo')}
@@ -1356,6 +1367,8 @@ export function StylePanel({ node }: { node: ElementNode }) {
 				<ApplyToItems id={node.id} />
 			</div>
 			<Layout ctx={ctx} />
+			<GridSection ctx={ctx} />
+			<ColumnSection ctx={ctx} />
 			<Spacing ctx={ctx} />
 			<Size ctx={ctx} />
 			<Typography ctx={ctx} />

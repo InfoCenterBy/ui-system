@@ -1,13 +1,12 @@
 import { readFile } from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 import { spawn } from 'node:child_process'
+import { tokensIssue, type DesignToken } from '@ui-system/core'
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
 import { ensurePlaceholder, listAssets, saveUpload } from './assets'
 import { registerClassRoutes } from './classes'
 import { buildExportCss, CssBuilder } from './css'
-import { exportSite, writeCally, type Optimize } from './export'
+import { callyScript, exportSite, type Optimize } from './export'
 import { faceCss, toChoices, toSiteFonts } from './fontCss'
 import { registerFontRoutes, type FetchFn } from './fonts'
 import { HttpError } from './errors'
@@ -195,6 +194,7 @@ export function createApp(options: AppOptions = {}) {
 			classes?: unknown
 			theme?: { name?: unknown; vars?: unknown }
 			fonts?: unknown
+			tokens?: unknown
 		}
 		const { classes, theme } = data
 		if (
@@ -210,10 +210,15 @@ export function createApp(options: AppOptions = {}) {
 		) {
 			throw new HttpError(400, 'theme needs a name and vars')
 		}
+		const tokens = (data.tokens ?? []) as DesignToken[]
+		if (!Array.isArray(tokens) || tokensIssue(tokens)) {
+			throw new HttpError(400, 'Invalid tokens')
+		}
 		const text = await css.build(
 			classes,
 			{ name: theme.name, vars: theme.vars as Record<string, string> },
-			toSiteFonts(data.fonts)
+			toSiteFonts(data.fonts),
+			tokens
 		)
 		return c.json({ css: text })
 	})
@@ -262,14 +267,15 @@ export function createApp(options: AppOptions = {}) {
 			return c.html(html, 200, noStore)
 		}
 		if (rel === 'assets/site.css') {
-			const { classes } = previewSiteAssets(project)
+			const { classes, extraCss } = previewSiteAssets(project)
 			const text = await buildExportCss(
 				classes,
 				project.site.theme,
 				project.site.fonts,
-				'../'
+				'../',
+				project.site.tokens
 			)
-			return c.body(text, 200, {
+			return c.body(text + extraCss, 200, {
 				'Content-Type': 'text/css; charset=utf-8',
 				...noStore,
 			})
@@ -281,9 +287,7 @@ export function createApp(options: AppOptions = {}) {
 			})
 		}
 		if (rel === CALLY_FILE) {
-			const tmp = path.join(os.tmpdir(), 'ui-builder-preview-cally.js')
-			await writeCally(tmp)
-			return c.body(await readFile(tmp, 'utf8'), 200, {
+			return c.body(await callyScript(), 200, {
 				'Content-Type': 'text/javascript; charset=utf-8',
 			})
 		}

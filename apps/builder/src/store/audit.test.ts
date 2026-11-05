@@ -78,6 +78,13 @@ describe('auditDocument', () => {
 		])
 	})
 
+	it('accepts an image marked decorative', () => {
+		const html = `<section><h1>T</h1>
+			<img src="assets/a.png" alt="" role="presentation">
+			<img src="assets/b.png" alt="" role="img"></section>`
+		expect(codes(doc([page('home', html)]))).toEqual(['img.noAlt'])
+	})
+
 	it('checks SEO fields of pages', () => {
 		const bad = page('home', GOOD, {
 			meta: { title: ' ', description: '', ogImage: null },

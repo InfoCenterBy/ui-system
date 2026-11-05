@@ -1,6 +1,8 @@
 import {
 	HEADER_POSITIONS,
+	tokensIssue,
 	type Component,
+	type DesignToken,
 	type ElementNode,
 	type Page,
 	type Site,
@@ -25,6 +27,21 @@ function assertCode(v: unknown, what: string) {
 	}
 }
 
+function assertTokens(v: unknown) {
+	const ok =
+		Array.isArray(v) &&
+		v.every(
+			(t) =>
+				isObj(t) &&
+				typeof t.name === 'string' &&
+				typeof t.type === 'string' &&
+				typeof t.value === 'string'
+		)
+	if (!ok) fail('site.tokens')
+	const found = tokensIssue(v as DesignToken[])
+	if (found) fail(`site.tokens[${found.index}] (${found.issue})`)
+}
+
 export function assertSite(v: unknown): asserts v is Site {
 	if (!isObj(v) || v.version !== 1) fail('site')
 	for (const key of ['name', 'lang', 'pathPrefix']) {
@@ -33,6 +50,7 @@ export function assertSite(v: unknown): asserts v is Site {
 	if (!isObj(v.theme) || typeof v.theme.name !== 'string') fail('site.theme')
 	if (!isObj(v.theme.vars)) fail('site.theme.vars')
 	if (!isObj(v.fonts)) fail('site.fonts')
+	if (v.tokens !== undefined) assertTokens(v.tokens)
 	if (!Array.isArray(v.pages) || !v.pages.every(isSafeId)) {
 		fail('site.pages')
 	}
@@ -64,12 +82,80 @@ export function assertSite(v: unknown): asserts v is Site {
 	}
 }
 
+const isStrings = (v: unknown): v is string[] =>
+	Array.isArray(v) && v.every((x) => typeof x === 'string')
+
 export function assertElement(v: unknown): asserts v is ElementNode {
 	if (!isObj(v) || v.type !== 'element') fail('element node')
 	if (typeof v.id !== 'string' || typeof v.tag !== 'string') {
 		fail('element node')
 	}
 	if (!Array.isArray(v.children)) fail('element node')
+	if (v.instance !== undefined) {
+		const info = v.instance
+		if (!isObj(info) || typeof info.component !== 'string') {
+			fail('element.instance')
+		}
+		if (info.variant !== undefined && typeof info.variant !== 'string') {
+			fail('element.instance.variant')
+		}
+		if (info.hidden !== undefined && !isStrings(info.hidden)) {
+			fail('element.instance.hidden')
+		}
+	}
+}
+
+const PROP_KINDS = ['text', 'image', 'link', 'visibility']
+
+function assertVariants(v: unknown) {
+	if (v === undefined) return
+	if (!Array.isArray(v)) fail('component.variants')
+	const ids = new Set<string>()
+	for (const variant of v) {
+		if (
+			!isObj(variant) ||
+			typeof variant.id !== 'string' ||
+			variant.id === '' ||
+			ids.has(variant.id)
+		) {
+			fail('component.variants')
+		}
+		ids.add(variant.id)
+		if (typeof variant.name !== 'string' || variant.name.trim() === '') {
+			fail('component.variants.name')
+		}
+		if (!isObj(variant.diffs)) fail('component.variants.diffs')
+		for (const diff of Object.values(variant.diffs)) {
+			if (
+				!isObj(diff) ||
+				!isStrings(diff.add) ||
+				!isStrings(diff.remove)
+			) {
+				fail('component.variants.diffs')
+			}
+		}
+	}
+}
+
+function assertProps(v: unknown) {
+	if (v === undefined) return
+	if (!Array.isArray(v)) fail('component.props')
+	const ids = new Set<string>()
+	for (const prop of v) {
+		if (
+			!isObj(prop) ||
+			typeof prop.id !== 'string' ||
+			prop.id === '' ||
+			ids.has(prop.id) ||
+			typeof prop.label !== 'string' ||
+			typeof prop.node !== 'string' ||
+			typeof prop.kind !== 'string' ||
+			!PROP_KINDS.includes(prop.kind)
+		) {
+			fail('component.props')
+		}
+		ids.add(prop.id)
+	}
 }
 
 export function assertPage(v: unknown): asserts v is Page {
@@ -94,6 +180,8 @@ export function assertComponent(v: unknown): asserts v is Component {
 		fail('component.name')
 	}
 	assertElement(v.root)
+	assertVariants(v.variants)
+	assertProps(v.props)
 }
 
 export function assertPartial(v: unknown): asserts v is ElementNode | null {

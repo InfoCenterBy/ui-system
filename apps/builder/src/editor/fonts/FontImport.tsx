@@ -35,18 +35,26 @@ function useJob(onDone: (choice: FontChoice) => void) {
 
 function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 	const [query, setQuery] = useState('')
-	const [suggestions, setSuggestions] = useState<GoogleFontSuggestion[]>([])
+	const [suggestions, setSuggestions] = useState<
+		GoogleFontSuggestion[] | null
+	>(null)
 	const [open, setOpen] = useState(false)
+	const [active, setActive] = useState(0)
 	const [weights, setWeights] = useState([400, 700])
 	const [italic, setItalic] = useState(false)
 	const { busy, error, run } = useJob(onDone)
 
 	useEffect(() => {
-		if (!open || query.trim().length < 2) return
+		if (!open) return
 		let cancelled = false
+		// An empty query lists the first families, so there is something to browse
 		const timer = setTimeout(() => {
 			api.searchGoogleFonts(query)
-				.then((list) => !cancelled && setSuggestions(list))
+				.then((list) => {
+					if (cancelled) return
+					setSuggestions(list)
+					setActive(0)
+				})
 				.catch(() => !cancelled && setSuggestions([]))
 		}, 200)
 		return () => {
@@ -55,11 +63,22 @@ function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 		}
 	}, [query, open])
 
-	const known = suggestions.find(
+	const known = suggestions?.find(
 		(s) => s.family.toLowerCase() === query.trim().toLowerCase()
 	)
 	const choices = known?.weights.length ? known.weights : ALL_WEIGHTS
-	const shown = open && query.trim().length >= 2 ? suggestions : []
+	const shown = open ? (suggestions ?? []) : []
+	const noMatches =
+		open && suggestions?.length === 0 && query.trim().length > 0
+
+	const pick = (s: GoogleFontSuggestion) => {
+		setQuery(s.family)
+		setWeights((w) => {
+			const kept = w.filter((x) => s.weights.includes(x))
+			return kept.length ? kept : s.weights.slice(0, 1)
+		})
+		setOpen(false)
+	}
 
 	return (
 		<div className='flex flex-col gap-3'>
@@ -67,34 +86,46 @@ function GoogleImport({ onDone }: { onDone: (c: FontChoice) => void }) {
 				<Field label={t('fonts.family')}>
 					<Input
 						value={query}
-						placeholder='Inter, Playfair Display...'
+						placeholder={t('fonts.searchPlaceholder')}
 						onChange={(e) => {
 							setQuery(e.target.value)
 							setOpen(true)
 						}}
 						onFocus={() => setOpen(true)}
 						onBlur={() => setTimeout(() => setOpen(false), 150)}
+						onKeyDown={(e) => {
+							if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+								e.preventDefault()
+								setOpen(true)
+								const step = e.key === 'ArrowDown' ? 1 : -1
+								setActive((i) =>
+									Math.max(
+										0,
+										Math.min(shown.length - 1, i + step)
+									)
+								)
+							} else if (e.key === 'Enter' && shown[active]) {
+								e.preventDefault()
+								pick(shown[active])
+							}
+						}}
 					/>
 				</Field>
+				{noMatches && (
+					<p className='text-muted-foreground mt-1 text-xs'>
+						{t('fonts.noMatches')}
+					</p>
+				)}
 				{shown.length > 0 && (
 					<ul className='bg-popover mt-1 max-h-48 w-full overflow-auto rounded-lg border p-1'>
-						{shown.map((s) => (
+						{shown.map((s, i) => (
 							<li key={s.family}>
 								<button
 									type='button'
-									className='hover:bg-muted flex w-full justify-between rounded px-2 py-1 text-left text-sm'
+									className={`hover:bg-muted flex w-full justify-between rounded px-2 py-1 text-left text-sm ${i === active ? 'bg-muted' : ''}`}
 									onMouseDown={(e) => {
 										e.preventDefault()
-										setQuery(s.family)
-										setWeights((w) => {
-											const kept = w.filter((x) =>
-												s.weights.includes(x)
-											)
-											return kept.length
-												? kept
-												: s.weights.slice(0, 1)
-										})
-										setOpen(false)
+										pick(s)
 									}}
 								>
 									<span>{s.family}</span>

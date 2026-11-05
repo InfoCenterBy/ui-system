@@ -2,15 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import callyUrl from 'cally?url'
 import { parseHtml, serializeHtml } from '@ui-system/core'
 
-const VIRTUAL_WIDTH = 480
-const HEIGHT = 80
+// Narrow virtual width keeps elements large, wide ones are clipped
+const VIRTUAL_WIDTH = 380
+const HEIGHT = 96
 
 const srcdocFor = (html: string, css: string) => {
 	const body = serializeHtml(parseHtml(html), { pretty: false })
 	const cally = body.includes('<calendar-')
 		? `<script type="module" src="${callyUrl}"></script>`
 		: ''
-	return `<!doctype html><html><head><meta charset="utf-8"><base href="${location.origin}/"><style>${css}</style><style>html,body{margin:0;overflow:hidden;background:var(--color-base-100,#fff)}body{padding:16px;pointer-events:none}</style></head><body>${body}${cally}</body></html>`
+	return `<!doctype html><html><head><meta charset="utf-8"><base href="${location.origin}/"><style>${css}</style><style>html,body{margin:0;overflow:hidden;background:var(--color-base-200,#f3f4f6);color:var(--color-base-content,#111)}body{padding:12px;pointer-events:none}</style></head><body>${body}${cally}</body></html>`
 }
 
 // Small non-interactive preview, clipped to a fixed height

@@ -43,7 +43,16 @@ export const LAYOUT_COMPONENTS: LayoutComponent[] = [
 	{
 		slug: 'layout-grid',
 		name: 'Grid',
-		variants: [grid(2), grid(3), grid(4)],
+		variants: [
+			grid(2),
+			grid(3),
+			grid(4),
+			{
+				id: 'layout/grid-12',
+				title: '12-column row',
+				html: '<div class="grid grid-cols-12 gap-6" data-label="Grid"></div>',
+			},
+		],
 	},
 	{
 		slug: 'layout-box',

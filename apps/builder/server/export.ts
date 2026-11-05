@@ -15,6 +15,8 @@ import {
 	collectClasses,
 	isElement,
 	markCurrentPage,
+	REVEAL_HEAD_SCRIPT,
+	revealCss,
 	resolveLayout,
 	serializeHtml,
 	walk,
@@ -123,7 +125,7 @@ export const siteScript = (scripts: string[]) =>
 	[...new Set(scripts)].map((code) => `;(() => {\n${code}\n})()\n`).join('\n')
 
 // Copies Cally with its MIT notice on top, as a classic script so file:// pages work too
-export const writeCally = async (to: string) => {
+export const callyScript = async () => {
 	const entry = fileURLToPath(import.meta.resolve('cally'))
 	const license = await readFile(
 		path.join(path.dirname(entry), '..', 'LICENSE'),
@@ -135,11 +137,12 @@ export const writeCally = async (to: string) => {
 		''
 	)
 	const notice = license.trim().replace(/\*\//g, '* /')
+	return `/*! Cally, MIT license\n${notice}\n*/\n;(() => {\n${code}\n})()\n`
+}
+
+export const writeCally = async (to: string) => {
 	await mkdir(path.dirname(to), { recursive: true })
-	await writeFile(
-		to,
-		`/*! Cally, MIT license\n${notice}\n*/\n;(() => {\n${code}\n})()\n`
-	)
+	await writeFile(to, await callyScript())
 }
 
 const ICON_TYPES: Record<string, string> = {
@@ -189,6 +192,7 @@ interface PageDocument {
 	prefix: string
 	script: boolean
 	cally?: boolean
+	reveal?: boolean
 	// Copied favicon, href relative to the site root
 	favicon?: string
 }
@@ -204,6 +208,7 @@ export const pageDocument = ({
 	prefix,
 	script,
 	cally,
+	reveal,
 	favicon,
 }: PageDocument) => {
 	const { title, description, ogImage, noindex } = page.meta
@@ -238,6 +243,8 @@ export const pageDocument = ({
 			`<meta property="og:image" content="${escapeAttr(ogUrl(ogImage))}">`,
 		ogImage && '<meta name="twitter:card" content="summary_large_image">',
 		`<link rel="stylesheet" href="${prefix}assets/site.css">`,
+		// Hides reveals before the first paint, the deferred site.js would come too late
+		reveal && `<script>${REVEAL_HEAD_SCRIPT}</script>`,
 		script && `<script src="${prefix}assets/site.js" defer></script>`,
 		cally && `<script src="${prefix}${CALLY_FILE}" defer></script>`,
 		// Custom code is the user's own, so it stays raw
@@ -418,6 +425,7 @@ export async function exportSite(
 	const exported: string[] = []
 	const indexable: string[] = []
 	let cally = false
+	let reveal = false
 
 	for (const id of site.pages) {
 		const page = project.pages.find((p) => p.id === id)
@@ -435,6 +443,7 @@ export async function exportSite(
 		const features = detectFeatures(roots)
 		pageScripts.push(...featureScripts(features))
 		cally ||= features.calendar
+		reveal ||= features.reveal
 		scripts.push(...pageScripts)
 		collectClasses(roots, classes)
 		if (stickyFooter) {
@@ -483,6 +492,7 @@ export async function exportSite(
 			prefix,
 			script: pageScripts.length > 0,
 			cally: features.calendar,
+			reveal: features.reveal,
 			favicon,
 		})
 		const name = `${page.slug}.html`
@@ -507,12 +517,14 @@ export async function exportSite(
 		.flatMap((choice) => choice?.files ?? [])
 		.map((f) => f.file)
 	for (const file of new Set(fontFiles)) await copyAsset(file)
-	const css = await buildExportCss(
-		classes,
-		site.theme,
-		site.fonts,
-		prefix || '../'
-	)
+	const css =
+		(await buildExportCss(
+			classes,
+			site.theme,
+			site.fonts,
+			prefix || '../',
+			site.tokens
+		)) + (reveal ? revealCss() : '')
 	await writeFile(path.join(assetsOut, 'site.css'), css)
 	files++
 

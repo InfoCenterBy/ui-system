@@ -18,6 +18,8 @@ import {
 import type { ClassIndex } from '@ui-system/theme/classes'
 import { useSiteThemeVars } from '@/editor/style/useSiteThemeVars'
 import { suggest } from '@/editor/style/suggest'
+import { withTokens } from '@/editor/style/tokenIndex'
+import { useSiteTokens } from '@/editor/style/useSiteTokens'
 import { useClassIndex } from '@/editor/style/useClassIndex'
 
 // Variant prefix is shown dimmed in front of the utility
@@ -116,7 +118,12 @@ export function ClassField({ node }: { node: ElementNode }) {
 	const [editText, setEditText] = useState('')
 	const listRef = useRef<HTMLUListElement>(null)
 	const tokens = splitClasses(node.classes)
-	const index = state.status === 'ready' ? state.index : null
+	const siteTokens = useSiteTokens()
+	const baseIndex = state.status === 'ready' ? state.index : null
+	const index = useMemo(
+		() => (baseIndex ? withTokens(baseIndex, siteTokens) : null),
+		[baseIndex, siteTokens]
+	)
 
 	// The main field and an edited chip share one suggestion list
 	const query = editing !== null ? editText : typed

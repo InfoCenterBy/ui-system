@@ -11,8 +11,12 @@ export interface RecentProject {
 
 const MAX_RECENT = 10
 
+// BUILDER_RECENT_FILE keeps tests and e2e runs away from the real home folder
 export function defaultRecentFile(): string {
-	return path.join(os.homedir(), '.ui-builder', 'recent.json')
+	return (
+		process.env.BUILDER_RECENT_FILE ??
+		path.join(os.homedir(), '.ui-builder', 'recent.json')
+	)
 }
 
 export async function readRecent(file: string): Promise<RecentProject[]> {

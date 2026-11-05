@@ -125,7 +125,7 @@ export function TopBar() {
 						variant={canvasWidth === width ? 'secondary' : 'ghost'}
 						onClick={() => setCanvasWidth(width)}
 					>
-						{label === 'Phone' ? t('top.phone') : label} {width}
+						{label} {width}
 					</Button>
 				))}
 			</div>

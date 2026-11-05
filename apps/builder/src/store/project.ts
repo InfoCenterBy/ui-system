@@ -3,7 +3,8 @@ import type { Project } from '@/api'
 import { useDocument } from '@/store/document'
 
 export const CANVAS_WIDTHS = [
-	{ label: 'Phone', width: 375 },
+	{ label: 'xs', width: 375 },
+	{ label: 'sm', width: 640 },
 	{ label: 'md', width: 768 },
 	{ label: 'lg', width: 1024 },
 	{ label: 'xl', width: 1280 },
@@ -18,6 +19,8 @@ interface ProjectState {
 	hoveredId: string | null
 	// Set while a component master is edited instead of a page
 	editingComponentId: string | null
+	// Variant of that component whose class edits are recorded, null for the base look
+	editingVariantId: string | null
 	openProject: (project: Project) => void
 	closeProject: () => void
 	setCurrentPage: (id: string) => void
@@ -26,6 +29,7 @@ interface ProjectState {
 	hover: (id: string | null) => void
 	editComponent: (id: string) => void
 	exitComponent: () => void
+	setEditingVariant: (id: string | null) => void
 }
 
 export const useProject = create<ProjectState>((set) => ({
@@ -35,6 +39,7 @@ export const useProject = create<ProjectState>((set) => ({
 	selectedId: null,
 	hoveredId: null,
 	editingComponentId: null,
+	editingVariantId: null,
 	openProject: (project) => {
 		useDocument.getState().load(project)
 		set({
@@ -43,6 +48,7 @@ export const useProject = create<ProjectState>((set) => ({
 			selectedId: null,
 			hoveredId: null,
 			editingComponentId: null,
+			editingVariantId: null,
 		})
 	},
 	closeProject: () => {
@@ -53,6 +59,7 @@ export const useProject = create<ProjectState>((set) => ({
 			selectedId: null,
 			hoveredId: null,
 			editingComponentId: null,
+			editingVariantId: null,
 		})
 	},
 	setCurrentPage: (id) =>
@@ -61,14 +68,26 @@ export const useProject = create<ProjectState>((set) => ({
 			selectedId: null,
 			hoveredId: null,
 			editingComponentId: null,
+			editingVariantId: null,
 		}),
 	setCanvasWidth: (width) => set({ canvasWidth: width }),
 	select: (id) => set({ selectedId: id }),
 	hover: (id) => set({ hoveredId: id }),
 	editComponent: (id) =>
-		set({ editingComponentId: id, selectedId: null, hoveredId: null }),
+		set({
+			editingComponentId: id,
+			editingVariantId: null,
+			selectedId: null,
+			hoveredId: null,
+		}),
 	exitComponent: () =>
-		set({ editingComponentId: null, selectedId: null, hoveredId: null }),
+		set({
+			editingComponentId: null,
+			editingVariantId: null,
+			selectedId: null,
+			hoveredId: null,
+		}),
+	setEditingVariant: (id) => set({ editingVariantId: id }),
 }))
 
 // The page shown on the canvas

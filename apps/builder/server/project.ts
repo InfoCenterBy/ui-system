@@ -3,7 +3,7 @@ import path from 'node:path'
 import {
 	detachInstance,
 	isElement,
-	materialize,
+	resolveInstance,
 	randomId,
 	type Component,
 	type ElementNode,
@@ -62,7 +62,7 @@ function syncAll(lists: TreeNode[][], components: Map<string, Component>) {
 			}
 			const master = components.get(id)
 			list[i] = master
-				? materialize(master.root, id, randomId, node)
+				? resolveInstance(master, randomId, node)
 				: detachInstance(node)
 		}
 	}

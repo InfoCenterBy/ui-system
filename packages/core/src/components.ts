@@ -2,8 +2,11 @@ import { serializeHtml } from './html'
 import type { IdFactory } from './ids'
 import { isTextLike } from './text'
 import { cloneNode, isElement, walk } from './tree'
+import { applyClassDiff, variantOf, visibleHidden } from './variants'
 import type {
+	ClassDiff,
 	Component,
+	ComponentVariant,
 	ElementNode,
 	NodeId,
 	SlotKind,
@@ -76,6 +79,9 @@ interface Context {
 	previous?: Map<NodeId, TreeNode>
 	// Master nodes the previous instance was built from
 	oldMaster?: Map<NodeId, TreeNode>
+	// Chosen variant and hidden master nodes of the instance
+	variant?: ComponentVariant
+	hidden?: Set<NodeId>
 }
 
 const autoSlot = (master: ElementNode): SlotKind | undefined => {
@@ -113,7 +119,10 @@ const build = (
 		id: root?.id ?? prev?.id ?? ctx.newId(),
 		type: 'element',
 		tag: master.tag,
-		classes: master.classes,
+		classes: applyClassDiff(
+			master.classes,
+			ctx.variant?.diffs[master.id] as ClassDiff | undefined
+		),
 		attrs: { ...master.attrs },
 		children: [],
 		ref: master.id,
@@ -122,6 +131,8 @@ const build = (
 	if (master.label) node.label = master.label
 	if (root) {
 		node.instance = { component: ctx.componentId }
+		if (ctx.variant) node.instance.variant = ctx.variant.id
+		if (ctx.hidden?.size) node.instance.hidden = [...ctx.hidden]
 		if (master.section) node.section = { ...master.section, locked: true }
 	}
 
@@ -141,24 +152,30 @@ const build = (
 	}
 	if (!keep || !specOf(master).children) {
 		const inner = blocked || swallowsChildren(master, slot)
-		node.children = master.children.map((child) => build(child, ctx, inner))
+		node.children = master.children
+			.filter((child) => !ctx.hidden?.has(child.id))
+			.map((child) => build(child, ctx, inner))
 	}
 	return node
 }
 
 // Builds an instance from the master. With the current instance given, node ids
 // and overridden content survive. An override is content that differs from the
-// old master, or from the new one when the old master is not known
+// old master, or from the new one when the old master is not known. The view
+// picks a variant and the hidden master nodes
 export const materialize = (
 	master: ElementNode,
 	componentId: string,
 	newId: IdFactory,
 	previous?: ElementNode,
-	oldMaster?: ElementNode
+	oldMaster?: ElementNode,
+	view?: { variant?: ComponentVariant; hidden?: NodeId[] }
 ): ElementNode => {
 	const ctx: Context = {
 		newId,
 		componentId,
+		variant: view?.variant,
+		hidden: view?.hidden && new Set(view.hidden),
 		previous: previous && indexByRef(previous),
 		oldMaster: oldMaster && indexById(oldMaster),
 	}
@@ -168,6 +185,23 @@ export const materialize = (
 		id: previous?.id ?? newId(),
 	}) as ElementNode
 }
+
+// The single place that turns master + variant + hidden nodes + the overrides
+// kept in the previous instance into an instance tree. Canvas and export both
+// read that tree. The view defaults to what the previous instance has chosen
+export const resolveInstance = (
+	component: Component,
+	newId: IdFactory,
+	previous?: ElementNode,
+	oldMaster?: ElementNode,
+	view: { variant?: string; hidden?: NodeId[] } = previous?.instance ?? {
+		component: '',
+	}
+): ElementNode =>
+	materialize(component.root, component.id, newId, previous, oldMaster, {
+		variant: variantOf(component, view.variant),
+		hidden: visibleHidden(component, view.hidden),
+	})
 
 export const masterNodeOf = (master: ElementNode, ref: NodeId | undefined) => {
 	if (!ref) return null
@@ -194,7 +228,8 @@ export const isOverridden = (node: TreeNode, master: ElementNode) => {
 export const resetOverride = (
 	node: ElementNode,
 	master: ElementNode,
-	newId: IdFactory
+	newId: IdFactory,
+	variant?: ComponentVariant
 ) => {
 	const source = masterNodeOf(master, node.ref)
 	if (!isElement(source)) return
@@ -204,7 +239,7 @@ export const resetOverride = (
 		else delete node.attrs[name]
 	}
 	if (spec.children) {
-		const ctx: Context = { newId, componentId: '' }
+		const ctx: Context = { newId, componentId: '', variant }
 		node.children = source.children.map((child) => build(child, ctx, true))
 	}
 }
@@ -309,13 +344,7 @@ export const syncInstances = (
 			const node = list[i]
 			if (!isElement(node)) continue
 			if (node.instance?.component === component.id) {
-				list[i] = materialize(
-					component.root,
-					component.id,
-					newId,
-					node,
-					oldMaster
-				)
+				list[i] = resolveInstance(component, newId, node, oldMaster)
 				count++
 			} else visit(node.children)
 		}

@@ -96,8 +96,18 @@ export const api = {
 		),
 	deleteComponent: (id: string) =>
 		request<{ ok: true }>('DELETE', `/api/project/components/${id}`),
-	css: (classes: string[], theme: Site['theme'], fonts?: Site['fonts']) =>
-		request<{ css: string }>('POST', '/api/css', { classes, theme, fonts }),
+	css: (
+		classes: string[],
+		theme: Site['theme'],
+		fonts?: Site['fonts'],
+		tokens?: Site['tokens']
+	) =>
+		request<{ css: string }>('POST', '/api/css', {
+			classes,
+			theme,
+			fonts,
+			tokens,
+		}),
 	fontFaces: (choices: FontChoice[]) =>
 		request<{ css: string }>('POST', '/api/fonts/css', { choices }),
 	projectFonts: () => request<FontChoice[]>('GET', '/api/project/fonts'),

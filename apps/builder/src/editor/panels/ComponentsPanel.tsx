@@ -52,6 +52,9 @@ function useComponentCss(components: Component[]) {
 		.sort()
 		.join(' ')
 	const themeKey = theme ? JSON.stringify(theme) : null
+	const tokensKey = JSON.stringify(
+		useDocument((s) => s.doc?.site.tokens) ?? null
+	)
 	const [css, setCss] = useState<string | null>(null)
 	useEffect(() => {
 		if (!themeKey) return
@@ -59,7 +62,9 @@ function useComponentCss(components: Component[]) {
 		const timer = setTimeout(() => {
 			api.css(
 				classKey ? classKey.split(' ') : [],
-				JSON.parse(themeKey) as Site['theme']
+				JSON.parse(themeKey) as Site['theme'],
+				undefined,
+				JSON.parse(tokensKey) ?? undefined
 			)
 				.then((r) => {
 					if (!cancelled) setCss(r.css)
@@ -70,7 +75,7 @@ function useComponentCss(components: Component[]) {
 			cancelled = true
 			clearTimeout(timer)
 		}
-	}, [classKey, themeKey])
+	}, [classKey, themeKey, tokensKey])
 	return css
 }
 

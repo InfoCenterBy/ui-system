@@ -24,21 +24,31 @@ import {
 	sectionOf,
 	replaceChildren,
 	shiftRepeatItem,
+	variantOf,
 	updateElement,
 	walk,
+	writeRevealConfig,
 	type ElementNode,
 	type ElementPatch,
 	type NodeId,
+	type RevealConfig,
 	type SectionPreset,
 	type SlotKind,
 	type TreeNode,
 } from '@ui-system/core'
 import { getSectionPreset, sharedRoleOf } from '@ui-system/blocks/sections'
 import { canBecomeLink } from '@/editor/properties/linkable'
+import {
+	isValidPopupId,
+	popupIdTaken,
+	popupKind,
+	retargetTriggers,
+} from '@/editor/properties/popups'
 import { scopeOf } from '@/editor/canvas/nodes'
 import { api } from '@/api'
 import { t } from '@/i18n'
 import { useDocument } from '@/store/document'
+import { setVariantClasses } from '@/store/variantActions'
 import type { Doc } from '@/store/history'
 import { useNav } from '@/editor/navigator/navState'
 import { fillMenuDraft } from '@/store/menuSync'
@@ -280,6 +290,36 @@ export const setAttribute = (id: NodeId, name: string, value: string | null) =>
 		`attr:${id}:${name}`
 	)
 
+// Describes an image, or marks it decorative (empty alt plus role) in one undo step
+export const setImageAlt = (id: NodeId, alt: string, decorative = false) =>
+	editNode(
+		'Set alt',
+		id,
+		(list) => {
+			const node = findElement(list, id)
+			if (!node) return
+			node.attrs.alt = decorative ? '' : alt
+			if (decorative) node.attrs.role = 'presentation'
+			else if (node.attrs.role === 'presentation') delete node.attrs.role
+		},
+		`alt:${id}`
+	)
+
+// Appear-on-scroll settings: free scope, or the section root even when it is locked
+export const setReveal = (id: NodeId, config: RevealConfig) =>
+	editNode(
+		'Set reveal',
+		id,
+		(list) => {
+			const node = findElement(list, id)
+			if (node) node.attrs = writeRevealConfig(node.attrs, config)
+		},
+		`reveal:${id}`,
+		(list, nodeId) =>
+			inFreeScope(list, nodeId) ||
+			Boolean(findElement(list, nodeId)?.section)
+	)
+
 // Points a button or link at a popup in one undo step, naming the popup when it has no id
 export const linkPopup = (
 	triggerId: NodeId,
@@ -302,6 +342,36 @@ export const linkPopup = (
 		const popupList = named && listOf(draft, named.nodeId)
 		const popup = popupList && findElement(popupList, named.nodeId)
 		if (popup && named) popup.attrs.id = named.id
+	})
+
+// Renames a modal or popover id, links and buttons that open it follow in the same undo step
+export const renamePopupId = (popupId: NodeId, next: string) =>
+	useDocument.getState().edit('Rename popup id', (draft) => {
+		const list = listOf(draft, popupId)
+		const popup = list && findElement(list, popupId)
+		if (!list || !popup || !popupKind(popup)) return
+		if (!inFreeScope(list, popupId)) return
+		const from = popup.attrs.id
+		if (!isValidPopupId(next) || next === from) return
+		const { header, footer } = draft.partials
+		const partials = [header, footer].filter((n) => n !== null)
+		const inPartial = partials.some((p) => locate([p], popupId))
+		const inMaster = Object.values(draft.components).some((c) =>
+			locate([c.root], popupId)
+		)
+		// Page popups are used on that page and in the shared parts,
+		// shared popups on every page, a master only inside itself
+		const scope: TreeNode[] = inMaster
+			? list
+			: [
+					...partials,
+					...(inPartial
+						? Object.values(draft.pages).flatMap((p) => p.sections)
+						: (draft.pages[pageId()]?.sections ?? [])),
+				]
+		if (popupIdTaken(scope, next, popupId)) return
+		popup.attrs.id = next
+		if (from) retargetTriggers(scope, from, next)
 	})
 
 export const patchElement = (id: NodeId, patch: ElementPatch, label = 'Edit') =>
@@ -486,14 +556,45 @@ export const setSectionLocked = (id: NodeId, locked: boolean) =>
 	})
 
 // Typing in the class field merges into one undo step per element
-export const setClasses = (id: NodeId, classes: string) =>
-	editNode(
+// While a component variant is edited the change goes into the variant diff
+export const setClasses = (id: NodeId, classes: string) => {
+	const { editingComponentId, editingVariantId } = useProject.getState()
+	if (editingComponentId && editingVariantId) {
+		const root =
+			useDocument.getState().doc?.components[editingComponentId]?.root
+		if (root && inFreeScope([root], id)) {
+			setVariantClasses(editingComponentId, editingVariantId, id, classes)
+		}
+		return
+	}
+	return editNode(
 		'Change classes',
 		id,
 		(list) => updateElement(list, id, { classes }),
 		`classes:${id}`,
 		inFreeScope
 	)
+}
+
+// Classes of several elements in one undo step, e.g. a grid and its first item
+export const setClassesMany = (changes: { id: NodeId; classes: string }[]) => {
+	if (changes.length === 0) return
+	if (useProject.getState().editingVariantId) {
+		for (const change of changes) setClasses(change.id, change.classes)
+		return
+	}
+	editNode(
+		'Change classes',
+		changes[0].id,
+		(list) => {
+			for (const { id, classes } of changes) {
+				if (inFreeScope(list, id)) updateElement(list, id, { classes })
+			}
+		},
+		undefined,
+		inFreeScope
+	)
+}
 
 // Inserts parsed HTML into a parent element at an index and selects the first new element
 export const insertHtml = (parentId: NodeId, index: number, html: string) => {
@@ -775,7 +876,12 @@ export const resetContent = (nodeId: NodeId) =>
 			instance && draft.components[instance.instance!.component]
 		if (!node || !master) return
 		if (!isOverridden(node, master.root)) return
-		resetOverride(node, master.root, randomId)
+		resetOverride(
+			node,
+			master.root,
+			randomId,
+			variantOf(master, instance?.instance?.variant)
+		)
 	})
 
 // Every overridden slot of an instance goes back to the master, one undo step
@@ -795,9 +901,15 @@ export const resetAllContent = (instanceId: NodeId) => {
 		for (const id of ids) {
 			const roots = pageRoots(draft)
 			const node = findElement(roots, id)
-			const master = draft.components[componentId]?.root
+			const component = draft.components[componentId]
+			const master = component?.root
 			if (!node || !master || !isOverridden(node, master)) continue
-			resetOverride(node, master, randomId)
+			resetOverride(
+				node,
+				master,
+				randomId,
+				variantOf(component, instance.instance?.variant)
+			)
 		}
 	})
 }

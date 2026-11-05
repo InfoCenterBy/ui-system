@@ -46,7 +46,17 @@ describe('classes', () => {
 		expect(groupOf('place-items-center')).toBe('place-items')
 		expect(groupOf('self-center')).toBe('align-self')
 		expect(groupOf('justify-self-end')).toBe('justify-self')
-		expect(groupOf('gap-x-4')).toBeNull()
+		expect(groupOf('gap-x-4')).toBe('gap-x')
+		expect(groupOf('gap-y-4')).toBe('gap-y')
+		expect(groupOf('gap-4')).toBe('gap')
+		expect(groupOf('grid-rows-3')).toBe('grid-rows')
+		expect(groupOf('col-span-2')).toBe('col-span')
+		expect(groupOf('col-span-full')).toBe('col-span')
+		expect(groupOf('col-start-3')).toBe('col-start')
+		expect(groupOf('col-end-3')).toBe('col-end')
+		expect(groupOf('row-span-2')).toBe('row-span')
+		expect(groupOf('row-start-2')).toBe('row-start')
+		expect(groupOf('row-end-2')).toBe('row-end')
 		expect(groupOf('rounded-box')).toBe('radius')
 		expect(groupOf('rounded-t-lg')).toBeNull()
 		expect(groupOf('btn')).toBeNull()
@@ -158,5 +168,25 @@ describe('classes', () => {
 		expect(groupOf('-rotate-3')).toBe('rotate')
 		expect(hasGroupClass('card group p-4')).toBe(true)
 		expect(hasGroupClass('group-hover:underline')).toBe(false)
+	})
+	it('writes grid placement per breakpoint without touching its neighbours', () => {
+		const classes = 'grid grid-cols-1 md:grid-cols-3 gap-4 col-span-2'
+		expect(setUtility(classes, 'grid-cols', 'md', 'grid-cols-4')).toBe(
+			'grid grid-cols-1 md:grid-cols-4 gap-4 col-span-2'
+		)
+		expect(setUtility(classes, 'gap-x', 'md', 'gap-x-8')).toBe(
+			`${classes} md:gap-x-8`
+		)
+		const placed = setUtility(classes, 'col-start', 'md', 'col-start-2')
+		expect(getUtility(placed, 'col-span', '')).toBe('col-span-2')
+		expect(getUtility(placed, 'col-start', 'md')).toBe('col-start-2')
+		expect(setUtility(placed, 'col-start', 'md', null)).toBe(classes)
+		expect(getUtility('md:row-span-2 row-start-3', 'row-span', 'md')).toBe(
+			'row-span-2'
+		)
+		expect(getUtility('md:row-span-2 row-start-3', 'row-start', '')).toBe(
+			'row-start-3'
+		)
+		expect(getUtility('gap-4 gap-y-2', 'gap', '')).toBe('gap-4')
 	})
 })

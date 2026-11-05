@@ -10,6 +10,7 @@
 		"builder": "node scripts/dev.mjs builder",
 		"catalog": "node scripts/dev.mjs catalog",
 		"test": "pnpm -r test",
+		"e2e": "pnpm --filter builder e2e",
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",

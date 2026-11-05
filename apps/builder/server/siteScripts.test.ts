@@ -26,3 +26,22 @@ describe('popup links', () => {
 		expect(featureScripts(features(dialog))).toHaveLength(0)
 	})
 })
+
+describe('reveal', () => {
+	it('is detected from data-reveal or a stagger container', () => {
+		expect(features('<p data-reveal="fade">x</p>').reveal).toBe(true)
+		expect(
+			features(
+				'<ul data-reveal-stagger="80" data-reveal-items="zoom"></ul>'
+			).reveal
+		).toBe(true)
+		expect(features('<p data-reveal="spin">x</p>').reveal).toBe(false)
+		expect(features('<p>x</p>').reveal).toBe(false)
+	})
+	it('adds the script only when used', () => {
+		expect(
+			featureScripts(features('<p data-reveal="fade">x</p>')).join('')
+		).toContain('IntersectionObserver')
+		expect(featureScripts(features('<p>x</p>'))).toHaveLength(0)
+	})
+})

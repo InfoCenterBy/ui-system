@@ -5,7 +5,7 @@ import { useDocument } from '@/store/document'
 
 const DELAY = 120
 
-// Fetches CSS for the classes on the canvas whenever that set, the theme or the fonts change
+// Fetches CSS for the classes on the canvas whenever that set, the theme, fonts or tokens change
 export function useCanvasCss(
 	doc: Document | null,
 	roots: ElementNode[],
@@ -20,6 +20,9 @@ export function useCanvasCss(
 	const fontsKey = JSON.stringify(
 		useDocument((s) => s.doc?.site.fonts) ?? null
 	)
+	const tokensKey = JSON.stringify(
+		useDocument((s) => s.doc?.site.tokens) ?? null
+	)
 
 	// A new theme object with equal values does not refetch
 	useEffect(() => {
@@ -29,7 +32,8 @@ export function useCanvasCss(
 			api.css(
 				classKey ? classKey.split(' ') : [],
 				JSON.parse(themeKey),
-				JSON.parse(fontsKey) ?? undefined
+				JSON.parse(fontsKey) ?? undefined,
+				JSON.parse(tokensKey) ?? undefined
 			)
 				.then(({ css }) => {
 					const style = doc.getElementById('site-css')
@@ -41,5 +45,5 @@ export function useCanvasCss(
 			cancelled = true
 			clearTimeout(timer)
 		}
-	}, [doc, classKey, themeKey, fontsKey])
+	}, [doc, classKey, themeKey, fontsKey, tokensKey])
 }

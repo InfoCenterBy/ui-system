@@ -1,12 +1,14 @@
 import {
 	ancestorsOf,
 	findElement,
+	isElement,
 	isTextLike,
+	walk,
 	type ElementNode,
 } from '@ui-system/core'
-import { getSectionPreset } from '@ui-system/blocks/sections'
+import { getSectionPreset, sectionCategories } from '@ui-system/blocks/sections'
 import { t, type Key } from '@/i18n'
-import { sectionName } from '@/i18n/names'
+import { categoryName, sectionName } from '@/i18n/names'
 import { useDocument } from '@/store/document'
 
 const SLOT_LABEL: Record<NonNullable<ElementNode['slot']>, Key> = {
@@ -30,6 +32,50 @@ export const labelOf = (node: ElementNode) => {
 	if (node.slot) return t(SLOT_LABEL[node.slot])
 	if (node.repeat) return t('node.item')
 	return node.label ?? node.tag
+}
+
+const textOf = (node: ElementNode): string =>
+	node.children
+		.map((c) => (c.type === 'text' ? c.text : textOf(c)))
+		.join('')
+		.replace(/\s+/g, ' ')
+		.trim()
+
+// First heading of a section, short enough for a muted hint
+export const headingOf = (node: ElementNode): string => {
+	let found = ''
+	walk(node.children, (n) => {
+		if (found) return false
+		if (isElement(n) && /^h[1-6]$/.test(n.tag.toLowerCase())) {
+			found = textOf(n)
+			return false
+		}
+	})
+	return found.length > 40 ? `${found.slice(0, 39)}…` : found
+}
+
+// Tells same-named sections apart: the preset group, or the heading when the
+// same preset is used twice on the page, numbered when the heading repeats too
+export const sectionHint = (node: ElementNode, siblings: ElementNode[]) => {
+	if (!node.section || node.instance) return ''
+	const preset = node.section.preset
+	const twins = siblings.filter(
+		(s) => !s.instance && s.section?.preset === preset
+	)
+	if (twins.length > 1) {
+		const heading = headingOf(node)
+		const same = twins.filter((s) => headingOf(s) === heading)
+		if (heading && same.length === 1) return heading
+		if (same.length > 1) {
+			const n = `#${same.indexOf(node) + 1}`
+			// Number first, the row cuts long hints at the end
+			return heading ? `${n} ${heading}` : n
+		}
+	}
+	const category = sectionCategories.find(
+		(c) => c.id === getSectionPreset(preset)?.category
+	)
+	return category ? categoryName(category) : ''
 }
 
 export type Scope = 'free' | 'slots'

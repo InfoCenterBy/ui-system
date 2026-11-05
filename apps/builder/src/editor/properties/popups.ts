@@ -43,6 +43,36 @@ export const popupFor = (trigger: ElementNode, popups: Popup[]) => {
 	return id ? (popups.find((p) => p.id === id) ?? null) : null
 }
 
+export const isValidPopupId = (id: string) => /^[A-Za-z][\w-]*$/.test(id)
+
+// True when another element already uses the id
+export const popupIdTaken = (roots: TreeNode[], id: string, self: string) => {
+	let taken = false
+	walk(roots, (node) => {
+		if (isElement(node) && node.id !== self && node.attrs.id === id)
+			taken = true
+	})
+	return taken
+}
+
+// Points every trigger of the popup id `from` at `to`, mutates the roots
+export const retargetTriggers = (
+	roots: TreeNode[],
+	from: string,
+	to: string
+) => {
+	walk(roots, (node) => {
+		if (!isElement(node)) return
+		const { attrs } = node
+		if (node.tag.toLowerCase() === 'a') {
+			if (attrs.href === `#${from}`) attrs.href = `#${to}`
+			return
+		}
+		if (attrs.commandfor === from) attrs.commandfor = to
+		if (attrs.popovertarget === from) attrs.popovertarget = to
+	})
+}
+
 const BUTTON_RESET = {
 	command: null,
 	commandfor: null,
